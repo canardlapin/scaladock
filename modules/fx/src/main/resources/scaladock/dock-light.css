@@ -1,0 +1,10 @@
+/* scaladock light theme: only the variables change; structure lives in dock.css. */
+
+.dock-layout {
+  -dock-base: #f7f8fa;
+  -dock-surface: #ececee;
+  -dock-outline: #d5d7db;
+  -dock-accent: #2f6fe4;
+  -dock-text: #5a5e66;
+  -dock-text-strong: #1c1e22;
+}

@@ -1,0 +1,117 @@
+/* scaladock default look. Themes override the variables on .dock-layout; structure below
+   references only variables. The class and pseudo-class names are public API. */
+
+.dock-layout {
+  -dock-base: #1e1f22;
+  -dock-surface: #2b2d30;
+  -dock-outline: #393b40;
+  -dock-accent: #3574f0;
+  -dock-text: #9da0a8;
+  -dock-text-strong: #dfe1e5;
+
+  -fx-background-color: -dock-base;
+}
+
+.dock-group {
+  -fx-background-color: -dock-surface;
+  -fx-border-color: -dock-outline;
+  -fx-border-width: 1;
+}
+
+.dock-group:active {
+  -fx-border-color: -dock-accent;
+}
+
+.dock-header {
+  -fx-background-color: -dock-surface;
+  -fx-alignment: center-left;
+}
+
+.dock-tab {
+  -fx-padding: 4 10 4 12;
+  -fx-spacing: 6;
+  -fx-alignment: center-left;
+}
+
+.dock-tab-title {
+  -fx-text-fill: -dock-text;
+}
+
+.dock-tab:selected {
+  -fx-background-color: -dock-base;
+}
+
+.dock-tab:selected .dock-tab-title {
+  -fx-text-fill: -dock-text-strong;
+}
+
+.dock-tab-close {
+  -fx-text-fill: -dock-text;
+  -fx-font-size: 9;
+  -fx-padding: 0 2 0 2;
+}
+
+.dock-tab-close:hover {
+  -fx-text-fill: -dock-text-strong;
+}
+
+.dock-header-buttons {
+  -fx-alignment: center-right;
+  -fx-padding: 0 6 0 6;
+  -fx-spacing: 8;
+}
+
+.dock-header-button {
+  -fx-text-fill: -dock-text;
+  -fx-font-size: 11;
+}
+
+.dock-header-button:hover {
+  -fx-text-fill: -dock-text-strong;
+}
+
+.dock-tab-overflow {
+  -fx-background-color: transparent;
+  -fx-text-fill: -dock-text;
+  -fx-padding: 0 4 0 4;
+}
+
+.dock-tab-overflow > .arrow-button {
+  -fx-padding: 0;
+}
+
+.dock-tab-overflow > .arrow-button > .arrow {
+  -fx-background-color: transparent;
+}
+
+.dock-content {
+  -fx-background-color: -dock-base;
+}
+
+.dock-divider {
+  -fx-background-color: -dock-base;
+}
+
+.dock-unresolved {
+  -fx-text-fill: -dock-text;
+  -fx-alignment: center;
+}
+
+.dock-drop-indicator {
+  -fx-background-color: #3574f04d; /* -dock-accent at ~30% */
+  -fx-border-color: #3574f0;
+  -fx-border-width: 1.5;
+}
+
+.dock-ghost {
+  -fx-background-color: #2b2d30ee;
+  -fx-border-color: #3574f0;
+  -fx-border-width: 1;
+  -fx-padding: 0;
+}
+
+.dock-ghost-title {
+  -fx-text-fill: #dfe1e5;
+  -fx-padding: 4 12 4 12;
+  -fx-background-color: #2b2d30;
+}

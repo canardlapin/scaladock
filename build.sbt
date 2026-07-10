@@ -1,0 +1,94 @@
+val scala3Version    = "3.7.0"
+val javafxVersion    = "24.0.1"
+val scalafxVersion   = "24.0.0-R35"
+val upickleVersion   = "4.1.0"
+val munitVersion     = "1.1.1"
+val munitScVersion   = "1.1.0"
+
+ThisBuild / organization       := "io.github.bbuchsbaum"
+ThisBuild / scalaVersion       := scala3Version
+ThisBuild / versionScheme      := Some("early-semver")
+ThisBuild / version            := "0.1.0-SNAPSHOT"
+ThisBuild / licenses           := Seq(License.Apache2)
+ThisBuild / homepage           := Some(url("https://github.com/bbuchsbaum/scaladock"))
+ThisBuild / semanticdbEnabled  := true
+
+val fxClassifier: String =
+  (sys.props("os.name"), sys.props("os.arch")) match {
+    case (n, "aarch64") if n.startsWith("Mac")   => "mac-aarch64"
+    case (n, _) if n.startsWith("Mac")           => "mac"
+    case (n, "aarch64") if n.startsWith("Linux") => "linux-aarch64"
+    case (n, _) if n.startsWith("Linux")         => "linux"
+    case _                                       => "win"
+  }
+
+val javafxModules = Seq("base", "graphics", "controls")
+
+def javafxDeps(config: Configuration): Seq[ModuleID] =
+  javafxModules.map(m => ("org.openjfx" % s"javafx-$m" % javafxVersion % config).classifier(fxClassifier))
+
+val warnings = Seq(
+  "-deprecation",
+  "-feature",
+  "-unchecked",
+  "-Wunused:all",
+  "-Wvalue-discard",
+  "-Wnonunit-statement",
+  "-Wsafe-init"
+)
+
+val commonSettings = Seq(
+  scalacOptions ++= warnings,
+  scalacOptions ++= (if (sys.env.contains("CI")) Seq("-Werror") else Seq.empty),
+  libraryDependencies ++= Seq(
+    "org.scalameta" %% "munit"            % munitVersion   % Test,
+    "org.scalameta" %% "munit-scalacheck" % munitScVersion % Test
+  )
+)
+
+lazy val core = project
+  .in(file("modules/core"))
+  .settings(commonSettings)
+  .settings(
+    name := "scaladock-core",
+    scalacOptions += "-language:strictEquality",
+    libraryDependencies += "com.lihaoyi" %% "upickle" % upickleVersion
+  )
+
+lazy val fx = project
+  .in(file("modules/fx"))
+  .dependsOn(core)
+  .settings(commonSettings)
+  .settings(
+    name := "scaladock-fx",
+    libraryDependencies += "org.scalafx" %% "scalafx" % scalafxVersion,
+    // Published POM must not carry a platform classifier: consumers supply natives.
+    libraryDependencies ++= javafxDeps(Provided),
+    libraryDependencies ++= javafxDeps(Test),
+    Test / fork := true,
+    Test / javaOptions ++= headlessFxOptions
+  )
+
+lazy val demo = project
+  .in(file("modules/demo"))
+  .dependsOn(fx)
+  .settings(commonSettings)
+  .settings(
+    name           := "scaladock-demo",
+    publish / skip := true,
+    libraryDependencies ++= javafxDeps(Compile),
+    run / fork := true
+  )
+
+// Headless JavaFX for CI: software pipeline; on Linux CI the workflow wraps sbt in xvfb-run.
+def headlessFxOptions: Seq[String] =
+  if (sys.env.contains("CI")) Seq("-Dprism.order=sw", "-Djava.awt.headless=true", "-Dtestfx.headless=false")
+  else Seq.empty
+
+lazy val root = project
+  .in(file("."))
+  .aggregate(core, fx, demo)
+  .settings(
+    name           := "scaladock",
+    publish / skip := true
+  )
