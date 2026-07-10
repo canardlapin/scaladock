@@ -32,6 +32,19 @@ final class Dock private (
 
   private val dragController = DragController(this, main.region)
 
+  // floating windows must not outlive the main window: when the scene's window hides
+  // (app closing), close every floating Stage — the state is untouched, so a save made
+  // before exit still restores them
+  locally:
+    main.region.sceneProperty.addListener: (_, _, scene) =>
+      if scene != null then
+        scene.windowProperty.addListener: (_, _, window) =>
+          if window != null then
+            window.addEventHandler(
+              javafx.stage.WindowEvent.WINDOW_HIDDEN,
+              _ => floats.values.foreach(_.dispose())
+            )
+
   // -- public surface --------------------------------------------------------------------------
 
   /** Put this into your scene. */
@@ -357,9 +370,10 @@ private[fx] final class FloatingStage(dock: Dock, initial: Floating):
   private var applyingBounds   = false
 
   locally:
-    stage.setScene(new Scene(renderer.region, initial.bounds.width, initial.bounds.height))
-    stage.setX(initial.bounds.x)
-    stage.setY(initial.bounds.y)
+    val b = FloatingStage.clampToScreens(initial.bounds)
+    stage.setScene(new Scene(renderer.region, b.width, b.height))
+    stage.setX(b.x)
+    stage.setY(b.y)
     stage.setOnCloseRequest: e =>
       e.consume()
       dock.dockBack(window)
@@ -391,3 +405,20 @@ private[fx] final class FloatingStage(dock: Dock, initial: Floating):
 
   def dispose(): Unit = stage.close()
 end FloatingStage
+
+object FloatingStage:
+  /** Keep a restored window reachable: monitors change between sessions. If the requested bounds
+    * don't intersect any visible screen, relocate onto the primary one.
+    */
+  private[fx] def clampToScreens(b: Rect): Rect =
+    import javafx.stage.Screen
+    val onSomeScreen = Screen.getScreensForRectangle(b.x, b.y, b.width, b.height).size > 0
+    if onSomeScreen then b
+    else
+      val vis = Screen.getPrimary.getVisualBounds
+      Rect(
+        vis.getMinX + 40,
+        vis.getMinY + 40,
+        b.width.min(vis.getWidth - 80).max(200),
+        b.height.min(vis.getHeight - 80).max(150)
+      )

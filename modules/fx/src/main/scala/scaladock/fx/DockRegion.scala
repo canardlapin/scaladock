@@ -61,12 +61,19 @@ private[fx] final class DockRegion(settings: LayoutSettings) extends Region:
     val dividerRects =
       geometry.dividers.map(d => (d.split, d.index) -> d).toMap
 
+    // snap manually-placed children to the pixel grid (Region only does this for its own
+    // layout algorithms): fractional rects render as blurry 1px borders on scaled displays
+    def snapped(n: javafx.scene.Node, r: Rect): Unit =
+      val x = snapPositionX(r.x)
+      val y = snapPositionY(r.y)
+      n.resizeRelocate(x, y, snapPositionX(r.right) - x, snapPositionY(r.bottom) - y)
+
     getChildren.forEach:
       case gv: GroupView =>
         geometry.groups.get(gv.nodeId) match
           case Some(gg) if visibleUnderMaximise(gv.nodeId) =>
             gv.setVisible(true)
-            gv.resizeRelocate(gg.bounds.x, gg.bounds.y, gg.bounds.width, gg.bounds.height)
+            snapped(gv, gg.bounds)
           case _ =>
             gv.setVisible(false)
       case dv: DividerView =>
@@ -74,7 +81,7 @@ private[fx] final class DockRegion(settings: LayoutSettings) extends Region:
           case Some(d) if geometry.maximized.isEmpty =>
             dv.setVisible(true)
             dv.setAxis(d.axis)
-            dv.resizeRelocate(d.bounds.x, d.bounds.y, d.bounds.width, d.bounds.height)
+            snapped(dv, d.bounds)
           case _ =>
             dv.setVisible(false)
       case other if other eq indicator =>

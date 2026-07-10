@@ -63,6 +63,13 @@ private[fx] final class GroupView(val nodeId: NodeId, settings: LayoutSettings) 
   private var activePane: Option[PaneId] = None
   private var headerVisible              = true
 
+  // clicking anywhere in the content focuses the pane (VS Code behaviour); a filter so the
+  // pane's own handlers still see the event
+  content.addEventFilter(
+    javafx.scene.input.MouseEvent.MOUSE_PRESSED,
+    (_: javafx.scene.input.MouseEvent) => activePane.foreach(onTabActivated)
+  )
+
   content.layoutBoundsProperty.addListener: (_, _, bounds) =>
     activePane.foreach(id => onContentResized(id, bounds.getWidth, bounds.getHeight))
 
