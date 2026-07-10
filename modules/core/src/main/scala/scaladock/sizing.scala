@@ -115,17 +115,33 @@ object sizing:
     else
       val alloc    = allocate(cells, span, dividerPx)
       val combined = alloc(index) + alloc(index + 1)
-      val lo       = cellMin(cells(index), axis, settings)
-      val hi       = combined - cellMin(cells(index + 1), axis, settings)
-      val aPx      = (fraction * combined).max(lo).min(math.max(lo, hi))
-      val bPx      = combined - aPx
-      def rewrite(cell: Cell, px: Double): Cell =
-        cell.size match
-          case Size.Px(_) => cell.copy(size = Size.Px(px))
-          case _          => cell.copy(size = Size.Pct(px / available * 100.0))
-      cells
-        .updated(index, rewrite(cells(index), aPx))
-        .updated(index + 1, rewrite(cells(index + 1), bPx))
+      val minA     = cellMin(cells(index), axis, settings)
+      val minB     = cellMin(cells(index + 1), axis, settings)
+      if minA + minB > combined then cells // both sides already below min: nothing sane to commit
+      else
+        commitAt(
+          cells,
+          index,
+          (fraction * combined).max(minA).min(combined - minB),
+          combined,
+          available
+        )
+
+  private def commitAt(
+      cells: Vector[Cell],
+      index: Int,
+      aPx: Double,
+      combined: Double,
+      available: Double
+  ): Vector[Cell] =
+    val bPx = combined - aPx
+    def rewrite(cell: Cell, px: Double): Cell =
+      cell.size match
+        case Size.Px(_) => cell.copy(size = Size.Px(px))
+        case _          => cell.copy(size = Size.Pct(px / available * 100.0))
+    cells
+      .updated(index, rewrite(cells(index), aPx))
+      .updated(index + 1, rewrite(cells(index + 1), bPx))
 
   /** A cell's effective minimum along its split's axis: its own floor or its subtree's. */
   def cellMin(cell: Cell, axis: Axis, settings: LayoutSettings): Double =

@@ -40,6 +40,43 @@ final class EventsSuite extends FunSuite:
     val s6 = edit.dockBack(s5, w)
     assert(DockEvent.diff(s5, s6).contains(DockEvent.WindowClosed(w)))
 
+  test("diff reports retitles and cleared focus"):
+    val a  = doc("a")
+    val s0 = edit.canonical(LayoutState.of(Node.solo(a))).copy(focused = Some(a.id))
+    val s1 = edit.retitle(s0, a.id, "renamed")
+    assert(DockEvent.diff(s0, s1).contains(DockEvent.PaneRetitled(a.id, "renamed")))
+    val s2 = s1.copy(focused = None)
+    assertEquals(DockEvent.diff(s1, s2), Vector(DockEvent.FocusCleared(a.id)))
+
+  test("a throwing subscriber does not starve the others"):
+    val topic = Events.Topic[Int]()
+    var seen  = List.empty[Int]
+    topic.subscribe(_ => throw new RuntimeException("boom")): Unit
+    topic.subscribe(n => seen = n :: seen): Unit
+    val t      = Thread.currentThread
+    val before = t.getUncaughtExceptionHandler
+    var caught = false
+    t.setUncaughtExceptionHandler((_, _) => caught = true)
+    try topic.publish(42)
+    finally t.setUncaughtExceptionHandler(before)
+    assertEquals(seen, List(42))
+    assert(caught, "the subscriber's exception was reported, not swallowed")
+
+  test("subscribing the same function twice yields independent subscriptions"):
+    val topic          = Events.Topic[Int]()
+    var count          = 0
+    val f: Int => Unit = _ => count += 1
+    val s1             = topic.subscribe(f)
+    val s2             = topic.subscribe(f)
+    topic.publish(1)
+    assertEquals(count, 2)
+    s1.cancel()
+    topic.publish(1)
+    assertEquals(count, 3, "cancelling one subscription leaves the other live")
+    s2.cancel()
+    topic.publish(1)
+    assertEquals(count, 3)
+
   test("Topic delivers, collect filters, cancel stops"):
     val topic  = Events.Topic[DockEvent]()
     var all    = List.empty[DockEvent]

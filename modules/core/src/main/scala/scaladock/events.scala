@@ -5,7 +5,9 @@ enum DockEvent derives CanEqual:
   case LayoutChanged(state: LayoutState)
   case PaneOpened(id: PaneId, tpe: String)
   case PaneClosed(id: PaneId)
+  case PaneRetitled(id: PaneId, title: String)
   case PaneFocused(id: PaneId, previous: Option[PaneId])
+  case FocusCleared(previous: PaneId)
   case ActiveTabChanged(group: NodeId, pane: PaneId)
   case GroupMaximized(group: NodeId)
   case GroupRestored(group: NodeId)
@@ -29,9 +31,16 @@ object DockEvent:
       events += PaneOpened(id, nextPanes(id).content.tpe.name)
     prevPanes.keysIterator.filterNot(nextPanes.contains).foreach: id =>
       events += PaneClosed(id)
+    nextPanes.foreach: (id, pane) =>
+      prevPanes.get(id) match
+        case Some(before) if before.title != pane.title => events += PaneRetitled(id, pane.title)
+        case _                                          => ()
 
     if prev.focused != next.focused then
-      next.focused.foreach(id => events += PaneFocused(id, prev.focused))
+      (prev.focused, next.focused) match
+        case (_, Some(id))      => events += PaneFocused(id, prev.focused)
+        case (Some(gone), None) => events += FocusCleared(gone)
+        case _                  => ()
 
     val prevActive = prev.groups.map(g => g.id -> g.active).toMap
     next.groups.foreach: g =>
@@ -76,12 +85,27 @@ trait Events[+A]:
 
 object Events:
 
-  /** Mutable publisher end. Single-threaded by design: publish from the UI thread. */
+  /** Mutable publisher end. Single-threaded by design: publish from the UI thread.
+    *
+    * Subscriptions are token-based (subscribing the same function twice yields two independent
+    * subscriptions), and one throwing subscriber cannot starve the rest — its exception is reported
+    * through the thread's uncaught-exception handler after delivery completes.
+    */
   final class Topic[A] extends Events[A]:
-    private var subscribers: Vector[A => Unit] = Vector.empty
+    private var nextToken: Long                        = 0
+    private var subscribers: Vector[(Long, A => Unit)] = Vector.empty
 
-    def publish(a: A): Unit = subscribers.foreach(_(a))
+    def publish(a: A): Unit =
+      var thrown: Throwable = null
+      subscribers.foreach: (_, f) =>
+        try f(a)
+        catch case t: Throwable => if thrown == null then thrown = t
+      if thrown != null then
+        val t = Thread.currentThread
+        t.getUncaughtExceptionHandler.uncaughtException(t, thrown)
 
     def subscribe(f: A => Unit): Subscription =
-      subscribers = subscribers :+ f
-      () => subscribers = subscribers.filterNot(_ eq f)
+      val token = nextToken
+      nextToken += 1
+      subscribers = subscribers :+ (token, f)
+      () => subscribers = subscribers.filterNot(_(0) == token)
