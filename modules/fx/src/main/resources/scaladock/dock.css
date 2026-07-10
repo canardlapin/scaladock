@@ -1,14 +1,22 @@
-/* scaladock default look. Themes override the variables on .dock-layout; structure below
-   references only variables. The class and pseudo-class names are public API. */
+/* scaladock default look. Themes override the variables on .dock; structure below references
+   only variables. The class and pseudo-class names are public API.
 
-.dock-layout {
+   `.dock` is the variable-carrying marker class: every dock window's root region has it, and
+   so does the drag ghost (which lives in its own popup window and is NOT a descendant of
+   .dock-layout — defining the variables here is what lets it theme). */
+
+.dock {
   -dock-base: #1e1f22;
   -dock-surface: #2b2d30;
+  -dock-surface-veil: #2b2d30ee; /* ghost backdrop: surface, slightly translucent */
   -dock-outline: #393b40;
   -dock-accent: #3574f0;
+  -dock-accent-soft: #3574f04d; /* accent at ~30%: drop-zone highlight fill */
   -dock-text: #9da0a8;
   -dock-text-strong: #dfe1e5;
+}
 
+.dock-layout {
   -fx-background-color: -dock-base;
 }
 
@@ -98,20 +106,20 @@
 }
 
 .dock-drop-indicator {
-  -fx-background-color: #3574f04d; /* -dock-accent at ~30% */
-  -fx-border-color: #3574f0;
+  -fx-background-color: -dock-accent-soft;
+  -fx-border-color: -dock-accent;
   -fx-border-width: 1.5;
 }
 
 .dock-ghost {
-  -fx-background-color: #2b2d30ee;
-  -fx-border-color: #3574f0;
+  -fx-background-color: -dock-surface-veil;
+  -fx-border-color: -dock-accent;
   -fx-border-width: 1;
   -fx-padding: 0;
 }
 
 .dock-ghost-title {
-  -fx-text-fill: #dfe1e5;
+  -fx-text-fill: -dock-text-strong;
   -fx-padding: 4 12 4 12;
-  -fx-background-color: #2b2d30;
+  -fx-background-color: -dock-surface;
 }

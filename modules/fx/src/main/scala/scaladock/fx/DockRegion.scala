@@ -7,7 +7,7 @@ import scaladock.*
   * geometry. Splits have no scene-graph presence — they exist only as arithmetic.
   */
 private[fx] final class DockRegion(settings: LayoutSettings) extends Region:
-  getStyleClass.add("dock-layout")
+  getStyleClass.addAll("dock", "dock-layout") // .dock carries the theme variables
 
   locally:
     val css = getClass.getResource("/scaladock/dock.css")

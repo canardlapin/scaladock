@@ -243,7 +243,9 @@ private[fx] final class GhostPopup(title: String, snapshot: Option[Image], theme
     view.setFitWidth(img.getWidth * scale)
     view.setFitHeight(img.getHeight * scale)
     box.getChildren.add(view): Unit
-  box.getStyleClass.add("dock-ghost")
+  // .dock carries the theme variables — the ghost is not a descendant of any dock window,
+  // so it must hold the marker class itself to resolve them
+  box.getStyleClass.addAll("dock", "dock-ghost")
 
   locally:
     box.setMouseTransparent(true)
