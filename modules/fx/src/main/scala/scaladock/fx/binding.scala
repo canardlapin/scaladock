@@ -31,6 +31,12 @@ final class PaneFactories private (
     private[fx] val entries: Map[String, PaneFactories.Entry[?]]
 ):
   def register[S](tpe: PaneType[S])(make: PaneContext[S] ?=> S => PaneView[S]): PaneFactories =
+    entries.get(tpe.name).foreach: existing =>
+      require(
+        existing.tpe eq tpe,
+        s"a different PaneType named '${tpe.name}' is already registered — " +
+          "pane type names must be unique and each PaneType registered as the same instance"
+      )
     PaneFactories(entries.updated(
       tpe.name,
       PaneFactories.Entry(tpe, ctx => s => make(using ctx)(s))
@@ -40,7 +46,9 @@ final class PaneFactories private (
     PaneTypes(entries.values.map(_.tpe).toSeq*)
 
   private[fx] def bind(content: PaneContent, ctx: UntypedPaneContext): Option[BoundPane[?]] =
-    entries.get(content.tpe.name).map(e => bindWith(e, content, ctx))
+    // instance identity, not just name: a user-constructed pane whose type merely shares a
+    // registered name must not be cast to the wrong S (it falls back to the unresolved view)
+    entries.get(content.tpe.name).filter(_.tpe eq content.tpe).map(e => bindWith(e, content, ctx))
 
   /** The single point where the existential opens on the render path: the entry was found by the
     * content's own type name, so the codec that produced `content.state` is the entry's.

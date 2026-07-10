@@ -58,6 +58,10 @@ final class Dock private (
     * pane closing itself from an event handler, say) are queued and applied in order.
     */
   def update(f: LayoutState => LayoutState): Unit =
+    require(
+      javafx.application.Platform.isFxApplicationThread,
+      "Dock must be used from the JavaFX application thread"
+    )
     queued.enqueue(f)
     if !updating then
       updating = true
@@ -104,6 +108,17 @@ final class Dock private (
   def dragSource(handle: javafx.scene.Node)(make: () => PaneDef): Subscription =
     dragController.installSource(handle)(make)
 
+  /** Tear the dock down: abort any drag, close floating windows and the ghost, dispose every pane
+    * view. The dock must not be used afterwards.
+    */
+  def dispose(): Unit =
+    dragController.cancel()
+    floats.values.foreach(_.dispose())
+    floats.clear()
+    panes.values.foreach(_.dispose())
+    panes.clear()
+    contexts.clear()
+
   /** Restyle every dock window. Themes redefine only CSS variables; see docs/styling.md. */
   def setTheme(theme: DockTheme): Unit =
     currentTheme = theme
@@ -124,7 +139,12 @@ final class Dock private (
 
   private[fx] def boundPane(content: PaneContent, id: PaneId): BoundPane[?] =
     val ctx = contexts.getOrElseUpdate(id, UntypedPaneContext(id, this))
-    factories.bind(content, ctx).getOrElse(unresolvedPane(content, ctx))
+    try factories.bind(content, ctx).getOrElse(unresolvedPane(content, ctx))
+    catch
+      case scala.util.control.NonFatal(t) =>
+        // one throwing factory must not abort the whole reconcile: carry the pane unresolved
+        System.err.println(s"scaladock: pane factory for '${content.tpe.name}' threw: $t")
+        unresolvedPane(content, ctx)
 
   private[fx] def paneNodeFor(id: PaneId): Option[javafx.scene.Node] = nodeOf(id)
 
@@ -133,12 +153,24 @@ final class Dock private (
       id
     ).orElse(floats.values.iterator.flatMap(_.renderer.groupViewFor(id)).nextOption())
 
-  /** Every dockable surface, front-most first (floating windows above the main one). */
+  /** Every dockable surface, front-most first: floating windows by most-recent OS focus, then the
+    * main window.
+    */
   private[fx] def dragSurfaces: Vector[(Option[WindowId], DockRegion, Option[Node])] =
-    floats.toVector.map((id, f) =>
-      (Some(id), f.renderer.region, current.floating.find(_.window == id).map(_.root))
-    )
+    floats.toVector
+      .sortBy((_, f) => -f.focusStamp)
+      .map((id, f) =>
+        (Some(id), f.renderer.region, current.floating.find(_.window == id).map(_.root))
+      )
       :+ (None, main.region, current.root)
+
+  private var focusCounter: Long = 0
+
+  private[fx] def nextFocusStamp(): Long =
+    focusCounter += 1
+    focusCounter
+
+  private[fx] def themeStylesheet: Option[String] = currentTheme.stylesheet
 
   private[fx] def resolvedHeader(g: Node.Group): Option[HeaderButtons] =
     Header.resolve(g.header, defaultHeader)
@@ -150,8 +182,10 @@ final class Dock private (
     val groupId = gv.nodeId
     gv.onTabActivated = id => update(edit.focus(_, id))
     gv.onTabPressed = (id, e) =>
-      update(edit.focus(_, id))
+      // arm the drag BEFORE the focus update: focusing reconciles and rebuilds the tab strip,
+      // and the controller must capture the press coordinates from the original gesture
       dragController.tabPressed(id, e)
+      update(edit.focus(_, id))
     gv.onTabDragged = (id, e) => dragController.tabDragged(id, e)
     gv.onTabReleased = (id, e) => dragController.tabReleased(id, e)
     gv.onTabClosed = id =>
@@ -162,7 +196,10 @@ final class Dock private (
           g.tabs.filter(_.closable).foldLeft(s)((acc, p) => edit.removePane(acc, p.id))
     gv.onMaximizeToggled = () => update(edit.toggleMaximize(_, groupId))
     gv.onPopOut = () => popOut(groupId)
-    gv.onContentResized = (id, w, h) => signal(id, PaneSignal.Resized(w, h))
+    // resize notifications originate inside a layout pass: defer so a handler that mutates
+    // the scene graph (or calls update) never runs mid-layout
+    gv.onContentResized = (id, w, h) =>
+      javafx.application.Platform.runLater(() => signal(id, PaneSignal.Resized(w, h)))
 
   private[fx] def wireDividerView(dv: DividerView, region: DockRegion): Unit =
     dv.dragContext = () => dividerDragContext(dv.splitId, dv.index, region)
@@ -175,6 +212,7 @@ final class Dock private (
       index: Int,
       region: DockRegion
   ): Option[DividerView.DragContext] =
+    region.layout() // a press can land between a state change and the next pulse: refresh
     for
       split <- current.findSplit(splitId)
       rect  <- region.geometry.splits.get(splitId)
@@ -257,9 +295,16 @@ final class Dock private (
       prev.focused.foreach(signal(_, PaneSignal.FocusLost))
       next.focused.foreach(signal(_, PaneSignal.FocusGained))
 
-  /** The panes actually on screen: each group's active tab. */
+  /** The panes actually on screen: each group's active tab — except while a group is maximised,
+    * when it hides every other group in its own window.
+    */
   private def visiblePanes(s: LayoutState): Set[PaneId] =
-    s.groups.map(_.active).toSet
+    def activesOf(root: Node): Set[PaneId] =
+      val groups = root.groups
+      s.maximized.flatMap(id => groups.find(_.id == id)) match
+        case Some(maxed) => Set(maxed.active)
+        case None        => groups.map(_.active).toSet
+    s.roots.flatMap(activesOf).toSet
 
   /** Carrier view for panes whose type has no registered factory: shows a notice, preserves the
     * original state verbatim so a later save loses nothing.
@@ -274,10 +319,18 @@ final class Dock private (
       def snapshot(): ujson.Value = keep
     BoundPane(PaneType.Unresolved, view, ctx.typed[ujson.Value])
 
-  /** Replace each pane's persisted state with its live snapshot. */
+  /** Replace each pane's persisted state with its live snapshot. Snapshotting is best-effort per
+    * pane: one throwing `snapshot()` falls back to that pane's last persisted state rather than
+    * failing the whole save.
+    */
   private def withLiveState(s: LayoutState): LayoutState =
     def refresh(p: Pane): Pane =
-      panes.get(p.id).fold(p)(bp => p.copy(content = bp.snapshotContent))
+      panes.get(p.id).fold(p): bp =>
+        try p.copy(content = bp.snapshotContent)
+        catch
+          case scala.util.control.NonFatal(t) =>
+            System.err.println(s"scaladock: snapshot() of pane '${p.title}' threw: $t")
+            p
     def go(n: Node): Node = n match
       case g: Node.Group => g.copy(tabs = g.tabs.map(refresh))
       case sp @ Node.Split(_, _, cells) =>
@@ -355,6 +408,11 @@ private[fx] final class WindowRenderer(dock: Dock, settings: LayoutSettings):
     dividerViews.keys.toVector.filterNot(neededDividers).foreach: key =>
       dividerViews.remove(key).foreach(region.removeView)
 
+    // dividers above groups (their invisible grab reach extends over neighbours), then the
+    // drop indicator above everything — addView keeps the indicator frontmost
+    dividerViews.values.foreach(_.toFront())
+    region.raiseOverlay()
+
     region.show(root, state.maximized)
 
 end WindowRenderer
@@ -369,24 +427,41 @@ private[fx] final class FloatingStage(dock: Dock, initial: Floating):
   private val stage: Stage     = new Stage
   private var applyingBounds   = false
 
+  /** Ordering stamp for hit-testing: bumped whenever this window gains OS focus. */
+  private[fx] var focusStamp: Long = 0
+
   locally:
-    val b = FloatingStage.clampToScreens(initial.bounds)
-    stage.setScene(new Scene(renderer.region, b.width, b.height))
-    stage.setX(b.x)
-    stage.setY(b.y)
-    stage.setOnCloseRequest: e =>
-      e.consume()
-      dock.dockBack(window)
+    // convention: state bounds are the OUTER (decorated) stage bounds, both directions.
+    // Guard the whole construction and attach the listeners only after show() — a Window's
+    // x/y/width/height are NaN until shown, and unguarded listeners would write NaN (and
+    // then decoration-inflated sizes) back into LayoutState, growing the window every
+    // save/load cycle.
+    applyingBounds = true
+    try
+      val b = FloatingStage.clampToScreens(initial.bounds)
+      stage.setScene(new Scene(renderer.region))
+      stage.setX(b.x)
+      stage.setY(b.y)
+      stage.setWidth(b.width)
+      stage.setHeight(b.height)
+      stage.setOnCloseRequest: e =>
+        e.consume()
+        dock.dockBack(window)
+      stage.show()
+    finally applyingBounds = false
+
     val onMoved: javafx.beans.value.ChangeListener[Number] = (_, _, _) =>
       if !applyingBounds then
-        dock.update(
-          edit.moveWindow(_, window, Rect(stage.getX, stage.getY, stage.getWidth, stage.getHeight))
-        )
+        val r = Rect(stage.getX, stage.getY, stage.getWidth, stage.getHeight)
+        val finite =
+          r.x.isFinite && r.y.isFinite && r.width.isFinite && r.height.isFinite
+        if finite then dock.update(edit.moveWindow(_, window, r))
     stage.xProperty.addListener(onMoved)
     stage.yProperty.addListener(onMoved)
     stage.widthProperty.addListener(onMoved)
     stage.heightProperty.addListener(onMoved)
-    stage.show()
+    stage.focusedProperty.addListener: (_, _, focused) =>
+      if focused then focusStamp = dock.nextFocusStamp()
 
   def setBoundsIfChanged(b: Rect): Unit =
     val differs =

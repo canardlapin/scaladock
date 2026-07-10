@@ -1,18 +1,20 @@
 package scaladock.fx
 
 import javafx.event.EventHandler
+import javafx.scene.SnapshotParameters
 import javafx.scene.control.Label
 import javafx.scene.image.{Image, ImageView}
 import javafx.scene.input.{KeyCode, KeyEvent, MouseEvent}
-import javafx.scene.layout.{StackPane, VBox}
-import javafx.scene.{Scene, SnapshotParameters}
-import javafx.stage.{Stage, StageStyle}
+import javafx.scene.layout.VBox
+import javafx.stage.Popup
 import scaladock.*
 
 /** The drag gesture, golden-layout style: arm on press, start after a 10px move, float a ghost
-  * window, hit-test a screen-space snapshot of drop areas taken at drag start, highlight the
-  * hovered zone, and commit exactly one transition on release. ESC or a hopeless miss returns the
-  * pane home.
+  * popup, hit-test a screen-space snapshot of drop areas taken at drag start (across every window,
+  * front-most first), highlight the hovered zone, and commit exactly one transition on release. The
+  * last highlighted zone stays lit and wins a near-miss release; ESC — or a drag that never found a
+  * zone at all — returns the pane home. Every path out of a drag runs through one idempotent
+  * cleanup door, so an exception can never leave a parked pane or a stray ghost behind.
   */
 private[fx] final class DragController(dock: Dock, region: DockRegion):
 
@@ -32,10 +34,12 @@ private[fx] final class DragController(dock: Dock, region: DockRegion):
   private final class Session(
       val pane: Pane,
       val home: Option[DropTarget],  // None: a sourced pane that lands nowhere is discarded
-      val surfaces: Vector[Surface], // front-most first: floating windows above the main one
-      val ghost: GhostStage
+      val surfaces: Vector[Surface], // front-most first
+      val ghost: Option[GhostPopup],
+      val filteredScenes: Vector[javafx.scene.Scene] // the scenes the ESC filter was added to
   ):
     var lastValid: Option[(Surface, DropArea)] = None
+    var closed: Boolean                        = false
 
   private var phase: Phase = Phase.Idle
 
@@ -65,6 +69,14 @@ private[fx] final class DragController(dock: Dock, region: DockRegion):
     phase match
       case Phase.Dragging(_) => completeDrop(e)
       case _                 => phase = Phase.Idle
+
+  /** Abort any in-flight drag, returning the pane home. Safe to call at any time. */
+  def cancel(): Unit =
+    phase match
+      case Phase.Dragging(session) =>
+        try session.home.foreach(home => dock.update(edit.drop(_, session.pane, home)))
+        finally endSession(session)
+      case _ => phase = Phase.Idle
 
   /** Arm an external node as a factory of new panes (golden-layout's DragSource). */
   def installSource(handle: javafx.scene.Node)(make: () => PaneDef): Subscription =
@@ -110,8 +122,16 @@ private[fx] final class DragController(dock: Dock, region: DockRegion):
       case None => phase = Phase.Idle
       case Some(pane) =>
         dock.park(paneId) // the view outlives its detached time in the tree
-        dock.update(s => edit.detach(s, paneId)._1)
-        beginSession(pane, Some(home), snapshot, e)
+        try
+          dock.update(s => edit.detach(s, paneId)._1)
+          beginSession(pane, Some(home), snapshot, e)
+        catch
+          case t: Throwable =>
+            // a throwing event subscriber must not strand the pane outside the layout
+            dock.update(edit.drop(_, pane, home))
+            dock.unpark(paneId)
+            phase = Phase.Idle
+            throw t
 
   private def beginSession(
       pane: Pane,
@@ -127,12 +147,16 @@ private[fx] final class DragController(dock: Dock, region: DockRegion):
         surfaceRegion,
         sizing.dropAreas(root, surfaceRegion.geometry, viewport, windowRef, settings)
       )
-    val ghost = GhostStage(pane.title, snapshot)
-    ghost.moveTo(e.getScreenX, e.getScreenY)
-    ghost.show()
-    phase = Phase.Dragging(Session(pane, home, surfaces, ghost))
+    // ESC must work whichever window holds keyboard focus
+    val scenes = surfaces.flatMap(s => Option(s.region.getScene)).distinct
+    scenes.foreach(_.addEventFilter(KeyEvent.KEY_PRESSED, escFilter))
+    // the ghost is a Popup: it follows the pointer across windows without stealing focus
+    val ghost = Option(region.getScene).map(_.getWindow).filter(_ != null).map: owner =>
+      val g = GhostPopup(pane.title, snapshot, dock.themeStylesheet)
+      g.showAt(owner, e.getScreenX, e.getScreenY)
+      g
+    phase = Phase.Dragging(Session(pane, home, surfaces, ghost, scenes))
     dock.publish(DockEvent.DragStarted(pane.id))
-    Option(region.getScene).foreach(_.addEventFilter(KeyEvent.KEY_PRESSED, escFilter))
 
   /** The front-most surface (and area) under the pointer, if any. */
   private def hitAt(session: Session, screenX: Double, screenY: Double)
@@ -150,7 +174,7 @@ private[fx] final class DragController(dock: Dock, region: DockRegion):
   private def moveDrag(e: MouseEvent): Unit =
     phase match
       case Phase.Dragging(session) =>
-        session.ghost.moveTo(e.getScreenX, e.getScreenY)
+        session.ghost.foreach(_.moveTo(e.getScreenX, e.getScreenY))
         hitAt(session, e.getScreenX, e.getScreenY) match
           case Some((surface, area)) =>
             session.lastValid = Some((surface, area))
@@ -158,35 +182,31 @@ private[fx] final class DragController(dock: Dock, region: DockRegion):
               if s eq surface then s.region.showIndicator(area.highlight)
               else s.region.hideIndicator()
           case None =>
-            session.surfaces.foreach(_.region.hideIndicator())
+            // the last valid zone still wins a near-miss release, so its highlight stays lit
+            if session.lastValid.isEmpty then session.surfaces.foreach(_.region.hideIndicator())
       case _ => ()
 
   private def completeDrop(e: MouseEvent): Unit =
     phase match
       case Phase.Dragging(session) =>
-        val chosen = hitAt(session, e.getScreenX, e.getScreenY).orElse(session.lastValid)
-        endSession(session)
-        chosen.map((_, area) => targetOf(area, e)).orElse(session.home) match
-          case Some(target) =>
-            dock.update(edit.drop(_, session.pane, target))
-            dock.publish(DockEvent.Dropped(session.pane.id, target))
-          case None => () // sourced pane, no landing zone: it simply never existed
-        dock.unpark(session.pane.id)
+        try
+          val chosen = hitAt(session, e.getScreenX, e.getScreenY).orElse(session.lastValid)
+          chosen.map((_, area) => targetOf(area, e)).orElse(session.home) match
+            case Some(target) =>
+              dock.update(edit.drop(_, session.pane, target))
+              dock.publish(DockEvent.Dropped(session.pane.id, target))
+            case None => () // sourced pane, no landing zone: it simply never existed
+        finally endSession(session)
       case _ => ()
 
-  private def cancel(): Unit =
-    phase match
-      case Phase.Dragging(session) =>
-        endSession(session)
-        session.home.foreach(home => dock.update(edit.drop(_, session.pane, home)))
-        dock.unpark(session.pane.id)
-      case _ => ()
-    phase = Phase.Idle
-
+  /** The single, idempotent cleanup door: ghost, indicators, filters, parked pane, phase. */
   private def endSession(session: Session): Unit =
-    session.ghost.close()
-    session.surfaces.foreach(_.region.hideIndicator())
-    Option(region.getScene).foreach(_.removeEventFilter(KeyEvent.KEY_PRESSED, escFilter))
+    if !session.closed then
+      session.closed = true
+      session.ghost.foreach(_.hide())
+      session.surfaces.foreach(_.region.hideIndicator())
+      session.filteredScenes.foreach(_.removeEventFilter(KeyEvent.KEY_PRESSED, escFilter))
+      dock.unpark(session.pane.id)
     phase = Phase.Idle
 
   /** Resolve a hovered zone into the final drop: header hits compute the tab-insertion index from
@@ -205,12 +225,13 @@ object DragController:
   /** Movement (in any axis) that turns a press into a drag — golden-layout's 10px. */
   val ThresholdPx: Double = 10
 
-/** The floating drag ghost: a transparent, undecorated, always-on-top utility Stage that can cross
-  * window boundaries — the reason it is a Stage and not an overlay node.
+/** The floating drag ghost: a Popup, not a Stage — a Popup never takes keyboard focus (so ESC keeps
+  * working in the dragged-from window) yet still crosses window boundaries.
   */
-private[fx] final class GhostStage(title: String, snapshot: Option[Image]) extends Stage:
-  initStyle(StageStyle.TRANSPARENT)
-  setAlwaysOnTop(true)
+private[fx] final class GhostPopup(title: String, snapshot: Option[Image], theme: Option[String])
+    extends Popup:
+  setAutoFix(false) // follow the pointer honestly, even near screen edges
+  setAutoHide(false)
 
   private val titleLabel = new Label(title)
   titleLabel.getStyleClass.add("dock-ghost-title")
@@ -218,27 +239,26 @@ private[fx] final class GhostStage(title: String, snapshot: Option[Image]) exten
   private val box = new VBox(titleLabel)
   snapshot.foreach: img =>
     val view  = new ImageView(img)
-    val scale = math.min(1.0, GhostStage.MaxContentPx / math.max(img.getWidth, img.getHeight))
+    val scale = math.min(1.0, GhostPopup.MaxContentPx / math.max(img.getWidth, img.getHeight))
     view.setFitWidth(img.getWidth * scale)
     view.setFitHeight(img.getHeight * scale)
     box.getChildren.add(view): Unit
   box.getStyleClass.add("dock-ghost")
 
-  private val root = new StackPane(box)
-  root.setStyle("-fx-background-color: transparent;")
-  root.setMouseTransparent(true)
-
   locally:
-    val scene = new Scene(root)
-    scene.setFill(javafx.scene.paint.Color.TRANSPARENT)
+    box.setMouseTransparent(true)
     val css = getClass.getResource("/scaladock/dock.css")
-    if css != null then scene.getStylesheets.add(css.toExternalForm): Unit
-    setScene(scene)
+    if css != null then box.getStylesheets.add(css.toExternalForm): Unit
+    theme.foreach(sheet => box.getStylesheets.add(sheet): Unit)
+    getContent.add(box): Unit
+
+  def showAt(owner: javafx.stage.Window, screenX: Double, screenY: Double): Unit =
+    show(owner, screenX + GhostPopup.OffsetPx, screenY + GhostPopup.OffsetPx)
 
   def moveTo(screenX: Double, screenY: Double): Unit =
-    setX(screenX + GhostStage.OffsetPx)
-    setY(screenY + GhostStage.OffsetPx)
+    setX(screenX + GhostPopup.OffsetPx)
+    setY(screenY + GhostPopup.OffsetPx)
 
-object GhostStage:
+object GhostPopup:
   val OffsetPx: Double     = 10
   val MaxContentPx: Double = 220

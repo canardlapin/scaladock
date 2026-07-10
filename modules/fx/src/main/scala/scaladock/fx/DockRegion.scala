@@ -55,6 +55,9 @@ private[fx] final class DockRegion(settings: LayoutSettings) extends Region:
     indicatorRect = None
     indicator.setVisible(false)
 
+  /** Restore the drop indicator to the top of the stack after z-order changes. */
+  private[fx] def raiseOverlay(): Unit = indicator.toFront()
+
   override def layoutChildren(): Unit =
     val viewport = Rect(0, 0, getWidth, getHeight)
     geometry = sizing.geometry(root, viewport, settings, maximized)
