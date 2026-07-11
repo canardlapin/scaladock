@@ -21,6 +21,7 @@ object edit:
     val next = s.copy(root = root, floating = floating)
     next.copy(
       maximized = next.maximized.filter(id => next.findGroup(id).isDefined),
+      minimized = next.minimized.filter(id => next.findGroup(id).isDefined),
       focused = next.focused.filter(id => next.findPane(id).isDefined)
     )
 
@@ -180,11 +181,13 @@ object edit:
     val base = unmaximized(removePane(s, pane.id))
     val next = target match
       case DropTarget.IntoGroup(gid, tabIndex) =>
-        mapGroups(base): g =>
+        val inserted = mapGroups(base): g =>
           if g.id != gid then g
           else
             val i = tabIndex.max(0).min(g.tabs.length)
             g.copy(tabs = g.tabs.patch(i, Vector(pane), 0), active = pane.id)
+        // dropping into a minimised group restores it: the pane must land visibly
+        inserted.copy(minimized = inserted.minimized - gid)
 
       case DropTarget.Beside(gid, edge) =>
         val incoming = Node.solo(pane)
@@ -244,18 +247,39 @@ object edit:
     mapGroups(s): g =>
       if g.tabs.exists(_.id == pane) then g.copy(active = pane) else g
 
-  /** Focus a pane: single focused pane per layout; focusing also activates its tab. */
+  /** Focus a pane: single focused pane per layout; focusing also activates its tab and restores its
+    * group from minimise — a focused pane is by definition visible.
+    */
   def focus(s: LayoutState, pane: PaneId): LayoutState =
-    if s.findPane(pane).isEmpty then s
-    else activate(s, pane).copy(focused = Some(pane))
+    s.groupOf(pane) match
+      case None => s
+      case Some(g) =>
+        activate(s, pane).copy(focused = Some(pane), minimized = s.minimized - g.id)
 
   def maximize(s: LayoutState, group: NodeId): LayoutState =
-    if s.findGroup(group).isDefined then s.copy(maximized = Some(group)) else s
+    if s.findGroup(group).isDefined then
+      s.copy(maximized = Some(group), minimized = s.minimized - group)
+    else s
 
   def unmaximized(s: LayoutState): LayoutState = s.copy(maximized = None)
 
   def toggleMaximize(s: LayoutState, group: NodeId): LayoutState =
     if s.maximized.contains(group) then unmaximized(s) else maximize(s, group)
+
+  /** Collapse a group to a header-thin strip in place. Its cell keeps its size, so restoring is
+    * exact; a maximised group minimising restores from maximise first.
+    */
+  def minimize(s: LayoutState, group: NodeId): LayoutState =
+    if s.findGroup(group).isEmpty then s
+    else
+      val base = if s.maximized.contains(group) then unmaximized(s) else s
+      base.copy(minimized = base.minimized + group)
+
+  def unminimize(s: LayoutState, group: NodeId): LayoutState =
+    s.copy(minimized = s.minimized - group)
+
+  def toggleMinimize(s: LayoutState, group: NodeId): LayoutState =
+    if s.minimized(group) then unminimize(s, group) else minimize(s, group)
 
   /** Retitle a pane in place (e.g. from a `PaneContext.setTitle`). */
   def retitle(s: LayoutState, pane: PaneId, title: String): LayoutState =

@@ -77,7 +77,7 @@ final class CodecSuite extends ScalaCheckSuite:
         """"home":{"sibling":"g-left","edge":"right","size":"50%","siblingSize":"1fr","minPx":80},""" +
         """"root":{"group":{"id":"g-float","active":"p-f","header":"inherit",""" +
         """"tabs":[{"id":"p-f","title":"one","closable":true,"type":"test.counter","state":1}]}}}],""" +
-        """"maximized":null,"focused":"p-doc"}"""
+        """"maximized":null,"minimized":[],"focused":"p-doc"}"""
 
     assertEquals(ujson.write(LayoutCodec.encode(state)), expected)
 

@@ -162,12 +162,19 @@ object sizing:
       else if cells.isEmpty then 0.0
       else cells.map(c => minSpan(c.node, axis, settings)).max
 
-  /** Realize one window's tree in pixels. */
+  /** The extent of a minimised group's strip along its parent split's axis. */
+  def stripPx(settings: LayoutSettings): Double = settings.headerPx
+
+  /** Realize one window's tree in pixels. Minimised groups are *presented* as header-thin strips —
+    * their cells are overridden to `Px(stripPx)` at allocation time only, so the stored sizes stay
+    * untouched and restoring is exact by construction.
+    */
   def geometry(
       root: Option[Node],
       viewport: Rect,
       settings: LayoutSettings,
-      maximized: Option[NodeId] = None
+      maximized: Option[NodeId] = None,
+      minimized: Set[NodeId] = Set.empty
   ): LayoutGeometry =
     root match
       case None => LayoutGeometry.empty
@@ -176,7 +183,25 @@ object sizing:
         val splits   = Map.newBuilder[NodeId, Rect]
         val dividers = Vector.newBuilder[DividerGeometry]
 
+        def isMinimized(n: Node): Boolean = n match
+          case g: Node.Group => minimized(g.id)
+          case _             => false
+
         def place(n: Node, rect: Rect): Unit = n match
+          case g: Node.Group if minimized(g.id) =>
+            // the whole strip is chrome; the content rect is deliberately zero-extent.
+            // Inside a split the rect is already strip-thin along the parent axis; a
+            // minimised ROOT group has no parent to shrink it, so it becomes a top strip.
+            val s            = stripPx(settings)
+            val alreadyStrip = rect.width <= s + 0.5 || rect.height <= s + 0.5
+            val strip =
+              if alreadyStrip then rect
+              else Rect(rect.x, rect.y, rect.width, math.min(s, rect.height))
+            groups += g.id -> GroupGeometry(
+              strip,
+              strip,
+              Rect(strip.x, strip.bottom, strip.width, 0)
+            )
           case g: Node.Group =>
             val headerH = g.header match
               case Header.Hidden => 0.0
@@ -189,8 +214,17 @@ object sizing:
             val span = axis match
               case Axis.Horizontal => rect.width
               case Axis.Vertical   => rect.height
-            val sizes  = allocate(cells, span, settings.dividerPx)
-            var offset = 0.0
+            // two-phase allocation: minimised cells take EXACTLY their strip (never scaled,
+            // whatever the sibling unit mix), and the live cells share what remains
+            val strip     = stripPx(settings)
+            val live      = cells.filterNot(c => isMinimized(c.node))
+            val stripSum  = (cells.length - live.length) * strip
+            val available = math.max(0.0, span - (cells.length - 1) * settings.dividerPx)
+            val liveSpan = math.max(0.0, available - stripSum) +
+              math.max(0, live.length - 1) * settings.dividerPx
+            val liveSizes = allocate(live, liveSpan, settings.dividerPx).iterator
+            val sizes     = cells.map(c => if isMinimized(c.node) then strip else liveSizes.next())
+            var offset    = 0.0
             // a rect too small for its divider strips (available clamped to 0) must not leak
             // children past its own edge: clamp every placement into [0, span]
             def clamped(at: Double, extent: Double): (Double, Double) =

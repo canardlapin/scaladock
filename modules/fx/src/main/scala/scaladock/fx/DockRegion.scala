@@ -23,6 +23,7 @@ private[fx] final class DockRegion(settings: LayoutSettings) extends Region:
 
   private var root: Option[Node]           = None
   private var maximized: Option[NodeId]    = None
+  private var minimized: Set[NodeId]       = Set.empty
   private[fx] var geometry: LayoutGeometry = LayoutGeometry.empty
 
   /** The drop-zone highlight, always the top child; positioned by [[showIndicator]]. */
@@ -35,9 +36,14 @@ private[fx] final class DockRegion(settings: LayoutSettings) extends Region:
   private var indicatorRect: Option[Rect] = None
 
   /** Adopt this window's tree; positioning happens in the next layout pass. */
-  def show(nextRoot: Option[Node], nextMaximized: Option[NodeId]): Unit =
+  def show(
+      nextRoot: Option[Node],
+      nextMaximized: Option[NodeId],
+      nextMinimized: Set[NodeId]
+  ): Unit =
     root = nextRoot
     maximized = nextMaximized
+    minimized = nextMinimized
     requestLayout()
 
   private[fx] def addView(n: javafx.scene.Node): Unit =
@@ -60,7 +66,7 @@ private[fx] final class DockRegion(settings: LayoutSettings) extends Region:
 
   override def layoutChildren(): Unit =
     val viewport = Rect(0, 0, getWidth, getHeight)
-    geometry = sizing.geometry(root, viewport, settings, maximized)
+    geometry = sizing.geometry(root, viewport, settings, maximized, minimized)
     val dividerRects =
       geometry.dividers.map(d => (d.split, d.index) -> d).toMap
 

@@ -100,6 +100,21 @@
   -fx-background-color: -dock-base;
 }
 
+.dock-strip {
+  -fx-background-color: -dock-surface;
+  -fx-border-color: -dock-outline;
+  -fx-border-width: 1;
+  -fx-cursor: hand;
+}
+
+.dock-strip-title {
+  -fx-text-fill: -dock-text;
+}
+
+.dock-strip:hover .dock-strip-title {
+  -fx-text-fill: -dock-text-strong;
+}
+
 .dock-unresolved {
   -fx-text-fill: -dock-text;
   -fx-alignment: center;

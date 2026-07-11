@@ -67,10 +67,17 @@ object TestPanes:
       root <- Gen.frequency(5 -> rawNodeGen(3).map(Some(_)), 1 -> Gen.const(None))
       floating <- Gen.frequency(3 -> Gen.const(0), 2 -> Gen.choose(1, 2))
         .flatMap(n => Gen.listOfN(n, rawNodeGen(2)).map(_.toVector))
-    yield LayoutState(
-      root,
-      floating.map(r => Floating(WindowId.fresh(), Rect(0, 0, 640, 480), r, None))
-    )
+      state = LayoutState(
+        root,
+        floating.map(r => Floating(WindowId.fresh(), Rect(0, 0, 640, 480), r, None))
+      )
+      // sometimes minimise groups (and sometimes a dangling id, which canonical must clear)
+      minimized <- Gen.frequency(
+        3 -> Gen.const(Set.empty[NodeId]),
+        2 -> Gen.someOf(state.groups.map(_.id)).map(_.toSet),
+        1 -> Gen.const(Set(NodeId.fresh()))
+      )
+    yield state.copy(minimized = minimized)
 
   /** Canonical, non-trivial states: what every transition receives in practice. */
   val stateGen: Gen[LayoutState] =

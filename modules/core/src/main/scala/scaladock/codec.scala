@@ -29,6 +29,7 @@ object LayoutCodec:
     obj("root") = s.root.fold[ujson.Value](ujson.Null)(encodeNode)
     obj("floating") = ujson.Arr.from(s.floating.map(encodeFloating))
     obj("maximized") = s.maximized.fold[ujson.Value](ujson.Null)(id => ujson.Str(id.value))
+    obj("minimized") = ujson.Arr.from(s.minimized.map(_.value).toVector.sorted)
     obj("focused") = s.focused.fold[ujson.Value](ujson.Null)(id => ujson.Str(id.value))
     obj
 
@@ -88,7 +89,12 @@ object LayoutCodec:
     case Header.Inherit => ujson.Str("inherit")
     case Header.Hidden  => ujson.Str("hidden")
     case Header.Shown(b) =>
-      ujson.Obj("close" -> b.close, "maximize" -> b.maximize, "popOut" -> b.popOut)
+      ujson.Obj(
+        "close"    -> b.close,
+        "maximize" -> b.maximize,
+        "popOut"   -> b.popOut,
+        "minimize" -> b.minimize
+      )
 
   private def sizeString(s: Size): String =
     // plain decimal notation always: BigDecimal never emits the 1.0E-4 form the parser rejects
@@ -141,8 +147,13 @@ object LayoutCodec:
               ))
         )
       val maximized = v.obj.get("maximized").filter(_ != ujson.Null).map(m => NodeId(m.str))
-      val focused   = v.obj.get("focused").filter(_ != ujson.Null).map(f => PaneId(f.str))
-      val state     = edit.canonical(LayoutState(root, floating, maximized, focused))
+      val minimized = v.obj
+        .get("minimized")
+        .map(_.arr.iterator.map(m => NodeId(m.str)).toSet)
+        .getOrElse(Set.empty)
+      val focused = v.obj.get("focused").filter(_ != ujson.Null).map(f => PaneId(f.str))
+      val state =
+        edit.canonical(LayoutState(root, floating, maximized, minimized, focused))
       requireUniqueIds(state)
       Right(state)
     catch
@@ -208,7 +219,14 @@ object LayoutCodec:
     case ujson.Str("inherit") => Header.Inherit
     case ujson.Str("hidden")  => Header.Hidden
     case obj =>
-      Header.Shown(HeaderButtons(obj("close").bool, obj("maximize").bool, obj("popOut").bool))
+      Header.Shown(
+        HeaderButtons(
+          obj("close").bool,
+          obj("maximize").bool,
+          obj("popOut").bool,
+          obj.obj.get("minimize").fold(true)(_.bool) // absent in pre-minimize documents
+        )
+      )
 
   // e-notation accepted defensively on input; output is always plain decimal
   private val SizePattern = """^(-?[\d.]+(?:[eE][+-]?\d+)?)(fr|%|px)$""".r

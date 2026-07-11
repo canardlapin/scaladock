@@ -16,7 +16,8 @@ object Header:
 final case class HeaderButtons(
     close: Boolean = true,
     maximize: Boolean = true,
-    popOut: Boolean = true
+    popOut: Boolean = true,
+    minimize: Boolean = true
 ) derives CanEqual
 
 /** A pane: a leaf of the layout carrying typed user content. Panes live only inside groups. */
@@ -84,12 +85,15 @@ final case class Floating(
 /** The whole layout — one immutable value, including floating windows.
   *
   * golden-layout's invisible GroundItem collapses into `root: Option[Node]`; its
-  * one-maximised-stack rule is carried by `maximized: Option[NodeId]`.
+  * one-maximised-stack rule is carried by `maximized: Option[NodeId]`. Minimised groups — collapsed
+  * to a header-thin strip in place — are likewise purely presentational state: their cells keep
+  * their sizes, so restoring is exact by construction.
   */
 final case class LayoutState(
     root: Option[Node],
     floating: Vector[Floating] = Vector.empty,
     maximized: Option[NodeId] = None,
+    minimized: Set[NodeId] = Set.empty,
     focused: Option[PaneId] = None
 ) derives CanEqual:
 

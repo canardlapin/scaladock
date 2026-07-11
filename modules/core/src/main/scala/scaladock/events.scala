@@ -11,6 +11,8 @@ enum DockEvent derives CanEqual:
   case ActiveTabChanged(group: NodeId, pane: PaneId)
   case GroupMaximized(group: NodeId)
   case GroupRestored(group: NodeId)
+  case GroupMinimized(group: NodeId)
+  case GroupUnminimized(group: NodeId)
   case WindowOpened(id: WindowId)
   case WindowClosed(id: WindowId)
   case DragStarted(pane: PaneId)
@@ -54,12 +56,16 @@ object DockEvent:
       case (_, Some(g))     => events += GroupMaximized(g)
       case _                => ()
 
+    (next.minimized -- prev.minimized).foreach(g => events += GroupMinimized(g))
+    (prev.minimized -- next.minimized).foreach(g => events += GroupUnminimized(g))
+
     val prevWindows = prev.floating.map(_.window).toSet
     val nextWindows = next.floating.map(_.window).toSet
     (nextWindows -- prevWindows).foreach(w => events += WindowOpened(w))
     (prevWindows -- nextWindows).foreach(w => events += WindowClosed(w))
 
     events.result()
+  end diff
 
 end DockEvent
 

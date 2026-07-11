@@ -8,10 +8,11 @@ import javafx.scene.layout.{HBox, Priority, Region, StackPane}
 import scaladock.*
 
 private[fx] object pseudo:
-  val Selected: PseudoClass = PseudoClass.getPseudoClass("selected")
-  val Active: PseudoClass   = PseudoClass.getPseudoClass("active")
-  val Vertical: PseudoClass = PseudoClass.getPseudoClass("vertical")
-  val Dragging: PseudoClass = PseudoClass.getPseudoClass("dragging")
+  val Selected: PseudoClass  = PseudoClass.getPseudoClass("selected")
+  val Active: PseudoClass    = PseudoClass.getPseudoClass("active")
+  val Vertical: PseudoClass  = PseudoClass.getPseudoClass("vertical")
+  val Dragging: PseudoClass  = PseudoClass.getPseudoClass("dragging")
+  val Minimized: PseudoClass = PseudoClass.getPseudoClass("minimized")
 
 /** The visible face of one [[Node.Group]]: a tab header above a content host. The chrome (tabs,
   * buttons, overflow menu) is cheap and rebuilt freely; the hosted pane nodes are only ever
@@ -28,6 +29,7 @@ private[fx] final class GroupView(val nodeId: NodeId, settings: LayoutSettings) 
   private[fx] var onTabClosed: PaneId => Unit                                    = _ => ()
   private[fx] var onGroupClosed: () => Unit                                      = () => ()
   private[fx] var onMaximizeToggled: () => Unit                                  = () => ()
+  private[fx] var onMinimizeToggled: () => Unit                                  = () => ()
   private[fx] var onPopOut: () => Unit                                           = () => ()
   private[fx] var onContentResized: (PaneId, Double, Double) => Unit             = (_, _, _) => ()
 
@@ -42,13 +44,16 @@ private[fx] final class GroupView(val nodeId: NodeId, settings: LayoutSettings) 
   private val popOutButton = headerButton("↗", "popout") // ↗
   popOutButton.setOnMouseClicked(_ => onPopOut())
 
+  private val minimizeButton = headerButton("–", "minimize") // – / ＋
+  minimizeButton.setOnMouseClicked(_ => onMinimizeToggled())
+
   private val maximizeButton = headerButton("□", "maximize") // □
   maximizeButton.setOnMouseClicked(_ => onMaximizeToggled())
 
   private val closeButton = headerButton("✕", "close") // ✕
   closeButton.setOnMouseClicked(_ => onGroupClosed())
 
-  private val buttons = new HBox(popOutButton, maximizeButton, closeButton)
+  private val buttons = new HBox(popOutButton, minimizeButton, maximizeButton, closeButton)
   buttons.getStyleClass.add("dock-header-buttons")
 
   private val header = new HBox(tabsBox, overflow, buttons)
@@ -58,10 +63,20 @@ private[fx] final class GroupView(val nodeId: NodeId, settings: LayoutSettings) 
   private val content = new StackPane
   content.getStyleClass.add("dock-content")
 
-  getChildren.addAll(header, content)
+  // the sideways presentation of a group minimised inside a row: a rotated title strip
+  private val stripLabel = new Label
+  stripLabel.getStyleClass.add("dock-strip-title")
+  stripLabel.setRotate(-90)
+  private val stripFace = new StackPane(new javafx.scene.Group(stripLabel))
+  stripFace.getStyleClass.add("dock-strip")
+  stripFace.setVisible(false)
+  stripFace.setOnMouseClicked(_ => onMinimizeToggled())
+
+  getChildren.addAll(header, content, stripFace)
 
   private var activePane: Option[PaneId] = None
   private var headerVisible              = true
+  private var stripMode                  = false
 
   // clicking anywhere in the content focuses the pane (VS Code behaviour); a filter so the
   // pane's own handlers still see the event
@@ -81,12 +96,22 @@ private[fx] final class GroupView(val nodeId: NodeId, settings: LayoutSettings) 
       group: Node.Group,
       chrome: Option[HeaderButtons],
       isMaximized: Boolean,
+      minimizedAxis: Option[Axis],
       nodeFor: PaneId => Option[FxNode]
   ): Unit =
     activePane = Some(group.active)
-    headerVisible = chrome.isDefined
+    pseudoClassStateChanged(pseudo.Minimized, minimizedAxis.isDefined)
+
+    // a group minimised inside a row is a sideways strip: rotated title, click to restore
+    stripMode = minimizedAxis.contains(Axis.Horizontal)
+    stripFace.setVisible(stripMode)
+    stripLabel.setText(group.tabs.find(_.id == group.active).fold("")(_.title))
+
+    headerVisible = chrome.isDefined && !stripMode
     header.setVisible(headerVisible)
     header.setManaged(headerVisible)
+
+    minimizeButton.setText(if minimizedAxis.isDefined then "＋" else "–")
 
     val tabs = group.tabs.map(pane => makeTab(pane, pane.id == group.active))
     tabsBox.getChildren.setAll(tabs*)
@@ -100,6 +125,8 @@ private[fx] final class GroupView(val nodeId: NodeId, settings: LayoutSettings) 
     chrome.foreach: b =>
       popOutButton.setVisible(b.popOut)
       popOutButton.setManaged(b.popOut)
+      minimizeButton.setVisible(b.minimize)
+      minimizeButton.setManaged(b.minimize)
       maximizeButton.setVisible(b.maximize)
       maximizeButton.setManaged(b.maximize)
       maximizeButton.setText(if isMaximized then "❐" else "□") // ❐ / □
@@ -112,6 +139,7 @@ private[fx] final class GroupView(val nodeId: NodeId, settings: LayoutSettings) 
         () // already hosting the right node: do not touch it
       case Some(node) => content.getChildren.setAll(node)
       case None       => content.getChildren.clear()
+  end update
 
   private def makeTab(pane: Pane, selected: Boolean): FxNode =
     val title = new Label(pane.title)
@@ -159,13 +187,19 @@ private[fx] final class GroupView(val nodeId: NodeId, settings: LayoutSettings) 
     pseudoClassStateChanged(pseudo.Active, focused)
 
   override def layoutChildren(): Unit =
-    val w       = getWidth
-    val headerH = if headerVisible then math.min(settings.headerPx, getHeight) else 0.0
-    header.resizeRelocate(0, 0, w, headerH)
-    content.resizeRelocate(0, headerH, w, math.max(0, getHeight - headerH))
-    // tab overflow: show the ⋯ menu when the tab strip wants more room than it has
-    val wanted = tabsBox.prefWidth(-1)
-    overflow.setVisible(headerVisible && wanted > tabsBox.getWidth + 0.5)
+    if stripMode then
+      stripFace.resizeRelocate(0, 0, getWidth, getHeight)
+      header.resizeRelocate(0, 0, 0, 0)
+      content.resizeRelocate(0, 0, 0, 0)
+      overflow.setVisible(false)
+    else
+      val w       = getWidth
+      val headerH = if headerVisible then math.min(settings.headerPx, getHeight) else 0.0
+      header.resizeRelocate(0, 0, w, headerH)
+      content.resizeRelocate(0, headerH, w, math.max(0, getHeight - headerH))
+      // tab overflow: show the ⋯ menu when the tab strip wants more room than it has
+      val wanted = tabsBox.prefWidth(-1)
+      overflow.setVisible(headerVisible && wanted > tabsBox.getWidth + 0.5)
 
 end GroupView
 

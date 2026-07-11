@@ -81,6 +81,9 @@ final class Dock private (
   def maximize(group: NodeId): Unit       = update(edit.maximize(_, group))
   def restore(): Unit                     = update(edit.unmaximized)
   def toggleMaximize(group: NodeId): Unit = update(edit.toggleMaximize(_, group))
+  def minimize(group: NodeId): Unit       = update(edit.minimize(_, group))
+  def unminimize(group: NodeId): Unit     = update(edit.unminimize(_, group))
+  def toggleMinimize(group: NodeId): Unit = update(edit.toggleMinimize(_, group))
 
   /** Pop a subtree out into its own OS window, appearing in place over its current bounds. */
   def popOut(node: NodeId): Unit =
@@ -195,6 +198,7 @@ final class Dock private (
         s.findGroup(groupId).fold(s): g =>
           g.tabs.filter(_.closable).foldLeft(s)((acc, p) => edit.removePane(acc, p.id))
     gv.onMaximizeToggled = () => update(edit.toggleMaximize(_, groupId))
+    gv.onMinimizeToggled = () => update(edit.toggleMinimize(_, groupId))
     gv.onPopOut = () => popOut(groupId)
     // resize notifications originate inside a layout pass: defer so a handler that mutates
     // the scene graph (or calls update) never runs mid-layout
@@ -213,10 +217,15 @@ final class Dock private (
       region: DockRegion
   ): Option[DividerView.DragContext] =
     region.layout() // a press can land between a state change and the next pulse: refresh
+    def minimizedCell(c: Cell): Boolean = c.node match
+      case g: Node.Group => current.minimized(g.id)
+      case _             => false
     for
       split <- current.findSplit(splitId)
       rect  <- region.geometry.splits.get(splitId)
       if index >= 0 && index < split.cells.length - 1
+      // a strip's extent is fixed: dragging its divider would corrupt the stored size
+      if !minimizedCell(split.cells(index)) && !minimizedCell(split.cells(index + 1))
     yield
       val span = split.axis match
         case Axis.Horizontal => rect.width
@@ -295,15 +304,15 @@ final class Dock private (
       prev.focused.foreach(signal(_, PaneSignal.FocusLost))
       next.focused.foreach(signal(_, PaneSignal.FocusGained))
 
-  /** The panes actually on screen: each group's active tab — except while a group is maximised,
-    * when it hides every other group in its own window.
+  /** The panes actually on screen: each non-minimised group's active tab — except while a group is
+    * maximised, when it hides every other group in its own window.
     */
   private def visiblePanes(s: LayoutState): Set[PaneId] =
     def activesOf(root: Node): Set[PaneId] =
       val groups = root.groups
       s.maximized.flatMap(id => groups.find(_.id == id)) match
         case Some(maxed) => Set(maxed.active)
-        case None        => groups.map(_.active).toSet
+        case None        => groups.filterNot(g => s.minimized(g.id)).map(_.active).toSet
     s.roots.flatMap(activesOf).toSet
 
   /** Carrier view for panes whose type has no registered factory: shows a notice, preserves the
@@ -387,7 +396,15 @@ private[fx] final class WindowRenderer(dock: Dock, settings: LayoutSettings):
           created
         }
       )
-      gv.update(g, dock.resolvedHeader(g), state.maximized.contains(g.id), dock.paneNodeFor)
+      val minimizedAxis = Option.when(state.minimized(g.id)):
+        edit.parentOf(state, g.id).map(_._1.axis).getOrElse(Axis.Vertical)
+      gv.update(
+        g,
+        dock.resolvedHeader(g),
+        state.maximized.contains(g.id),
+        minimizedAxis,
+        dock.paneNodeFor
+      )
       gv.setActiveStyle(state.focused.exists(f => g.tabs.exists(_.id == f)))
     val liveGroups = groupsHere.map(_.id).toSet
     groupViews.keys.toVector.filterNot(liveGroups).foreach: id =>
@@ -413,7 +430,8 @@ private[fx] final class WindowRenderer(dock: Dock, settings: LayoutSettings):
     dividerViews.values.foreach(_.toFront())
     region.raiseOverlay()
 
-    region.show(root, state.maximized)
+    region.show(root, state.maximized, state.minimized)
+  end sync
 
 end WindowRenderer
 

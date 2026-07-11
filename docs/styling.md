@@ -37,7 +37,8 @@ Define them on the `.dock` selector — the marker class carried by every dock w
 | `.dock-tab` | one tab (`:selected` = the visible tab) |
 | `.dock-tab-title`, `.dock-tab-close` | tab label and its close glyph |
 | `.dock-header-buttons` | the button cluster (right side) |
-| `.dock-header-button` with `.popout` / `.maximize` / `.close` | the header buttons |
+| `.dock-header-button` with `.popout` / `.minimize` / `.maximize` / `.close` | the header buttons |
+| `.dock-strip`, `.dock-strip-title` | a minimised group's sideways strip (`:minimized` on the group) |
 | `.dock-tab-overflow` | the ⋯ menu shown when tabs don't fit |
 | `.dock-divider` | a split divider (`:vertical` = a vertical bar, `:dragging` while dragged) |
 | `.dock-drop-indicator` | the translucent drop-zone highlight |

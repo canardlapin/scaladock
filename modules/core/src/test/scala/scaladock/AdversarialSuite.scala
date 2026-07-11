@@ -51,6 +51,8 @@ final class AdversarialSuite extends ScalaCheckSuite:
     s => s.panes.lastOption.fold(s)(p => edit.close(s, p.id)),
     s => s.groups.headOption.fold(s)(g => edit.maximize(s, g.id)),
     s => edit.unmaximized(s),
+    s => s.groups.headOption.fold(s)(g => edit.minimize(s, g.id)),
+    s => s.minimized.headOption.fold(s)(g => edit.unminimize(s, g)),
     s => s.groups.lastOption.fold(s)(g => edit.popOut(s, g.id, Rect(0, 0, 300, 200))),
     s => s.floating.headOption.fold(s)(f => edit.dockBack(s, f.window)),
     s => edit.open(s, counter(7), DockAt.Preferred),
