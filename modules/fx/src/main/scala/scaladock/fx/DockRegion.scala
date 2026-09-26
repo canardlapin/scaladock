@@ -7,28 +7,11 @@ import scaladock.*
   * geometry. Splits have no scene-graph presence — they exist only as arithmetic.
   */
 private[fx] final class DockRegion(settings: LayoutSettings) extends Region:
-  getStyleClass.addAll("dock", "dock-layout") // .dock carries the theme variables
-
-  locally:
-    val css = getClass.getResource("/scaladock/dock.css")
-    if css != null then getStylesheets.add(css.toExternalForm): Unit
-
   private var themeSheet: Option[String] = None
 
   // `:inactive` while this region's window lacks OS focus (only once it is in a focusable window)
   private val onWindowFocus: javafx.beans.value.ChangeListener[java.lang.Boolean] =
     (_, _, focused) => pseudoClassStateChanged(pseudo.Inactive, !focused)
-  locally:
-    sceneProperty.addListener: (_, oldScene, scene) =>
-      Option(
-        oldScene
-      ).flatMap(sc => Option(sc.getWindow)).foreach(_.focusedProperty.removeListener(onWindowFocus))
-      Option(scene).foreach: sc =>
-        sc.windowProperty.addListener: (_, oldW, w) =>
-          Option(oldW).foreach(_.focusedProperty.removeListener(onWindowFocus))
-          Option(w).foreach: win =>
-            win.focusedProperty.addListener(onWindowFocus)
-            pseudoClassStateChanged(pseudo.Inactive, !win.isFocused)
 
   /** Swap the theme stylesheet (appended after the base sheet, so its variables win). */
   private[fx] def setThemeSheet(url: Option[String]): Unit =
@@ -63,7 +46,6 @@ private[fx] final class DockRegion(settings: LayoutSettings) extends Region:
     box.setManaged(false)
     box
   private var placeholder: javafx.scene.Node = defaultPlaceholder
-  getChildren.addAll(placeholder, indicator)
 
   /** Replace what this window shows when empty (`None` restores the built-in placeholder). */
   private[fx] def setPlaceholder(node: Option[javafx.scene.Node]): Unit =
@@ -108,6 +90,28 @@ private[fx] final class DockRegion(settings: LayoutSettings) extends Region:
     * only, matched by index — never child subtrees, which could go stale.
     */
   private var splitPreview: Option[(NodeId, Vector[Size])] = None
+
+  // Everything below touches this Region's inherited JavaFX surface, so it runs only once every
+  // field above is initialized (checked by -Wsafe-init).
+  getStyleClass.addAll("dock", "dock-layout") // .dock carries the theme variables
+
+  locally:
+    val css = classOf[DockRegion].getResource("/scaladock/dock.css")
+    if css != null then getStylesheets.add(css.toExternalForm): Unit
+
+  locally:
+    sceneProperty.addListener: (_, oldScene, scene) =>
+      Option(
+        oldScene
+      ).flatMap(sc => Option(sc.getWindow)).foreach(_.focusedProperty.removeListener(onWindowFocus))
+      Option(scene).foreach: sc =>
+        sc.windowProperty.addListener: (_, oldW, w) =>
+          Option(oldW).foreach(_.focusedProperty.removeListener(onWindowFocus))
+          Option(w).foreach: win =>
+            win.focusedProperty.addListener(onWindowFocus)
+            pseudoClassStateChanged(pseudo.Inactive, !win.isFocused)
+
+  getChildren.addAll(placeholder, indicator)
 
   private[fx] def previewSplit(p: Option[(NodeId, Vector[Size])]): Unit =
     splitPreview = p

@@ -35,7 +35,7 @@ final class Dock private (
   private val main   = WindowRenderer(this, settings, floating = false)
   private val floats = mutable.Map.empty[WindowId, FloatingStage]
 
-  private val dragController = DragController(this, main.region)
+  private val dragController = DragController(this, main.region, settings)
 
   // floating windows must not outlive the main window: when the scene's window hides
   // (app closing), close every floating Stage — the state is untouched, so a save made
@@ -603,7 +603,7 @@ private[fx] final class FloatingStage(dock: Dock, initial: Floating):
 
   /** Theme the window's own chrome (the region themes itself). */
   def applyTheme(theme: DockTheme): Unit =
-    if !(root eq renderer.region) then root.getStylesheets.setAll(theme.stylesheets*)
+    if !(root eq renderer.region) then root.getStylesheets.setAll(theme.stylesheets*): Unit
     Option(root.getScene).foreach(theme.applyWindowScheme(_): Unit)
 
   /** Ordering stamp for hit-testing: bumped whenever this window gains OS focus. */

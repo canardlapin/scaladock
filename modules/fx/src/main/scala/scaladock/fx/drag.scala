@@ -18,9 +18,7 @@ import scaladock.*
   * leaves everything as it was. Every path out of a drag runs through one idempotent cleanup door,
   * so an exception can never leave a dimmed tab or a stray ghost behind.
   */
-private[fx] final class DragController(dock: Dock, region: DockRegion):
-
-  private val settings = dock.settings
+private[fx] final class DragController(dock: Dock, region: DockRegion, settings: LayoutSettings):
 
   private enum Phase:
     case Idle
@@ -315,9 +313,6 @@ private[fx] final class GhostPopup(
     icon: Option[javafx.scene.Node],
     theme: Option[String]
 ) extends Popup:
-  setAutoFix(false) // follow the pointer honestly, even near screen edges
-  setAutoHide(false)
-
   private val titleLabel = new Label(title)
   titleLabel.getStyleClass.add("dock-ghost-title")
 
@@ -334,12 +329,16 @@ private[fx] final class GhostPopup(
   private val box = new StackPane(chip)
   box.getStyleClass.addAll("dock", "dock-ghost")
 
+  box.setMouseTransparent(true)
   locally:
-    box.setMouseTransparent(true)
-    val css = getClass.getResource("/scaladock/dock.css")
+    val css = classOf[GhostPopup].getResource("/scaladock/dock.css")
     if css != null then box.getStylesheets.add(css.toExternalForm): Unit
-    theme.foreach(sheet => box.getStylesheets.add(sheet): Unit)
-    getContent.add(box): Unit
+  theme.foreach(sheet => box.getStylesheets.add(sheet): Unit)
+
+  // The Popup's own surface is configured only once every field above is set (-Wsafe-init).
+  setAutoFix(false) // follow the pointer honestly, even near screen edges
+  setAutoHide(false)
+  getContent.add(box): Unit
 
   def showAt(owner: javafx.stage.Window, screenX: Double, screenY: Double): Unit =
     show(owner, screenX + GhostPopup.OffsetPx, screenY + GhostPopup.OffsetPx)

@@ -34,8 +34,6 @@ private[fx] def dockIcon(kind: String): Region =
   * reparented.
   */
 private[fx] final class GroupView(val nodeId: NodeId, settings: LayoutSettings) extends Region:
-  getStyleClass.add("dock-group")
-
   // gesture callbacks, wired once by Dock at creation
   private[fx] var onTabActivated: PaneId => Unit                                 = _ => ()
   private[fx] var onTabPressed: (PaneId, javafx.scene.input.MouseEvent) => Unit  = (_, _) => ()
@@ -99,17 +97,6 @@ private[fx] final class GroupView(val nodeId: NodeId, settings: LayoutSettings) 
   buttons.setMinWidth(Region.USE_PREF_SIZE)
 
   private val header = GroupView.HeaderBar(layoutHeader)
-  header.getStyleClass.add("dock-header")
-  header.add(tabsViewport, overflow, buttons)
-
-  tabsViewport.setOnScroll: e =>
-    val delta = if math.abs(e.getDeltaX) > math.abs(e.getDeltaY) then e.getDeltaX else e.getDeltaY
-    wheel += delta
-    if math.abs(wheel) >= GroupView.WheelStepPx then
-      manualFirst = Some(lastFirst + (if wheel < 0 then 1 else -1))
-      wheel = 0
-      header.requestLayout()
-    e.consume()
 
   private val content = new StackPane
   content.getStyleClass.add("dock-content")
@@ -129,8 +116,6 @@ private[fx] final class GroupView(val nodeId: NodeId, settings: LayoutSettings) 
   stripFace.setVisible(false)
   stripFace.setOnMouseClicked(_ => onMinimizeToggled())
 
-  getChildren.addAll(header, content, stripFace)
-
   private var activePane: Option[PaneId]               = None
   private var chromeAllowed: HeaderButtons             = HeaderButtons()
   private var headerVisible                            = true
@@ -139,6 +124,25 @@ private[fx] final class GroupView(val nodeId: NodeId, settings: LayoutSettings) 
   private var foldedItems: Vector[(MenuItem, Boolean)] = Vector.empty
   private val foldSeparator: MenuItem                  = new SeparatorMenuItem
   private var tabNodes: Vector[(PaneId, FxNode)]       = Vector.empty
+  private val tabViews = collection.mutable.Map.empty[PaneId, TabView]
+  private val slides =
+    collection.mutable.Map.empty[PaneId, (javafx.animation.TranslateTransition, Double)]
+
+  // Everything below touches this Region's inherited JavaFX surface or hands out callbacks that
+  // close over it, so it runs only once every field above is initialized (checked by -Wsafe-init).
+  getStyleClass.add("dock-group")
+  header.getStyleClass.add("dock-header")
+  header.add(tabsViewport, overflow, buttons)
+  getChildren.addAll(header, content, stripFace)
+
+  tabsViewport.setOnScroll: e =>
+    val delta = if math.abs(e.getDeltaX) > math.abs(e.getDeltaY) then e.getDeltaX else e.getDeltaY
+    wheel += delta
+    if math.abs(wheel) >= GroupView.WheelStepPx then
+      manualFirst = Some(lastFirst + (if wheel < 0 then 1 else -1))
+      wheel = 0
+      header.requestLayout()
+    e.consume()
 
   // clicking anywhere in the content focuses the pane (VS Code behaviour); a filter so the
   // pane's own handlers still see the event
@@ -309,8 +313,6 @@ private[fx] final class GroupView(val nodeId: NodeId, settings: LayoutSettings) 
       pseudoClassStateChanged(pseudo.Dragging, draggingPane.contains(id))
   end TabView
 
-  private val tabViews = collection.mutable.Map.empty[PaneId, TabView]
-
   /** Open (or close, with `None`) a gap of the given width before tab `index`: the tabs after it
     * slide right, so a header drop previews as a real slot rather than a hairline.
     */
@@ -335,9 +337,6 @@ private[fx] final class GroupView(val nodeId: NodeId, settings: LayoutSettings) 
     slides.values.foreach(_._1.stop())
     slides.clear()
     tabNodes.foreach(_._2.setTranslateX(0))
-
-  private val slides =
-    collection.mutable.Map.empty[PaneId, (javafx.animation.TranslateTransition, Double)]
 
   /** The laid-out width of a pane's tab, if this group shows it. */
   def tabWidth(pane: PaneId): Option[Double] =
@@ -536,8 +535,6 @@ object GroupView:
   * minimums) — and exactly one transition commits the new ratio on release.
   */
 private[fx] final class DividerView(val splitId: NodeId, val index: Int) extends Region:
-  getStyleClass.add("dock-divider")
-
   /** Wider invisible grab handle: generous picking without a fat visual. */
   private val grab = new Region
   grab.setStyle("-fx-background-color: transparent;")
@@ -546,15 +543,8 @@ private[fx] final class DividerView(val splitId: NodeId, val index: Int) extends
   private val sash = new Region
   sash.getStyleClass.add("dock-divider-sash")
   sash.setMouseTransparent(true)
-  getChildren.addAll(sash, grab)
 
   private val hoverDelay = new javafx.animation.PauseTransition(javafx.util.Duration.millis(250))
-  hoverDelay.setOnFinished(_ => pseudoClassStateChanged(pseudo.Hot, true))
-  hoverProperty.addListener: (_, _, hovering) =>
-    if hovering then hoverDelay.playFromStart()
-    else
-      hoverDelay.stop()
-      pseudoClassStateChanged(pseudo.Hot, false)
 
   private var axis: Axis                                              = Axis.Horizontal
   private[fx] var dragContext: () => Option[DividerView.DragContext]  = () => None
@@ -568,6 +558,18 @@ private[fx] final class DividerView(val splitId: NodeId, val index: Int) extends
 
   /** The scene whose cursor the gesture borrowed, and the cursor to hand back. */
   private var borrowed: Option[(javafx.scene.Scene, javafx.scene.Cursor)] = None
+
+  // Everything below touches this Region's inherited JavaFX surface, so it runs only once every
+  // field above is initialized (checked by -Wsafe-init).
+  getStyleClass.add("dock-divider")
+  getChildren.addAll(sash, grab)
+
+  hoverDelay.setOnFinished(_ => pseudoClassStateChanged(pseudo.Hot, true))
+  hoverProperty.addListener: (_, _, hovering) =>
+    if hovering then hoverDelay.playFromStart()
+    else
+      hoverDelay.stop()
+      pseudoClassStateChanged(pseudo.Hot, false)
 
   private def endGesture(): Unit =
     active = None
