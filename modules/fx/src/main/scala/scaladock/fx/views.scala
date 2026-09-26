@@ -40,6 +40,7 @@ private[fx] final class GroupView(val nodeId: NodeId, settings: LayoutSettings) 
   private[fx] var onTabDragged: (PaneId, javafx.scene.input.MouseEvent) => Unit  = (_, _) => ()
   private[fx] var onTabReleased: (PaneId, javafx.scene.input.MouseEvent) => Unit = (_, _) => ()
   private[fx] var onTabClosed: PaneId => Unit                                    = _ => ()
+  private[fx] var onTabMenu: PaneId => Seq[javafx.scene.control.MenuItem]        = _ => Seq.empty
   private[fx] var onGroupClosed: () => Unit                                      = () => ()
   private[fx] var onMaximizeToggled: () => Unit                                  = () => ()
   private[fx] var onMinimizeToggled: () => Unit                                  = () => ()
@@ -192,12 +193,13 @@ private[fx] final class GroupView(val nodeId: NodeId, settings: LayoutSettings) 
     header.setVisible(headerVisible)
     header.setManaged(headerVisible)
 
-    tipOf(minimizeButton).foreach(_.setText(if minimizedAxis.isDefined then "Restore"
-    else "Minimize"))
-    tipOf(maximizeButton).foreach(_.setText(if isMaximized then "Restore layout" else "Maximize"))
-    tipOf(popOutButton).foreach(
-      _.setText(if loneFloating then "Dock back into main window" else "Open in new window")
-    )
+    // one label per button state, shared by its tooltip and its accessible name
+    def label(button: FxNode, text: String): Unit =
+      tipOf(button).foreach(_.setText(text))
+      button.setAccessibleText(text)
+    label(minimizeButton, if minimizedAxis.isDefined then "Restore" else "Minimize")
+    label(maximizeButton, if isMaximized then "Restore layout" else "Maximize")
+    label(popOutButton, if loneFloating then "Dock back into main window" else "Open in new window")
 
     val views = group.tabs.map: pane =>
       val v = tabViews.getOrElseUpdate(pane.id, TabView(pane.id, iconFor(pane.id)))
@@ -263,7 +265,16 @@ private[fx] final class GroupView(val nodeId: NodeId, settings: LayoutSettings) 
     * that follows — and the platform may then route the gesture to whatever lies beneath.
     */
   private final class TabView(val id: PaneId, icon: Option[FxNode]) extends HBox:
-    private var closable = true
+    private var closable   = true
+    private var isSelected = false
+
+    // screen readers ask a tab whether it is the selected one
+    override def queryAccessibleAttribute(
+        attribute: javafx.scene.AccessibleAttribute,
+        parameters: AnyRef*
+    ): AnyRef = attribute match
+      case javafx.scene.AccessibleAttribute.SELECTED => java.lang.Boolean.valueOf(isSelected)
+      case _ => super.queryAccessibleAttribute(attribute, parameters*)
 
     private val title = new Label
     title.getStyleClass.add("dock-tab-title")
@@ -293,6 +304,17 @@ private[fx] final class GroupView(val nodeId: NodeId, settings: LayoutSettings) 
     getChildren.addAll(title, close)
     getStyleClass.add("dock-tab")
     setMinWidth(Region.USE_PREF_SIZE)
+    setAccessibleRole(javafx.scene.AccessibleRole.TAB_ITEM)
+    close.setAccessibleRole(javafx.scene.AccessibleRole.BUTTON)
+    close.setAccessibleText("Close tab")
+
+    // the context menu is built fresh at each opening, so it always reflects the current layout
+    setOnContextMenuRequested: e =>
+      val items = onTabMenu(id)
+      if items.nonEmpty then
+        val menu = new javafx.scene.control.ContextMenu(items*)
+        menu.show(this, e.getScreenX, e.getScreenY)
+      e.consume()
 
     setOnMousePressed: e =>
       if e.getButton == MouseButton.PRIMARY then onTabPressed(id, e)
@@ -306,6 +328,10 @@ private[fx] final class GroupView(val nodeId: NodeId, settings: LayoutSettings) 
 
     def sync(pane: Pane, selected: Boolean): Unit =
       if title.getText != pane.title then title.setText(pane.title)
+      if getAccessibleText != pane.title then setAccessibleText(pane.title)
+      if isSelected != selected then
+        isSelected = selected
+        notifyAccessibleAttributeChanged(javafx.scene.AccessibleAttribute.SELECTED)
       closable = pane.closable
       close.setVisible(closable)
       close.setManaged(closable)
@@ -377,6 +403,8 @@ private[fx] final class GroupView(val nodeId: NodeId, settings: LayoutSettings) 
   private def headerButton(kind: String, tip: String): StackPane =
     val b = new StackPane(dockIcon(kind))
     b.getStyleClass.addAll("dock-header-button", kind)
+    b.setAccessibleRole(javafx.scene.AccessibleRole.BUTTON)
+    b.setAccessibleText(tip)
     tooltip(b, tip)
     b
 

@@ -238,6 +238,20 @@
   -fx-text-fill: white;
 }
 
+.dock .context-menu .separator {
+  -fx-padding: 3 4 3 4;
+}
+
+.dock .context-menu .separator .line {
+  -fx-border-color: -dock-outline transparent transparent transparent;
+  -fx-border-width: 1 0 0 0;
+  -fx-padding: 0;
+}
+
+.dock .context-menu .menu-item:disabled .label {
+  -fx-opacity: 0.5;
+}
+
 .dock .context-menu .check-menu-item:checked .mark {
   -fx-background-color: -dock-text-strong;
 }

@@ -65,7 +65,8 @@ object Shots:
       "10-divider-drag"   -> dividerDrag,
       "11-floating"       -> floating,
       "12-empty"          -> empty,
-      "13-drag-new-empty" -> dragNewIntoEmpty
+      "13-drag-new-empty" -> dragNewIntoEmpty,
+      "14-tab-menu"       -> tabMenu
     )
     try
       scenarios.foreach: (name, run) =>
@@ -162,6 +163,14 @@ object Shots:
   private def empty(): Unit =
     fx(app.dock.update(_ => LayoutState.empty))
 
+  /** Right-click a tab: the dock's context menu, opened by real OS input. */
+  private def tabMenu(): Unit =
+    focusPane("scan-01")
+    val at = tabCenter("scan-02")
+    moveTo(at); settle(150)
+    fx(robot.mouseClick(MouseButton.SECONDARY))
+    settle(400)
+
   /** The palette chip fabricates a viewer; drag it into an empty window. */
   private def dragNewIntoEmpty(): Unit =
     empty()
@@ -198,7 +207,7 @@ object Shots:
       Thread.sleep(16)
 
   private def cleanup(): Unit =
-    // cancel any drag before letting go so no scenario mutates the next one
+    // cancel any drag or open menu before letting go so no scenario mutates the next one
     fx(robot.keyPress(KeyCode.ESCAPE)); fx(robot.keyRelease(KeyCode.ESCAPE))
     fx(robot.mouseRelease(MouseButton.PRIMARY))
     settle(120)

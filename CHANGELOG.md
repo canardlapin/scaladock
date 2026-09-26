@@ -8,6 +8,16 @@ downstream apps pinning a commit can see what moved.
 
 ### Behaviour changes — check these when updating a pin
 
+- **Maven group is now `io.github.canardlapin`** (was `io.github.bbuchsbaum`): update
+  `libraryDependencies` / pinned coordinates, e.g.
+  `"io.github.canardlapin" %% "scaladock-fx" % "0.1.0-SNAPSHOT"`.
+- **`DockEvent` has two new cases**, `PaneDetached` and `PaneReattached` (see Added); an
+  exhaustive `match` over `DockEvent` needs them. Nothing emits them unless you use a retaining
+  switch — `update` and `load` still dispose panes that leave, exactly as before.
+- **The dock now handles a few keys** — F6 / Shift+F6 and Ctrl+Tab / Ctrl+Shift+Tab — after the
+  focused content has had its chance; content that consumes a key keeps it. Turn them off with
+  `dock.setKeyBindings(Map.empty)`. Keyboard focus moving into a pane (by Tab traversal) now
+  also moves the dock's focused pane.
 - **`Dock.close` on a non-closable pane is now a no-op**, and `Dock.requestClose` returns a
   completed `false`. Closing goes through asynchronous close admission (see
   [docs/close-admission.md](docs/close-admission.md)); `update(edit…)`, layout replacement and
@@ -28,6 +38,23 @@ downstream apps pinning a commit can see what moved.
 
 ### Added
 
+- **Panes that survive a layout change.** `Dock#switchTo` (and `load(json, retainPanes = true)`)
+  keeps the views of panes that leave the layout alive and detached; a later layout containing
+  the same `PaneId` gets the same live view back. `Dock#detachedPanes`, `Dock#releaseDetached`,
+  and `requestClose` on a detached pane (through close admission) release them.
+  `Dock#snapshot` returns the layout with live pane state.
+- **`Perspectives`**: named layouts over one dock, each remembering its last arrangement; a pane
+  shared by several is one live view; a perspective's floating windows close on leaving and
+  reopen at their bounds; `reset`, `releaseUnused`, and `save`/`load` of every perspective plus
+  the active one.
+- **Keyboard actions as API**: `focusNextGroup`, `focusPreviousGroup`, `nextTab`, `previousTab`,
+  `toggleMaximizeFocused`, `closeFocused`, `perform(DockAction)`, and remappable
+  `keyBindings` / `setKeyBindings`. Keyboard focus lands in the pane's content.
+- **Tab context menu**: Close, Close Others, Close All, Open in New Window / Dock Back,
+  Maximize / Restore Layout, Minimize; `Dock#setTabMenu` hooks it with a `TabMenuContext`
+  (pane, group, dock) and the defaults, returning the final items.
+- **Accessibility**: tabs carry `AccessibleRole.TAB_ITEM` and their title; header and tab close
+  buttons carry `AccessibleRole.BUTTON` and a name.
 - `PaneView.icon()`: a per-pane icon for tabs, minimised strips, menus and the drag chip.
 - `Dock#setPlaceholder`, `Dock#themeChanges`, `Dock#theme`, `DockTheme#stylesheets`,
   `DockTheme#isDark`, `DockTheme#applyWindowScheme` (native title bars follow the theme on
@@ -50,6 +77,10 @@ downstream apps pinning a commit can see what moved.
 
 ### Build
 
+- Maven Central publishing is set up (signed, via sbt's Central Portal support); pushing a
+  `vX.Y.Z` tag releases. One-time account steps are in [docs/releasing.md](docs/releasing.md).
+- The published fx POM no longer names a platform classifier on its (provided) JavaFX
+  dependencies — it previously carried the build machine's.
 - `scaladock-core` and `scaladock-fx` target JDK 22 (`-java-output-version 22`) and are tested in
   CI on JDK 22 with JavaFX 24.0.1, alongside the main JDK 25 jobs on Linux and macOS.
 - ScalaFX is now a dependency of the demo only; the library uses plain JavaFX.

@@ -85,7 +85,7 @@ sbt publishLocal
 
 ```scala
 // build.sbt — scaladock-fx pulls in scaladock-core
-libraryDependencies += "io.github.bbuchsbaum" %% "scaladock-fx" % "0.1.0-SNAPSHOT"
+libraryDependencies += "io.github.canardlapin" %% "scaladock-fx" % "0.1.0-SNAPSHOT"
 // scaladock-fx declares JavaFX as "provided": add JavaFX for your platform, e.g.
 libraryDependencies ++= Seq("base", "graphics", "controls").map(m =>
   "org.openjfx" % s"javafx-$m" % "24.0.1" classifier "mac-aarch64" // or linux, win, mac, …
@@ -115,6 +115,11 @@ Requires Scala 3.7+, JDK 22+, and JavaFX 24+ (the demo itself runs on JavaFX 27 
 - **Panes are never rebuilt** — a pane's JavaFX node is created once and only moved, so a viewer
   keeps its scroll position, selection, and GPU resources through tab switches, splits, drags,
   and pop-outs.
+- **Perspectives** — named layouts ("Analysis", "Review") over one dock, each remembering the
+  user's arrangement; a pane that appears in several stays one live view as you switch
+  ([workspaces guide](docs/workspaces.md)).
+- **Keyboard and context menus** — F6 between groups, Ctrl+Tab between tabs, all exposed as
+  actions a host keymap can rebind; a tab menu with the usual commands and a hook for your own.
 - **Everyday states** — minimise to a side rail or strip, maximise one group, overflowing tabs,
   an empty-window placeholder, and close vetoes for unsaved work
   ([close admission](docs/close-admission.md)).
@@ -128,8 +133,8 @@ Requires Scala 3.7+, JDK 22+, and JavaFX 24+ (the demo itself runs on JavaFX 27 
 ## Fit and boundaries
 
 A good fit for JavaFX desktop apps that want VS Code- or JetBrains-style panel layouts from
-Scala 3. Not covered yet: keyboard navigation between groups (F6), tab context menus, and keeping
-panes alive across a full `load` of a different layout — all on the roadmap. The library is
+Scala 3. Not covered yet: accessibility beyond named tabs and buttons, and a published release
+(see [releasing](docs/releasing.md)). The library is
 tested in CI on Linux and macOS with JDK 25, and on Linux with JDK 22 and JavaFX 24 (the library's floor); Windows is untested.
 scaladock takes golden-layout's model as its conceptual starting point
 ([golden-layout](https://github.com/golden-layout/golden-layout)).
@@ -152,11 +157,13 @@ same value, which is why multi-window layouts save like everything else.
 ## Documentation
 
 - [Styling and theming](docs/styling.md) — CSS variables, style classes, and icons
+- [Workspaces](docs/workspaces.md) — perspectives, retained panes, keyboard actions, tab menus
 - [Close admission](docs/close-admission.md) — letting panes save, veto, or defer a close
 - [Changelog](CHANGELOG.md) — behaviour changes to check when updating a pinned version
 - [The demo](modules/demo) — a full imaging-workstation example, and the screenshot rig
   (`Shots.scala`) that captures the real app for visual review
-- [Manual release checks](docs/manual-checks.md) · [SemanticDB output](docs/semanticdb-output.md)
+- [Releasing](docs/releasing.md) · [Manual release checks](docs/manual-checks.md) ·
+  [SemanticDB output](docs/semanticdb-output.md)
 
 ## Development
 

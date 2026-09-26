@@ -25,11 +25,19 @@ final class Dock private (
 ):
   private var current: LayoutState = LayoutState.empty
   private var updating             = false
-  private val queued               = mutable.Queue.empty[LayoutState => LayoutState]
+
+  /** Pending transitions, each with whether panes leaving the layout are retained (not disposed).
+    */
+  private val queued = mutable.Queue.empty[(LayoutState => LayoutState, Boolean)]
 
   private val topic    = Events.Topic[DockEvent]()
   private val panes    = mutable.Map.empty[PaneId, BoundPane[?]]
   private val contexts = mutable.Map.empty[PaneId, UntypedPaneContext]
+
+  /** Retained panes: alive and bound, but in no window's tree (see [[switchTo]]). The last known
+    * model entry travels with each, so a close admission knows whether it may close.
+    */
+  private val detached = mutable.LinkedHashMap.empty[PaneId, (BoundPane[?], Pane)]
   private val closing  = mutable.Map.empty[(Set[PaneId], Boolean), Future[Boolean]]
 
   private val main   = WindowRenderer(this, settings, floating = false)
@@ -62,16 +70,55 @@ final class Dock private (
   /** The single mutation door: canonicalize, reconcile views, publish events. Reentrant calls (a
     * pane closing itself from an event handler, say) are queued and applied in order.
     */
-  def update(f: LayoutState => LayoutState): Unit =
+  def update(f: LayoutState => LayoutState): Unit = enqueue(f, retain = false)
+
+  /** Replace the layout while RETAINING the views of panes that leave it: they stay alive,
+    * detached, and a later layout containing the same `PaneId` gets the same live view back —
+    * scroll position, selection, and GPU resources intact. Leaving panes publish
+    * [[DockEvent.PaneDetached]] (not `PaneClosed`); returning ones [[DockEvent.PaneReattached]].
+    * Release retained views with [[requestClose]] / [[releaseDetached]]. This is the primitive
+    * behind [[Perspectives]].
+    */
+  def switchTo(next: LayoutState): Unit = enqueue(_ => next, retain = true)
+
+  /** Every pane whose view is retained but in no window. */
+  def detachedPanes: Vector[PaneId] = detached.keys.toVector
+
+  /** Admit the release of retained panes (non-closable ones too: releasing a view the layout no
+    * longer shows is not a user close). Each may still save or veto, as for any close.
+    */
+  def releaseDetached(ids: Set[PaneId]): Future[Boolean] =
+    val known = ids.filter(detached.contains)
+    if known.isEmpty then Future.successful(true) else admitClose(known)
+
+  /** Whether a transition is being applied (dock event handlers run inside one). */
+  private[fx] def isUpdating: Boolean = updating
+
+  /** The pane types this dock can build: what a saved layout may contain. */
+  def paneTypes: PaneTypes = factories.paneTypes
+
+  /** Admit a close of every retained, detached pane (each may veto, as for any close). */
+  def releaseDetached(): Future[Boolean] =
+    if detached.isEmpty then Future.successful(true) else admitClose(detached.keySet.toSet)
+
+  /** The current layout, with each pane's state refreshed from its live view. */
+  def snapshot: LayoutState = withLiveState(current)
+
+  /** Any layout, with each pane's state refreshed from its live view where one exists. */
+  private[fx] def withLiveStateOf(s: LayoutState): LayoutState = withLiveState(s)
+
+  private def enqueue(f: LayoutState => LayoutState, retain: Boolean): Unit =
     require(
       javafx.application.Platform.isFxApplicationThread,
       "Dock must be used from the JavaFX application thread"
     )
-    queued.enqueue(f)
+    queued.enqueue((f, retain))
     if !updating then
       updating = true
       try
-        while queued.nonEmpty do applyOne(queued.dequeue())
+        while queued.nonEmpty do
+          val (next, keep) = queued.dequeue()
+          applyOne(next, keep)
       finally updating = false
 
   // convenience operations — sugar over update + edit.*
@@ -86,11 +133,16 @@ final class Dock private (
     val _ = requestClose(id)
 
   def requestClose(id: PaneId): Future[Boolean] =
-    if current.findPane(id).exists(_.closable) then admitClose(Set(id))
-    else Future.successful(false)
+    val closable = current.findPane(id).orElse(detached.get(id).map(_._2)).exists(_.closable)
+    if closable then admitClose(Set(id)) else Future.successful(false)
 
   /** Host shutdown: prepare all panes, including non-closable chrome, before removing any. */
-  def requestCloseAll(): Future[Boolean] = admitClose(panes.keySet.toSet, wholeDock = true)
+  def requestCloseAll(): Future[Boolean] =
+    admitClose(panes.keySet.toSet ++ detached.keySet, wholeDock = true)
+
+  /** A pane's live binding, whether it is in the layout or retained. */
+  private def liveBinding(id: PaneId): Option[BoundPane[?]] =
+    panes.get(id).orElse(detached.get(id).map(_._1))
 
   private def admitClose(ids: Set[PaneId], wholeDock: Boolean = false): Future[Boolean] =
     require(javafx.application.Platform.isFxApplicationThread, "Close admission requires JavaFX")
@@ -99,19 +151,24 @@ final class Dock private (
       case Some(pending)                                             => pending
       case None if closing.keys.exists(_._1.intersect(ids).nonEmpty) => Future.successful(false)
       case None =>
-        val captured = ids.toVector.flatMap(id => panes.get(id).map(id -> _))
+        val captured = ids.toVector.flatMap(id => liveBinding(id).map(id -> _))
         val done     = Promise[Boolean]()
         closing(key) = done.future
         def finish(allowed: Boolean): Unit =
-          val unchanged = captured.forall((id, pane) => panes.get(id).exists(_ eq pane)) &&
-            (!wholeDock || panes.keySet.toSet == ids)
+          val unchanged = captured.forall((id, pane) => liveBinding(id).exists(_ eq pane)) &&
+            (!wholeDock || (panes.keySet ++ detached.keySet).toSet == ids)
           val _ = closing.remove(key)
           if allowed && unchanged then
+            // retained panes are not in the layout: dispose them directly
+            ids.filter(detached.contains).foreach: id =>
+              detached.remove(id).foreach(_._1.dispose())
+              contexts.remove(id): Unit
+              topic.publish(DockEvent.PaneClosed(id))
             update(s => ids.foldLeft(s)((state, id) => edit.removePane(state, id)))
             val _ = done.trySuccess(true)
           else
             captured.foreach((id, pane) =>
-              if panes.get(id).exists(_ eq pane) then
+              if liveBinding(id).exists(_ eq pane) then
                 val _ = Try(pane.view.closeCancelled())
             )
             val _ = done.trySuccess(false)
@@ -130,7 +187,195 @@ final class Dock private (
               )
             )
         done.future
-  def focus(id: PaneId): Unit             = update(edit.focus(_, id))
+    end match
+  end admitClose
+  def focus(id: PaneId): Unit = update(edit.focus(_, id))
+
+  // -- tab context menu ------------------------------------------------------------------------
+
+  private var tabMenuHook: (TabMenuContext, Vector[javafx.scene.control.MenuItem]) => Seq[
+    javafx.scene.control.MenuItem
+  ] = (_, defaults) => defaults
+
+  /** Customise every tab's context menu. The hook receives the pane, its group and this dock, plus
+    * the default items (Close, Close Others, Close All, Pop Out, Maximize/Restore, Minimize); it
+    * returns the final list — extend, reorder, or replace. Built fresh per opening.
+    */
+  def setTabMenu(
+      hook: (
+          TabMenuContext,
+          Vector[javafx.scene.control.MenuItem]
+      ) => Seq[javafx.scene.control.MenuItem]
+  ): Unit = tabMenuHook = hook
+
+  /** The default items for a tab's menu (before the hook). */
+  private[fx] def defaultTabMenu(
+      pane: PaneId,
+      group: Node.Group
+  ): Vector[javafx.scene.control.MenuItem] =
+    import javafx.scene.control.{MenuItem, SeparatorMenuItem}
+    def item(text: String, enabled: Boolean)(action: => Unit): MenuItem =
+      val m = new MenuItem(text)
+      m.setDisable(!enabled)
+      m.setOnAction(_ => action)
+      m
+    // enablement reflects the layout as the menu opens; each action re-reads the layout when
+    // clicked, so a change in between (an async close finishing, say) never acts on stale ids
+    def closableIn(g: Node.Group)         = g.tabs.filter(_.closable).map(_.id)
+    def live(f: Node.Group => Unit): Unit = current.findGroup(group.id).foreach(f)
+    val chrome = resolvedHeader(group).getOrElse(HeaderButtons(false, false, false, false))
+    val lone   = loneFloatingWindowOf(group.id)
+    Vector(
+      item("Close", closableIn(group).contains(pane))(close(pane)),
+      item("Close Others", closableIn(group).exists(_ != pane))(
+        live(g => admitClose(closableIn(g).filterNot(_ == pane).toSet): Unit)
+      ),
+      item(
+        "Close All",
+        closableIn(group).nonEmpty
+      )(live(g => admitClose(closableIn(g).toSet): Unit)),
+      new SeparatorMenuItem,
+      item(if lone.isDefined then "Dock Back" else "Open in New Window", chrome.popOut)(
+        live(g => loneFloatingWindowOf(g.id).fold(popOut(g.id))(dockBack))
+      ),
+      item(
+        if current.maximized.contains(group.id) then "Restore Layout" else "Maximize",
+        chrome.maximize && lone.isEmpty
+      )(live(g => toggleMaximize(g.id))),
+      item("Minimize", chrome.minimize && lone.isEmpty)(live(g => minimize(g.id)))
+    )
+
+  /** The final menu for a tab: defaults through the host's hook. */
+  private[fx] def tabMenuItems(pane: PaneId): Seq[javafx.scene.control.MenuItem] =
+    current.groupOf(pane).fold(Seq.empty): g =>
+      tabMenuHook(TabMenuContext(pane, g.id, this), defaultTabMenu(pane, g))
+
+  // -- keyboard ----------------------------------------------------------------------------------
+
+  /** Move focus to the next visible group (every window, in layout order), into its content. */
+  def focusNextGroup(): Unit = focusGroupBy(+1)
+
+  def focusPreviousGroup(): Unit = focusGroupBy(-1)
+
+  /** Activate the next tab of the focused group, and focus its content. */
+  def nextTab(): Unit = cycleTab(+1)
+
+  def previousTab(): Unit = cycleTab(-1)
+
+  /** Maximise the focused pane's group, or restore the layout if it is maximised. */
+  def toggleMaximizeFocused(): Unit =
+    current.focused.flatMap(current.groupOf).foreach(g => toggleMaximize(g.id))
+
+  /** Admit a close of the focused pane. */
+  def closeFocused(): Unit = current.focused.foreach(close)
+
+  /** Run one keyboard-addressable operation — what a host's command registry or menu calls. */
+  def perform(action: DockAction): Unit = action match
+    case DockAction.FocusNextGroup     => focusNextGroup()
+    case DockAction.FocusPreviousGroup => focusPreviousGroup()
+    case DockAction.NextTab            => nextTab()
+    case DockAction.PreviousTab        => previousTab()
+    case DockAction.ToggleMaximize     => toggleMaximizeFocused()
+    case DockAction.CloseFocused       => closeFocused()
+
+  private var bindings: Map[javafx.scene.input.KeyCombination, DockAction] = DockAction.defaultKeys
+
+  /** The dock's own key bindings; `Map.empty` turns them off (a host keymap can call [[perform]]).
+    * They are consulted only after the focused content has seen a key: a key the content handles
+    * never reaches the dock, and a key no binding matches is never consumed.
+    */
+  def keyBindings: Map[javafx.scene.input.KeyCombination, DockAction] = bindings
+
+  def setKeyBindings(keys: Map[javafx.scene.input.KeyCombination, DockAction]): Unit =
+    bindings = keys
+
+  private[fx] def handleKey(e: javafx.scene.input.KeyEvent): Unit =
+    bindings.collectFirst { case (combo, action) if combo.`match`(e) => action }.foreach: action =>
+      perform(action)
+      e.consume()
+
+  /** Groups keyboard navigation visits: every window, layout order, skipping minimised groups and
+    * those a maximise hides.
+    */
+  private def navigableGroups: Vector[Node.Group] =
+    current.roots.flatMap: root =>
+      val groups = root.groups
+      current.maximized.flatMap(id => groups.find(_.id == id)) match
+        case Some(maxed) => Vector(maxed)
+        case None        => groups.filterNot(g => current.minimized(g.id))
+
+  private def focusGroupBy(step: Int): Unit =
+    val groups = navigableGroups
+    if groups.nonEmpty then
+      val at = current.focused.flatMap(f =>
+        groups.indexWhere(_.tabs.exists(_.id == f)) match
+          case -1 => None
+          case i  => Some(i)
+      )
+      val next = at.fold(if step > 0 then 0 else groups.length - 1)(i =>
+        ((i + step) % groups.length + groups.length) % groups.length
+      )
+      val target = groups(next).active
+      update(edit.focus(_, target))
+      focusContent(target)
+
+  private def cycleTab(step: Int): Unit =
+    current.focused.flatMap(current.groupOf).foreach: g =>
+      val i      = g.tabs.indexWhere(_.id == g.active)
+      val target = g.tabs(((i + step) % g.tabs.length + g.tabs.length) % g.tabs.length).id
+      update(edit.focus(_, target))
+      focusContent(target)
+
+  /** Put keyboard focus inside a pane: its first focus-traversable descendant, else the node. */
+  private[fx] def focusContent(id: PaneId): Unit =
+    def firstFocusable(n: javafx.scene.Node): Option[javafx.scene.Node] =
+      if n.isFocusTraversable && !n.isDisabled && n.isVisible then Some(n)
+      else
+        n match
+          case p: Parent =>
+            p.getChildrenUnmodifiable.toArray.iterator.collect { case c: javafx.scene.Node => c }
+              .flatMap(firstFocusable).nextOption()
+          case _ => None
+    nodeOf(id).foreach: node =>
+      Option(node.getScene).flatMap(sc => Option(sc.getWindow)).foreach: w =>
+        if !w.isFocused then w.requestFocus()
+      firstFocusable(node).getOrElse(node).requestFocus()
+
+  /** The pane whose view contains this node, if any. */
+  private def paneContaining(n: javafx.scene.Node): Option[PaneId] =
+    val byNode = panes.iterator.map((id, bp) => (bp.node, id)).toMap
+    Iterator.iterate(n)(_.getParent).takeWhile(_ != null).flatMap(byNode.get).nextOption()
+
+  /** Wiring that needs a fully constructed dock (called once by [[Dock.apply]]). */
+  private[fx] def attach(): Unit = installKeyboard(main.region)
+
+  /** Keys, and the model's focus following keyboard focus (Tab traversal into another pane). */
+  private[fx] def installKeyboard(region: DockRegion): Unit =
+    region.addEventHandler(
+      javafx.scene.input.KeyEvent.KEY_PRESSED,
+      (e: javafx.scene.input.KeyEvent) => handleKey(e)
+    )
+    // Follow only a USER's move of keyboard focus (Tab traversal, a press): the previous owner
+    // is still in the scene. When the owner left the scene instead (a tab switch, pop-out, or
+    // perspective change removed it), JavaFX's focus cleanup hands focus to an arbitrary node;
+    // then the model is right and keyboard focus is sent back to the model's pane.
+    val follow: javafx.beans.value.ChangeListener[javafx.scene.Node] = (_, old, owner) =>
+      val userMove = old != null && old.getScene != null
+      if owner != null && userMove then
+        paneContaining(owner).filterNot(current.focused.contains).foreach(id =>
+          update(edit.focus(_, id))
+        )
+      else if owner != null && !userMove then
+        current.focused
+          .filter(id =>
+            nodeOf(id).exists(n => n.getScene != null && (n.getScene eq owner.getScene))
+          )
+          .filterNot(id => paneContaining(owner).contains(id))
+          .foreach(focusContent)
+    Option(region.getScene).foreach(_.focusOwnerProperty.addListener(follow))
+    region.sceneProperty.addListener: (_, old, scene) =>
+      Option(old).foreach(_.focusOwnerProperty.removeListener(follow))
+      Option(scene).foreach(_.focusOwnerProperty.addListener(follow))
   def maximize(group: NodeId): Unit       = update(edit.maximize(_, group))
   def restore(): Unit                     = update(edit.unmaximized)
   def toggleMaximize(group: NodeId): Unit = update(edit.toggleMaximize(_, group))
@@ -155,8 +400,12 @@ final class Dock private (
   def save(): ujson.Value =
     LayoutCodec.encode(withLiveState(current))
 
-  def load(v: ujson.Value): Either[LoadError, Unit] =
-    LayoutCodec.decode(v, factories.paneTypes).map(next => update(_ => next))
+  /** Replace the layout with a saved one. Panes absent from it are disposed, or — with
+    * `retainPanes` — kept alive and detached, as by [[switchTo]].
+    */
+  def load(v: ujson.Value, retainPanes: Boolean = false): Either[LoadError, Unit] =
+    LayoutCodec.decode(v, factories.paneTypes).map: next =>
+      if retainPanes then switchTo(next) else update(_ => next)
 
   /** Arm an external node (a palette entry, say) so dragging from it fabricates a new pane and
     * enters the ordinary drag-and-drop machinery — golden-layout's DragSource.
@@ -173,6 +422,8 @@ final class Dock private (
     floats.clear()
     panes.values.foreach(_.dispose())
     panes.clear()
+    detached.values.foreach(_._1.dispose())
+    detached.clear()
     contexts.clear()
 
   /** Restyle every dock window. Themes redefine only CSS variables; see docs/styling.md. */
@@ -207,7 +458,7 @@ final class Dock private (
 
   /** The live JavaFX node of a pane (test and interaction plumbing). */
   private[fx] def nodeOf(id: PaneId): Option[javafx.scene.Node] =
-    panes.get(id).map(_.node)
+    liveBinding(id).map(_.node) // a retained pane's view is alive too
 
   private[fx] def publish(e: DockEvent): Unit = topic.publish(e)
 
@@ -262,6 +513,7 @@ final class Dock private (
       update(edit.focus(_, id))
     gv.onTabDragged = (id, e) => dragController.tabDragged(id, e)
     gv.onTabReleased = (id, e) => dragController.tabReleased(id, e)
+    gv.onTabMenu = id => tabMenuItems(id)
     gv.onTabClosed = id =>
       if current.findPane(id).exists(_.closable) then close(id)
     gv.onGroupClosed = () =>
@@ -353,24 +605,53 @@ final class Dock private (
 
   // -- reconciliation ----------------------------------------------------------------------------
 
-  private def applyOne(f: LayoutState => LayoutState): Unit =
+  private def applyOne(f: LayoutState => LayoutState, retain: Boolean): Unit =
     val prev = current
     val next = edit.canonical(f(prev))
     if next != prev then
       current = next
-      reconcile(prev, next)
-      DockEvent.diff(prev, next).foreach(topic.publish)
+      val (detachedNow, reattached) = reconcile(prev, next, retain)
+      // a retained pane did not close, and a reattached one did not open: say what happened
+      DockEvent.diff(prev, next).foreach:
+        case DockEvent.PaneClosed(id) if detachedNow(id) =>
+          topic.publish(DockEvent.PaneDetached(id))
+        case DockEvent.PaneOpened(id, _) if reattached(id) =>
+          topic.publish(DockEvent.PaneReattached(id))
+        case e => topic.publish(e)
       topic.publish(DockEvent.LayoutChanged(next))
 
-  private def reconcile(prev: LayoutState, next: LayoutState): Unit =
-    val nextPanes = next.panes.map(p => p.id -> p).toMap
+  /** Returns the panes detached (retained) and reattached by this transition. */
+  private def reconcile(
+      prev: LayoutState,
+      next: LayoutState,
+      retain: Boolean
+  ): (Set[PaneId], Set[PaneId]) =
+    val nextPanes  = next.panes.map(p => p.id -> p).toMap
+    val prevPanes  = prev.panes.map(p => p.id -> p).toMap
+    val reattached = mutable.Set.empty[PaneId]
+    val retained   = mutable.Set.empty[PaneId]
 
-    // panes (across every window): bind newcomers once, dispose leavers
+    // panes (across every window): newcomers reuse a retained view or bind once; leavers are
+    // disposed — or, in a retaining transition, kept alive and detached
     nextPanes.keysIterator.filterNot(panes.contains).foreach: id =>
-      panes(id) = boundPane(nextPanes(id).content, id)
+      // a retained view comes back as-is (its live state wins over the layout's saved state) —
+      // unless the layout now says the pane is of another type: then it is rebuilt
+      detached.remove(id) match
+        case Some((bound, _)) if bound.tpe.name == nextPanes(id).content.tpe.name =>
+          panes(id) = bound
+          reattached += id
+        case Some((stale, _)) =>
+          stale.dispose()
+          panes(id) = boundPane(nextPanes(id).content, id)
+        case None => panes(id) = boundPane(nextPanes(id).content, id)
     panes.keys.toVector.filterNot(nextPanes.contains).foreach: id =>
-      panes.remove(id).foreach(_.dispose())
-      contexts.remove(id): Unit
+      panes.remove(id).foreach: bound =>
+        if retain then
+          detached(id) = (bound, prevPanes(id))
+          retained += id
+        else
+          bound.dispose()
+          contexts.remove(id): Unit
 
     // the main window's tree
     main.sync(next.root, next)
@@ -381,6 +662,7 @@ final class Dock private (
       val f = floats.getOrElseUpdate(
         fl.window, {
           val created = FloatingStage(this, fl)
+          installKeyboard(created.renderer.region)
           created.renderer.region.setThemeSheet(currentTheme.stylesheet)
           created.applyTheme(currentTheme)
           created
@@ -393,6 +675,8 @@ final class Dock private (
       floats.remove(id).foreach(_.dispose())
 
     publishPaneSignals(prev, next)
+    (retained.toSet, reattached.toSet)
+  end reconcile
 
   private def publishPaneSignals(prev: LayoutState, next: LayoutState): Unit =
     val prevVisible = visiblePanes(prev)
@@ -433,7 +717,7 @@ final class Dock private (
     */
   private def withLiveState(s: LayoutState): LayoutState =
     def refresh(p: Pane): Pane =
-      panes.get(p.id).fold(p): bp =>
+      liveBinding(p.id).fold(p): bp =>
         try p.copy(content = bp.snapshotContent)
         catch
           case scala.util.control.NonFatal(t) =>
@@ -503,6 +787,7 @@ object Dock:
       defaultHeader: HeaderButtons = HeaderButtons()
   ): Dock =
     val dock = new Dock(factories, settings, defaultHeader)
+    dock.attach()
     dock.update(_ => initial)
     dock
 
@@ -775,3 +1060,26 @@ object FloatingStage:
         b.width.min(vis.getWidth - 80).max(200),
         b.height.min(vis.getHeight - 80).max(150)
       )
+
+/** The dock's keyboard-addressable operations (see [[Dock.perform]] and [[Dock.setKeyBindings]]).
+  */
+enum DockAction:
+  case FocusNextGroup, FocusPreviousGroup, NextTab, PreviousTab, ToggleMaximize, CloseFocused
+
+object DockAction:
+  import javafx.scene.input.{KeyCode, KeyCodeCombination, KeyCombination}
+
+  /** F6 / Shift+F6 between groups and Ctrl+Tab / Ctrl+Shift+Tab between tabs (Control on every
+    * platform, as in VS Code and JetBrains IDEs). Maximise and close have no default key: hosts
+    * bind them in their own keymaps.
+    */
+  val defaultKeys: Map[KeyCombination, DockAction] = Map(
+    KeyCodeCombination(KeyCode.F6)                               -> FocusNextGroup,
+    KeyCodeCombination(KeyCode.F6, KeyCombination.SHIFT_DOWN)    -> FocusPreviousGroup,
+    KeyCodeCombination(KeyCode.TAB, KeyCombination.CONTROL_DOWN) -> NextTab,
+    KeyCodeCombination(KeyCode.TAB, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN) ->
+      PreviousTab
+  )
+
+/** What a tab-menu hook knows: the pane, its group, and the dock (to read state or act). */
+final case class TabMenuContext(pane: PaneId, group: NodeId, dock: Dock)

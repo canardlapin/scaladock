@@ -5,6 +5,14 @@ enum DockEvent derives CanEqual:
   case LayoutChanged(state: LayoutState)
   case PaneOpened(id: PaneId, tpe: String)
   case PaneClosed(id: PaneId)
+
+  /** A pane left the layout but its view was retained (a perspective switch, say): it is alive,
+    * detached from every window. Pause expensive work; it may be reattached later.
+    */
+  case PaneDetached(id: PaneId)
+
+  /** A retained pane's view re-entered the layout — the same live view, state intact. */
+  case PaneReattached(id: PaneId)
   case PaneRetitled(id: PaneId, title: String)
   case PaneFocused(id: PaneId, previous: Option[PaneId])
   case FocusCleared(previous: PaneId)
