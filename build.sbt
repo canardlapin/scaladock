@@ -67,6 +67,11 @@ lazy val fx = project
   .settings(commonSettings)
   .settings(
     name := "scaladock-fx",
+    // JavaFX controls are built by subclassing and styling `this` in the constructor
+    // (getStyleClass, pseudoClassStateChanged, property listeners). The initialisation
+    // checker cannot see into those Java methods and flags every such call; it stays on
+    // for the pure core, where it is meaningful.
+    scalacOptions -= "-Wsafe-init",
     libraryDependencies += "org.scalafx" %% "scalafx" % scalafxVersion,
     // Published POM must not carry a platform classifier: consumers supply natives.
     libraryDependencies ++= javafxDeps(Provided),
