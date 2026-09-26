@@ -79,6 +79,8 @@ window (drag tabs freely between windows; closing a floating window docks it bac
 ## Documentation
 
 - [Styling & theming](docs/styling.md) — the CSS contract
+- [Asynchronous close admission](docs/close-admission.md) — letting panes veto or defer a close
+- [SemanticDB output](docs/semanticdb-output.md) — keeping compiler metadata out of source trees
 - [Manual release checks](docs/manual-checks.md)
 - The demo source (`modules/demo`) is the living tutorial
 

@@ -9,3 +9,6 @@ project/project/
 *.class
 *.log
 .DS_Store
+# the Mote op-log is committed as this repository's tracker; its local state is not
+.mote/tmp/
+.mote/local/
