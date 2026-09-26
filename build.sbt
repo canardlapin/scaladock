@@ -1,5 +1,8 @@
 val scala3Version    = "3.7.0"
 val javafxVersion    = "24.0.1"
+// the demo runs on a current JavaFX: 25+ lets a scene's colour scheme drive native window
+// decorations (dark title bars), which the fx module applies reflectively when available
+val demoJavafxVersion = "27"
 val scalafxVersion   = "24.0.0-R35"
 val upickleVersion   = "4.1.0"
 val munitVersion     = "1.1.1"
@@ -24,8 +27,8 @@ val fxClassifier: String =
 
 val javafxModules = Seq("base", "graphics", "controls")
 
-def javafxDeps(config: Configuration): Seq[ModuleID] =
-  javafxModules.map(m => ("org.openjfx" % s"javafx-$m" % javafxVersion % config).classifier(fxClassifier))
+def javafxDeps(config: Configuration, version: String = javafxVersion): Seq[ModuleID] =
+  javafxModules.map(m => ("org.openjfx" % s"javafx-$m" % version % config).classifier(fxClassifier))
 
 val warnings = Seq(
   "-deprecation",
@@ -38,6 +41,9 @@ val warnings = Seq(
 )
 
 val commonSettings = Seq(
+  // Sources must relativize inside this module even when a consumer imports
+  // the build from another working directory. Keep SemanticDB under target.
+  scalacOptions ++= Seq("-sourceroot", baseDirectory.value.getAbsolutePath),
   scalacOptions ++= warnings,
   scalacOptions ++= (if (sys.env.contains("CI")) Seq("-Werror") else Seq.empty),
   libraryDependencies ++= Seq(
@@ -76,7 +82,9 @@ lazy val demo = project
   .settings(
     name           := "scaladock-demo",
     publish / skip := true,
-    libraryDependencies ++= javafxDeps(Compile),
+    libraryDependencies ++= javafxDeps(Compile, demoJavafxVersion),
+    // the fx module's Provided 24.x must not win the demo's runtime classpath
+    dependencyOverrides ++= javafxDeps(Compile, demoJavafxVersion),
     run / fork := true
   )
 

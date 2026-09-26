@@ -13,8 +13,10 @@ final class AdversarialSuite extends ScalaCheckSuite:
 
   private def paneIds(s: LayoutState): Set[PaneId] = s.panes.map(_.id).toSet
 
-  // -- drop is total: the pane is NEVER lost -------------------------------------------------
+  // Every generator is defined before the first property: a property registers a closure over
+  // this suite, so fields declared after it would still be uninitialized (-Wsafe-init).
 
+  // drop targets, including stale ones
   private val anyTargetGen: Gen[LayoutState => DropTarget] =
     Gen.oneOf[LayoutState => DropTarget](
       s => DropTarget.IntoGroup(s.groups.headOption.fold(NodeId.fresh())(_.id), 0),
@@ -24,6 +26,32 @@ final class AdversarialSuite extends ScalaCheckSuite:
       _ => DropTarget.AtWindowEdge(None, Edge.Top),
       _ => DropTarget.AtWindowEdge(Some(WindowId.fresh()), Edge.Left) // stale window
     )
+
+  // random op sequences
+  private val opGen: Gen[LayoutState => LayoutState] = Gen.oneOf[LayoutState => LayoutState](
+    s => s.panes.headOption.fold(s)(p => edit.focus(s, p.id)),
+    s => s.panes.lastOption.fold(s)(p => edit.close(s, p.id)),
+    s => s.groups.headOption.fold(s)(g => edit.maximize(s, g.id)),
+    s => edit.unmaximized(s),
+    s => s.groups.headOption.fold(s)(g => edit.minimize(s, g.id)),
+    s => s.minimized.headOption.fold(s)(g => edit.unminimize(s, g)),
+    s => s.groups.lastOption.fold(s)(g => edit.popOut(s, g.id, Rect(0, 0, 300, 200))),
+    s => s.floating.headOption.fold(s)(f => edit.dockBack(s, f.window)),
+    s => edit.open(s, counter(7), DockAt.Preferred),
+    s =>
+      s.groups.headOption.fold(s): g =>
+        edit.drop(s, doc("dropped"), DropTarget.Beside(g.id, Edge.Top)),
+    s => edit.dragDivider(s, NodeId.fresh(), 0, 0.5, 1000, LayoutSettings.default)
+  )
+
+  // numeric extremes for the codec
+  private val extremeSizeGen: Gen[Size] = Gen.oneOf(
+    Gen.oneOf(1e-9, 5e-4, 1e16, 123.456789012345).map(Size.Pct.apply),
+    Gen.oneOf(1e-9, 7.5e-5, 2e15).map(Size.Fr.apply),
+    Gen.oneOf(0.0001, 9e7).map(Size.Px.apply)
+  )
+
+  // -- drop is total: the pane is NEVER lost -------------------------------------------------
 
   property("drop never loses the pane, even on stale targets"):
     forAll(stateGen, paneGen, anyTargetGen) { (s, pane, mkTarget) =>
@@ -46,22 +74,6 @@ final class AdversarialSuite extends ScalaCheckSuite:
 
   // -- random op sequences keep every invariant ----------------------------------------------
 
-  private val opGen: Gen[LayoutState => LayoutState] = Gen.oneOf[LayoutState => LayoutState](
-    s => s.panes.headOption.fold(s)(p => edit.focus(s, p.id)),
-    s => s.panes.lastOption.fold(s)(p => edit.close(s, p.id)),
-    s => s.groups.headOption.fold(s)(g => edit.maximize(s, g.id)),
-    s => edit.unmaximized(s),
-    s => s.groups.headOption.fold(s)(g => edit.minimize(s, g.id)),
-    s => s.minimized.headOption.fold(s)(g => edit.unminimize(s, g)),
-    s => s.groups.lastOption.fold(s)(g => edit.popOut(s, g.id, Rect(0, 0, 300, 200))),
-    s => s.floating.headOption.fold(s)(f => edit.dockBack(s, f.window)),
-    s => edit.open(s, counter(7), DockAt.Preferred),
-    s =>
-      s.groups.headOption.fold(s): g =>
-        edit.drop(s, doc("dropped"), DropTarget.Beside(g.id, Edge.Top)),
-    s => edit.dragDivider(s, NodeId.fresh(), 0, 0.5, 1000, LayoutSettings.default)
-  )
-
   property("every public transition sequence preserves canonical invariants"):
     forAll(stateGen, Gen.listOfN(8, opGen)) { (s0, ops) =>
       val states = ops.scanLeft(s0)((s, op) => op(s))
@@ -70,12 +82,6 @@ final class AdversarialSuite extends ScalaCheckSuite:
     }
 
   // -- codec at numeric extremes ---------------------------------------------------------------
-
-  private val extremeSizeGen: Gen[Size] = Gen.oneOf(
-    Gen.oneOf(1e-9, 5e-4, 1e16, 123.456789012345).map(Size.Pct.apply),
-    Gen.oneOf(1e-9, 7.5e-5, 2e15).map(Size.Fr.apply),
-    Gen.oneOf(0.0001, 9e7).map(Size.Px.apply)
-  )
 
   property("sizes at numeric extremes survive the codec round trip"):
     forAll(extremeSizeGen) { size =>

@@ -51,7 +51,8 @@ final class DividerSuite extends FunSuite:
         )
       )
       val dock  = Dock(factories, initial = layout)
-      val scene = new Scene(dock.view, 1205, 800)
+      val span  = 1200 + dock.settings.dividerPx // two 600px halves either side of the divider
+      val scene = new Scene(dock.view, span, 800)
       dock.view.applyCss()
       dock.view.layout()
       assert(scene != null)
@@ -68,7 +69,7 @@ final class DividerSuite extends FunSuite:
       dock.view.layout()
 
       val split = dock.state.findSplit(dock.state.root.get.id).getOrElse(fail("no root split"))
-      val alloc = sizing.allocate(split.cells, 1205, dock.settings.dividerPx)
+      val alloc = sizing.allocate(split.cells, span, dock.settings.dividerPx)
       assertEqualsDouble(alloc(0), 400.0, 1.0)
       assertEqualsDouble(alloc(1), 800.0, 1.0)
 
@@ -80,7 +81,7 @@ final class DividerSuite extends FunSuite:
 
       val alloc2 = sizing.allocate(
         dock.state.findSplit(split.id).get.cells,
-        1205,
+        span,
         dock.settings.dividerPx
       )
       assertEqualsDouble(alloc2(0), dock.settings.defaultMinPanePx, 1.0)

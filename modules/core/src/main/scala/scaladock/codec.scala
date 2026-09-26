@@ -17,9 +17,6 @@ final case class LoadError(message: String) derives CanEqual
   */
 object LayoutCodec:
 
-  // ujson's AST predates CanEqual; equality on it is sound (plain case classes).
-  private given CanEqual[ujson.Value, ujson.Value] = CanEqual.derived
-
   private val Version = 1
 
   // -- encoding ----------------------------------------------------------------------------
@@ -122,36 +119,35 @@ object LayoutCodec:
 
   // -- decoding ----------------------------------------------------------------------------
 
+  /** A JSON value that is not `null`. ujson's AST has no `CanEqual`, so null is tested by shape. */
+  private def present(v: ujson.Value): Option[ujson.Value] = if v.isNull then None else Some(v)
+
   def decode(v: ujson.Value, types: PaneTypes): Either[LoadError, LayoutState] =
     try
       val version = v("version").num.toInt
       if version > Version then
         throw IllegalArgumentException(s"layout format version $version is newer than $Version")
-      val root = v("root") match
-        case ujson.Null => None
-        case node       => Some(decodeNode(node, types))
+      val root = present(v("root")).map(decodeNode(_, types))
       val floating = v.obj.get("floating").map(_.arr.toVector).getOrElse(Vector.empty).map: f =>
         Floating(
           WindowId(f("window").str),
           decodeRect(f("bounds")),
           decodeNode(f("root"), types),
-          f("home") match
-            case ujson.Null => None
-            case h =>
-              Some(Anchor(
-                NodeId(h("sibling").str),
-                parseEdge(h("edge").str),
-                parseSize(h("size").str),
-                parseSize(h("siblingSize").str),
-                h.obj.get("minPx").map(_.num).getOrElse(0.0)
-              ))
+          present(f("home")).map: h =>
+            Anchor(
+              NodeId(h("sibling").str),
+              parseEdge(h("edge").str),
+              parseSize(h("size").str),
+              parseSize(h("siblingSize").str),
+              h.obj.get("minPx").map(_.num).getOrElse(0.0)
+            )
         )
-      val maximized = v.obj.get("maximized").filter(_ != ujson.Null).map(m => NodeId(m.str))
+      val maximized = v.obj.get("maximized").flatMap(present).map(m => NodeId(m.str))
       val minimized = v.obj
         .get("minimized")
         .map(_.arr.iterator.map(m => NodeId(m.str)).toSet)
         .getOrElse(Set.empty)
-      val focused = v.obj.get("focused").filter(_ != ujson.Null).map(f => PaneId(f.str))
+      val focused = v.obj.get("focused").flatMap(present).map(f => PaneId(f.str))
       val state =
         edit.canonical(LayoutState(root, floating, maximized, minimized, focused))
       requireUniqueIds(state)

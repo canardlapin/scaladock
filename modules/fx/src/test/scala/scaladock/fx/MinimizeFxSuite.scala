@@ -51,11 +51,13 @@ final class MinimizeFxSuite extends FunSuite:
       dock.view.layout()
       assertEqualsDouble(gv.getHeight, sizing.stripPx(dock.settings), 1.0)
       assert(dock.state.minimized(console.id))
+      assert(!consoleNode.getParent.isVisible, "Minimized content remains rendered and pickable")
 
       dock.unminimize(console.id)
       dock.view.layout()
       assertEqualsDouble(gv.getHeight, heightBefore, 1.0) // the 200px came back exactly
       assert(dock.nodeOf(console.tabs.head.id).get eq consoleNode, "pane node never rebuilt")
+      assert(consoleNode.getParent.isVisible, "Restored content remained hidden")
 
   test("a group minimized inside a row shows the sideways strip; clicking it restores"):
     onFx:

@@ -138,7 +138,7 @@ object edit:
       target: NodeId,
       incoming: Cell,
       edge: Edge,
-      targetSize: Option[Size] = None
+      targetSize: Size
   ): LayoutState =
     parentOf(s, target) match
       case Some((sp, i)) if sp.axis == edge.axis =>
@@ -149,7 +149,7 @@ object edit:
           case other => other
       case _ =>
         rewriteNode(s, target): old =>
-          val oldCell = Cell(old, targetSize.getOrElse(Size.Fr(1)))
+          val oldCell = Cell(old, targetSize)
           val pair =
             if edge.leading then Vector(incoming, oldCell) else Vector(oldCell, incoming)
           Node.Split(NodeId.fresh(), edge.axis, pair)
@@ -353,7 +353,7 @@ object edit:
               a.sibling,
               Cell(fl.root, a.size, a.minPx),
               a.edge,
-              targetSize = Some(a.siblingSize)
+              targetSize = a.siblingSize
             )
         canonical(anchored.getOrElse(
           without.copy(root = Some(dockAtEdge(without.root, fl.root, Edge.Right)))

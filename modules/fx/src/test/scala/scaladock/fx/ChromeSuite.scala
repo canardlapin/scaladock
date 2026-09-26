@@ -78,6 +78,44 @@ final class ChromeSuite extends FunSuite:
     Event.fireEvent(target, release)
   end click
 
+  test("pressing a tab that moves focus restyles it in place: the pressed node is never replaced"):
+    // A drag gesture belongs to the node that received the press. If focusing rebuilt the tab
+    // strip, the pressed tab would leave the scene and the platform could route the rest of the
+    // gesture elsewhere (seen as a drag that dies after its first step).
+    onFx:
+      val dock = dockWith(
+        LayoutState.of(
+          row(
+            group(TxtPane(Txt("a")).titled("a")),
+            group(TxtPane(Txt("b")).titled("b"), TxtPane(Txt("c")).titled("c"))
+          )
+        )
+      )
+      val a = dock.state.panes.find(_.title == "a").get
+      dock.focus(a.id)
+      val right  = dock.state.groups.last.id
+      val gv     = groupViewOf(dock, right)
+      val before = gv.lookupAll(".dock-tab").toArray.map(_.asInstanceOf[javafx.scene.Node]).toVector
+      click(before(1)) // "c": focuses it, activating its tab and moving focus across groups
+
+      val c = dock.state.panes.find(_.title == "c").get
+      assertEquals(dock.state.focused, Some(c.id))
+      val after = gv.lookupAll(".dock-tab").toArray.map(_.asInstanceOf[javafx.scene.Node]).toVector
+      assertEquals(after.length, 2)
+      assert(after.zip(before).forall(_ eq _), "tab nodes must survive a focus change")
+      assert(before(1).getScene != null, "the pressed tab is still in the scene")
+
+  test("a strip whose tabs fit is not clipped short: tabs slid aside by a drop slot stay visible"):
+    onFx:
+      val dock = dockWith(
+        LayoutState.of(group(TxtPane(Txt("a")).titled("a"), TxtPane(Txt("b")).titled("b")))
+      )
+      val gv = groupViewOf(dock, dock.state.groups.head.id)
+      dock.view.applyCss(); dock.view.layout()
+      val viewport = gv.lookup(".dock-tabs-viewport").asInstanceOf[javafx.scene.layout.Region]
+      val clip     = viewport.getClip.getLayoutBounds
+      assertEqualsDouble(clip.getWidth, viewport.getWidth, 0.5)
+
   test("the tab close glyph closes exactly that pane"):
     onFx:
       val dock = dockWith(
@@ -86,7 +124,7 @@ final class ChromeSuite extends FunSuite:
       val a     = dock.state.panes.find(_.title == "a").get
       val gid   = dock.state.groups.head.id
       val gv    = groupViewOf(dock, gid)
-      val close = gv.lookupAll(".dock-tab-close").toArray.head.asInstanceOf[Label]
+      val close = gv.lookupAll(".dock-tab-close").toArray.head.asInstanceOf[javafx.scene.Node]
 
       click(close)
       assertEquals(dock.state.panes.map(_.title), Vector("b"))
@@ -169,7 +207,9 @@ final class ChromeSuite extends FunSuite:
       val menu = gv.lookupAll(".dock-tab-overflow").toArray.head
         .asInstanceOf[javafx.scene.control.MenuButton]
       assert(menu.isVisible, "12 long tabs in 1000px must overflow")
-      assertEquals(menu.getItems.size, 12)
+      val tabEntries =
+        menu.getItems.toArray.count(_.isInstanceOf[javafx.scene.control.CheckMenuItem])
+      assertEquals(tabEntries, 12, "the menu lists every tab")
 
       // now with a single short tab the menu hides
       val dock2 = dockWith(LayoutState.of(group(TxtPane(Txt("only")).titled("only"))))

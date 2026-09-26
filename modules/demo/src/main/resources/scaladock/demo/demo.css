@@ -1,0 +1,768 @@
+/* scaladock imaging demo.
+
+   Every UI colour below is a dock variable (-dock-*) or derived from one with ladder(), so the
+   app follows the dock between dark and light. Two deliberate exceptions, both data rather than
+   chrome: the image block inside each viewer (black in either theme, like every clinical viewer)
+   and the layer swatches, which show the colormaps actually drawn in the image. */
+
+/* -- shared vocabulary ------------------------------------------------------------------------ */
+
+.demo-shell, .demo-pane, .demo-icon-box {
+  -demo-warn: ladder(-dock-base, #e3b341 49%, #a86a00 50%);
+  -demo-ok: ladder(-dock-base, #6cc387 49%, #23864a 50%);
+  -demo-subtle: ladder(-dock-base, #ffffff08 49%, #00000006 50%);
+}
+
+.demo-shell, .demo-pane {
+  -fx-base: -dock-surface;
+  -fx-background: -dock-base;
+  -fx-control-inner-background: -dock-base;
+  -fx-accent: -dock-accent;
+  -fx-selection-bar: -dock-accent-soft;
+  -fx-selection-bar-non-focused: -dock-accent-soft;
+  -fx-focus-color: transparent;
+  -fx-faint-focus-color: transparent;
+  -fx-font-size: 12.5px;
+}
+
+.demo-shell {
+  -fx-background-color: -dock-base;
+}
+
+.demo-pane {
+  -fx-background-color: -dock-base;
+}
+
+.mono {
+  -fx-font-size: 12px;
+}
+
+/* -- icons: one outline family, 1.25px strokes like the dock's own glyphs -------------------- */
+
+.demo-icon {
+  -fx-fill: transparent;
+  -fx-stroke: -dock-text;
+  -fx-stroke-width: 1.25;
+  -fx-stroke-line-cap: round;
+  -fx-stroke-line-join: round;
+}
+
+.dock-tab:selected .demo-icon {
+  -fx-stroke: -dock-text-strong;
+}
+
+.demo-icon-nifti,
+.demo-icon-info {
+  -fx-stroke: -dock-accent;
+}
+
+.demo-icon-json,
+.demo-icon-warning {
+  -fx-stroke: -demo-warn;
+}
+
+.demo-icon-tsv {
+  -fx-stroke: -demo-ok;
+}
+
+.demo-icon-folder {
+  -fx-opacity: 0.9;
+}
+
+/* dots have no outline */
+.demo-icon-grip {
+  -fx-fill: -dock-text;
+  -fx-stroke: transparent;
+}
+
+.brand-tile {
+  -fx-fill: -dock-text;
+}
+
+.brand-tile-accent {
+  -fx-fill: -dock-accent;
+}
+
+/* -- app bar -------------------------------------------------------------------------------- */
+
+.app-bar {
+  -fx-background-color: -dock-surface;
+  -fx-border-color: transparent transparent -dock-outline transparent;
+  -fx-border-width: 0 0 1 0;
+  -fx-padding: 0 8 0 8;
+  -fx-spacing: 4;
+  -fx-alignment: center-left;
+  -fx-min-height: 36;
+  -fx-pref-height: 36;
+  -fx-max-height: 36;
+}
+
+.wordmark {
+  -fx-spacing: 8;
+  -fx-padding: 0 16 0 8;
+}
+
+.brand-name {
+  -fx-text-fill: -dock-text-strong;
+  -fx-font-size: 13px;
+  -fx-font-weight: bold;
+}
+
+.brand-sub {
+  -fx-text-fill: -dock-text;
+  -fx-font-size: 12px;
+}
+
+.app-sep {
+  -fx-background-color: -dock-outline;
+  -fx-min-width: 1;
+  -fx-pref-width: 1;
+  -fx-max-width: 1;
+  -fx-pref-height: 16;
+  -fx-max-height: 16;
+}
+
+.app-button {
+  -fx-background-color: transparent;
+  -fx-background-insets: 0;
+  -fx-background-radius: 5;
+  -fx-border-width: 0;
+  -fx-padding: 4 8 4 8;
+  -fx-text-fill: -dock-text-strong;
+  -fx-font-size: 13px; /* one size with the wordmark: one baseline across the bar */
+  -fx-graphic-text-gap: 6;
+}
+
+.app-button:hover {
+  -fx-background-color: -dock-hover;
+}
+
+.app-button:armed {
+  -fx-background-color: -dock-pressed;
+}
+
+.app-button-primary {
+  -fx-background-color: -dock-accent;
+  -fx-text-fill: #ffffff; /* text on accent: white in both themes */
+}
+
+.app-button-primary .demo-icon {
+  -fx-stroke: #ffffff;
+}
+
+.app-button-primary:hover {
+  -fx-background-color: derive(-dock-accent, 12%);
+}
+
+.app-button-primary:armed {
+  -fx-background-color: derive(-dock-accent, -12%);
+}
+
+.app-button-secondary {
+  -fx-border-color: -dock-outline;
+  -fx-border-width: 1;
+  -fx-border-radius: 5;
+}
+
+.palette-chip {
+  -fx-background-color: -dock-base;
+  -fx-background-radius: 6;
+  -fx-border-color: -dock-outline;
+  -fx-border-radius: 6;
+  -fx-border-width: 1;
+  -fx-padding: 3 8 3 4;
+  -fx-spacing: 4;
+  -fx-alignment: center-left;
+  -fx-cursor: open-hand;
+}
+
+.palette-chip:hover {
+  -fx-border-color: -dock-accent;
+}
+
+.palette-chip:pressed {
+  -fx-cursor: closed-hand;
+  -fx-background-color: -dock-pressed;
+}
+
+.chip-text {
+  -fx-text-fill: -dock-text-strong;
+  -fx-font-size: 13px;
+}
+
+
+/* -- status bar ----------------------------------------------------------------------------- */
+
+.status-bar {
+  -fx-background-color: -dock-surface;
+  -fx-border-color: -dock-outline transparent transparent transparent;
+  -fx-border-width: 1 0 0 0;
+  -fx-padding: 0 8 0 8;
+  -fx-spacing: 8;
+  -fx-alignment: center-left;
+  -fx-min-height: 24;
+  -fx-pref-height: 24;
+  -fx-max-height: 24;
+}
+
+.status-text {
+  -fx-text-fill: -dock-text;
+  -fx-font-size: 12px;
+  -fx-padding: 0;
+  -fx-alignment: center-left;
+}
+
+.status-ras {
+  -fx-text-fill: -dock-text-strong;
+  -fx-font-size: 11.5px;
+}
+
+/* -- empty state ---------------------------------------------------------------------------- */
+
+.demo-empty-actions {
+  -fx-spacing: 8;
+  -fx-padding: 14 0 0 0;
+}
+
+.status-dot {
+  -fx-fill: -demo-ok;
+}
+
+/* -- pane furniture ------------------------------------------------------------------------- */
+
+.pane-header {
+  -fx-padding: 6 8 6 8;
+  -fx-spacing: 8;
+  -fx-alignment: center-left;
+  -fx-min-height: 28;
+}
+
+.section-title {
+  -fx-text-fill: -dock-text;
+  -fx-font-size: 11px;
+  -fx-font-weight: bold;
+}
+
+.badge {
+  -fx-text-fill: -dock-text;
+  -fx-font-size: 11px;
+  -fx-background-color: -dock-hover;
+  -fx-background-radius: 4;
+  -fx-padding: 1 6 1 6;
+}
+
+.tally {
+  -fx-spacing: 4;
+  -fx-alignment: center-left;
+}
+
+.tally-count {
+  -fx-text-fill: -dock-text-strong;
+  -fx-font-size: 12px;
+}
+
+/* -- controls inside panes: flat, variable-driven ------------------------------------------- */
+
+.demo-pane .tree-view,
+.demo-pane .list-view {
+  -fx-background-color: -dock-base;
+  -fx-background-insets: 0;
+  -fx-border-width: 0;
+  -fx-padding: 0 0 4 0;
+}
+
+.demo-pane .tree-cell,
+.demo-pane .list-cell {
+  -fx-background-color: transparent;
+  -fx-text-fill: -dock-text-strong;
+  -fx-padding: 3 8 3 6;
+  -fx-font-size: 12.5px;
+  -fx-graphic-text-gap: 6;
+}
+
+.demo-pane .tree-cell:filled:hover,
+.demo-pane .list-cell:filled:hover {
+  -fx-background-color: -dock-hover;
+}
+
+.demo-pane .tree-cell:filled:selected,
+.demo-pane .list-cell:filled:selected {
+  -fx-background-color: -dock-accent-soft;
+  -fx-text-fill: -dock-text-strong;
+}
+
+.demo-pane .tree-cell > .tree-disclosure-node {
+  -fx-padding: 4 6 4 4;
+}
+
+.demo-pane .tree-cell > .tree-disclosure-node > .arrow {
+  -fx-background-color: -dock-text;
+  -fx-padding: 3 2 3 2;
+}
+
+.demo-pane .scroll-pane,
+.demo-pane .scroll-pane > .viewport {
+  -fx-background-color: transparent;
+  -fx-background-insets: 0;
+  -fx-padding: 0;
+}
+
+.demo-pane .scroll-bar {
+  -fx-background-color: transparent;
+  -fx-background-insets: 0;
+  -fx-padding: 0;
+}
+
+.demo-pane .scroll-bar:vertical {
+  -fx-pref-width: 9;
+}
+
+.demo-pane .scroll-bar:horizontal {
+  -fx-pref-height: 9;
+}
+
+.demo-pane .scroll-bar > .increment-button,
+.demo-pane .scroll-bar > .decrement-button {
+  -fx-background-color: transparent;
+  -fx-padding: 0;
+}
+
+.demo-pane .scroll-bar > .increment-button > .increment-arrow,
+.demo-pane .scroll-bar > .decrement-button > .decrement-arrow {
+  -fx-padding: 0;
+  -fx-background-color: transparent;
+}
+
+.demo-pane .scroll-bar > .track,
+.demo-pane .scroll-bar > .track-background {
+  -fx-background-color: transparent;
+  -fx-border-color: transparent;
+}
+
+.demo-pane .scroll-bar > .thumb {
+  -fx-background-color: -dock-outline;
+  -fx-background-insets: 2;
+  -fx-background-radius: 4;
+}
+
+.demo-pane .scroll-bar > .thumb:hover,
+.demo-pane .scroll-bar > .thumb:pressed {
+  -fx-background-color: -dock-text;
+}
+
+.demo-pane .corner {
+  -fx-background-color: transparent;
+}
+
+.demo-pane .slider {
+  -fx-padding: 2 0 2 0;
+}
+
+.demo-pane .slider > .track {
+  -fx-background-color: -dock-outline;
+  -fx-background-insets: 0;
+  -fx-background-radius: 2;
+  -fx-padding: 1.5;
+}
+
+.demo-pane .slider > .thumb {
+  -fx-background-color: -dock-text-strong;
+  -fx-background-insets: 0;
+  -fx-background-radius: 6;
+  -fx-padding: 5;
+  -fx-effect: null;
+}
+
+.demo-pane .slider > .thumb:hover,
+.demo-pane .slider > .thumb:pressed {
+  -fx-background-color: -dock-accent;
+}
+
+.demo-pane .text-area {
+  -fx-background-color: -dock-base;
+  -fx-background-insets: 0;
+  -fx-background-radius: 0;
+  -fx-border-width: 0;
+  -fx-padding: 0;
+  -fx-text-fill: -dock-text-strong;
+  -fx-highlight-fill: -dock-accent-soft;
+  -fx-highlight-text-fill: -dock-text-strong;
+  -fx-prompt-text-fill: -dock-text;
+}
+
+.demo-pane .text-area > .scroll-pane > .viewport > .content {
+  -fx-background-color: -dock-base;
+  -fx-padding: 12;
+}
+
+/* -- note: a calm small panel --------------------------------------------------------------- */
+
+.note .text-area {
+  -fx-font-size: 12.5px;
+  -fx-text-fill: -dock-text-strong;
+}
+
+.note .text-area > .scroll-pane > .viewport > .content {
+  -fx-padding: 4 12 12 12;
+}
+
+/* -- viewer: a black image block on the themed surround ----------------------------------- */
+
+.viewer {
+  -fx-background-color: -dock-base;
+  -viewer-text: #d6d9df;
+  -viewer-muted: #858a93;
+}
+
+.viewer-frame {
+  -fx-fill: #000000;
+  -fx-stroke: -dock-outline;
+  -fx-stroke-width: 1;
+}
+
+.viewer-scale {
+  -fx-text-fill: -dock-text;
+  -fx-font-size: 11px;
+}
+
+/* corner annotations sit on a soft backing so the crosshair never runs through their text */
+.viewer-title,
+.viewer-meta,
+.viewer-instance,
+.viewer-orient {
+  -fx-background-color: #0000008c;
+  -fx-background-radius: 3;
+  -fx-padding: 2 4 2 4;
+}
+
+.viewer-title {
+  -fx-text-fill: -viewer-text;
+  -fx-font-size: 12px;
+}
+
+.viewer-meta {
+  -fx-text-fill: -viewer-muted;
+  -fx-font-size: 11.5px;
+}
+
+.viewer-orient {
+  -fx-text-fill: -dock-accent;
+  -fx-font-size: 11px;
+  -fx-font-weight: bold;
+  -fx-opacity: 0.9;
+}
+
+.viewer-instance {
+  -fx-text-fill: -viewer-muted;
+  -fx-font-size: 11px;
+  -fx-opacity: 0.6;
+}
+
+.viewer-crosshair {
+  -fx-stroke: -dock-accent;
+  -fx-stroke-width: 1;
+  -fx-opacity: 0.85;
+}
+
+.viewer-bar-frame {
+  -fx-fill: transparent;
+  -fx-stroke: -dock-outline;
+  -fx-stroke-width: 1;
+}
+
+/* -- explorer ------------------------------------------------------------------------------- */
+
+.explorer .tree-cell {
+  -fx-padding: 2 8 2 2;
+}
+
+/* -- console -------------------------------------------------------------------------------- */
+
+.console .mono {
+  -fx-font-size: 11.5px;
+}
+
+.console-lines {
+  -fx-padding: 8 8 8 8;
+  -fx-spacing: 2;
+}
+
+.console-fade {
+  -fx-background-color: linear-gradient(to bottom, -dock-base, transparent);
+  -fx-min-height: 14;
+  -fx-pref-height: 14;
+  -fx-max-height: 14;
+}
+
+.console-line {
+  -fx-spacing: 12;
+  -fx-alignment: center-left;
+}
+
+.console-ts {
+  -fx-text-fill: -dock-text;
+  -fx-opacity: 0.7;
+}
+
+.console-level {
+  -fx-min-width: 34;
+  -fx-font-weight: bold;
+}
+
+.level-info {
+  -fx-text-fill: -dock-text;
+}
+
+.level-warn {
+  -fx-text-fill: -demo-warn;
+}
+
+.level-ok {
+  -fx-text-fill: -demo-ok;
+}
+
+.console-msg {
+  -fx-text-fill: -dock-text-strong;
+}
+
+.console-prompt-line {
+  -fx-spacing: 6;
+  -fx-padding: 4 0 0 0;
+}
+
+.console-prompt {
+  -fx-text-fill: -dock-accent;
+}
+
+.console-caret {
+  -fx-background-color: -dock-text-strong;
+  -fx-min-width: 7;
+  -fx-pref-width: 7;
+  -fx-max-width: 7;
+  -fx-min-height: 14;
+  -fx-pref-height: 14;
+  -fx-max-height: 14;
+}
+
+/* -- problems ------------------------------------------------------------------------------- */
+
+.problem-row {
+  -fx-spacing: 8;
+}
+
+.problem-msg {
+  -fx-text-fill: -dock-text-strong;
+}
+
+.problem-loc {
+  -fx-text-fill: -dock-text;
+  -fx-font-size: 11.5px;
+}
+
+.problems .list-cell {
+  -fx-padding: 4 8 4 8;
+}
+
+/* -- layers --------------------------------------------------------------------------------- */
+
+.layer-row {
+  -fx-padding: 8 8 8 8;
+  -fx-spacing: 4;
+  -fx-border-color: transparent transparent -demo-subtle transparent;
+  -fx-border-width: 0 0 1 0;
+}
+
+.layer-row:hover {
+  -fx-background-color: -dock-hover;
+}
+
+.layer-row:selected {
+  -fx-background-color: -dock-accent-soft;
+}
+
+.layer-top {
+  -fx-spacing: 8;
+  -fx-alignment: center-left;
+}
+
+.layer-slider-row {
+  -fx-padding: 0 0 0 50; /* eye 20 + 8 + swatch 14 + 8: the slider starts under the name */
+  -fx-alignment: center-left;
+}
+
+.layer-eye {
+  -fx-background-color: transparent;
+  -fx-background-radius: 4;
+  -fx-background-insets: 0;
+  -fx-border-width: 0;
+  -fx-padding: 2;
+}
+
+.layer-eye:hover {
+  -fx-background-color: -dock-hover;
+}
+
+.layer-eye .demo-icon {
+  -fx-stroke: -dock-text;
+  -fx-opacity: 0.45;
+}
+
+.layer-eye:selected .demo-icon {
+  -fx-stroke: -dock-text-strong;
+  -fx-opacity: 1;
+}
+
+.layer-swatch {
+  -fx-min-width: 14;
+  -fx-pref-width: 14;
+  -fx-max-width: 14;
+  -fx-min-height: 14;
+  -fx-pref-height: 14;
+  -fx-max-height: 14;
+  -fx-background-radius: 3;
+  -fx-border-color: -dock-outline;
+  -fx-border-radius: 3;
+  -fx-border-width: 1;
+}
+
+.layer-swatch-gray {
+  -fx-background-color: linear-gradient(to right, #000000, #ffffff);
+}
+
+.layer-swatch-hot {
+  -fx-background-color: linear-gradient(to right, #8a0000, #ff3000, #ffc800, #ffffd8);
+}
+
+.layer-swatch-atlas {
+  -fx-background-color: #36c2c2;
+}
+
+.layer-name {
+  -fx-text-fill: -dock-text-strong;
+  -fx-font-size: 12.5px;
+}
+
+.layer-row:hidden-layer .layer-name {
+  -fx-text-fill: -dock-text;
+}
+
+.layer-row:hidden-layer .layer-swatch {
+  -fx-opacity: 0.4;
+}
+
+.layer-detail {
+  -fx-text-fill: -dock-text;
+  -fx-font-size: 11px;
+}
+
+.layer-pct {
+  -fx-text-fill: -dock-text;
+  -fx-min-width: 36;
+  -fx-alignment: center-right;
+}
+
+/* -- note tool panels (Metadata, Histogram, Atlas, ROIs, Colormap) -------------------------- */
+
+.kv-grid {
+  -fx-padding: 0 8 8 8;
+  -fx-hgap: 16;
+  -fx-vgap: 4;
+}
+
+.kv-key {
+  -fx-text-fill: -dock-text;
+  -fx-font-size: 12px;
+}
+
+.kv-value {
+  -fx-text-fill: -dock-text-strong;
+  -fx-font-size: 11.5px;
+}
+
+.hist {
+  -fx-padding: 0 8 8 8;
+  -fx-spacing: 4;
+}
+
+.hist-bar {
+  -fx-fill: -dock-accent;
+  -fx-opacity: 0.85;
+}
+
+.hist-baseline {
+  -fx-stroke: -dock-outline;
+  -fx-stroke-width: 1;
+}
+
+.hist-tick {
+  -fx-text-fill: -dock-text;
+  -fx-font-size: 11px;
+}
+
+.hist-stats {
+  -fx-padding: 4 0 0 0;
+}
+
+.list-rows {
+  -fx-padding: 0 0 8 0;
+}
+
+.list-row {
+  -fx-padding: 4 8 4 8;
+  -fx-spacing: 8;
+}
+
+.list-row:hover {
+  -fx-background-color: -dock-hover;
+}
+
+.list-row:selected {
+  -fx-background-color: -dock-accent-soft;
+}
+
+.list-caption {
+  -fx-padding: 0 8 4 8;
+  -fx-spacing: 8;
+}
+
+.list-name {
+  -fx-text-fill: -dock-text-strong;
+  -fx-font-size: 12.5px;
+}
+
+.list-meta {
+  -fx-text-fill: -dock-text;
+  -fx-font-size: 11.5px;
+}
+
+.list-value {
+  -fx-text-fill: -dock-text-strong;
+  -fx-font-size: 11.5px;
+}
+
+/* colormap previews are data: they show the lookup tables themselves */
+.cmap-strip {
+  -fx-min-height: 10;
+  -fx-pref-height: 10;
+  -fx-max-height: 10;
+  -fx-background-radius: 2;
+  -fx-border-color: -dock-outline;
+  -fx-border-radius: 2;
+  -fx-border-width: 1;
+}
+
+.cmap-hot {
+  -fx-background-color: linear-gradient(to right, #000000, #8a0000, #ff3000, #ffc800, #ffffff);
+}
+
+.cmap-viridis {
+  -fx-background-color: linear-gradient(to right, #440154, #3b528b, #21918c, #5ec962, #fde725);
+}
+
+.cmap-gray {
+  -fx-background-color: linear-gradient(to right, #000000, #ffffff);
+}
+
+.cmap-cool-warm {
+  -fx-background-color: linear-gradient(to right, #3b4cc0, #aac7fd, #dddddd, #f7b89c, #b40426);
+}

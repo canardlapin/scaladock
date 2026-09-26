@@ -13,8 +13,21 @@ trait PaneView[S]:
   /** The pane's current state, pulled at save time (golden-layout's stateRequestEvent, typed). */
   def snapshot(): S
 
+  /** Prepare for an admitted close, on JavaFX. Keep edits frozen until disposal or closeCancelled.
+    * False or a failed future keeps the pane open. Default panes close immediately.
+    */
+  def prepareClose(): scala.concurrent.Future[Boolean] = scala.concurrent.Future.successful(true)
+
+  /** A prepared close was vetoed or invalidated; restore interaction. Called on JavaFX. */
+  def closeCancelled(): Unit = ()
+
   /** Release resources when the pane leaves the layout for good. */
   def dispose(): Unit = ()
+
+  /** A small (16px) glyph for this pane's tab, minimised strip and drag chip. Chrome is rebuilt
+    * freely, so return a fresh node on every call; `None` (the default) shows no icon.
+    */
+  def icon(): Option[javafx.scene.Node] = None
 
 /** What the layout hands a pane author at construction: identity, chrome control, lifecycle. */
 trait PaneContext[S]:
@@ -93,5 +106,5 @@ private[fx] final class UntypedPaneContext(
     def paneId: PaneId                = id
     def setTitle(title: String): Unit = dock.update(edit.retitle(_, id, title))
     def focus(): Unit                 = dock.update(edit.focus(_, id))
-    def close(): Unit                 = dock.update(edit.close(_, id))
+    def close(): Unit                 = dock.close(id)
     def signals: Events[PaneSignal]   = topic

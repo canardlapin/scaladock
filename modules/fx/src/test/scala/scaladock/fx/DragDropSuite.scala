@@ -139,6 +139,49 @@ final class DragDropSuite extends FunSuite:
         assertEquals(dock.state.groupOf(bId).map(_.id), Some(tabsNow.id))
       finally stage.close()
 
+  test("a window's lone tab dropped on that window's own edge changes nothing"):
+    // the pane is not detached at drag start, so its window stays a drop surface; edit.drop
+    // would dissolve the lone group (and, for a floating window, the window) and re-dock the
+    // pane elsewhere under a fresh group id: the gesture must be recognised as a no-op
+    onFx:
+      val (dock, stage) = staged(LayoutState.of(group(TxtPane(Txt("solo")).titled("solo"))))
+      try
+        val before = dock.state
+        val gid    = before.groups.head.id
+        val tab    = tabOf(dock, gid, 0)
+        val origin = tab.localToScreen(5, 5)
+        val edge   = dock.view.localToScreen(10, 400) // inside the left window-edge band
+        dragFromTo(tab, (origin.getX, origin.getY), (edge.getX, edge.getY))
+        assertEquals(dock.state.groups.map(_.id), Vector(gid), "the group keeps its identity")
+        assertEquals(dock.state.root, before.root)
+      finally stage.close()
+
+  test("reordering within a group lands at the index shown, accounting for the tab's own removal"):
+    onFx:
+      val (dock, stage) = staged(
+        LayoutState.of(
+          group(
+            TxtPane(Txt("a")).titled("a"),
+            TxtPane(Txt("b")).titled("b"),
+            TxtPane(Txt("c")).titled("c")
+          )
+        )
+      )
+      try
+        val gid    = dock.state.groups.head.id
+        val first  = tabOf(dock, gid, 0)
+        val last   = tabOf(dock, gid, 2)
+        val origin = first.localToScreen(5, 5)
+        // just past the last tab's midpoint: insert after "c"
+        val lb = last.localToScreen(last.getLayoutBounds)
+        dragFromTo(
+          first,
+          (origin.getX, origin.getY),
+          (lb.getMaxX - 2, lb.getMinY + lb.getHeight / 2)
+        )
+        assertEquals(dock.state.groups.head.tabs.map(_.title), Vector("b", "c", "a"))
+      finally stage.close()
+
   test("a drag source fabricates a pane on drop and nothing on a miss"):
     onFx:
       val (dock, stage) = staged(LayoutState.of(group(TxtPane(Txt("home")).titled("home"))))

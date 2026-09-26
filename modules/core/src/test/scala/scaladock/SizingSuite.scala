@@ -73,9 +73,10 @@ final class SizingSuite extends ScalaCheckSuite:
     // regime allocation rescales proportionally and a commit is best-effort (golden-layout
     // never leaves the regime at all — it has no px sizes). Min pressure is likewise excluded
     // here; it is exercised by its own tests.
+    val dividerPx    = LayoutSettings.default.dividerPx
     val minFreeCells = cellsGen.filter(_.length >= 2).map(_.map(_.copy(minPx = 0)))
     forAll(minFreeCells, spanGen, Gen.choose(0.0, 1.0)) { (cells, span, f) =>
-      val available = math.max(0.0, span - (cells.length - 1) * 5.0)
+      val available = math.max(0.0, span - (cells.length - 1) * dividerPx)
       val claims = cells.map: c =>
         c.size match
           case Size.Px(v)  => math.max(0.0, v)
@@ -87,11 +88,11 @@ final class SizingSuite extends ScalaCheckSuite:
           case _          => false
       )
       (hasFr && claims.sum <= available) ==> {
-        val before = sizing.allocate(cells, span, 5.0)
+        val before = sizing.allocate(cells, span, dividerPx)
         val after = sizing.allocate(
           sizing.commitDivider(cells, Axis.Horizontal, 0, f, span, LayoutSettings.default),
           span,
-          5.0
+          dividerPx
         )
         assertEqualsDouble(after(0) + after(1), before(0) + before(1), 1e-3)
         true
@@ -134,6 +135,18 @@ final class SizingSuite extends ScalaCheckSuite:
         assert(gg.bounds.bottom <= viewport.bottom + eps)
       true
     }
+
+  test("default metrics: a hairline 1px divider and a 32px header"):
+    assertEquals(LayoutSettings.default.dividerPx, 1.0)
+    assertEquals(LayoutSettings.default.headerPx, 32.0)
+    val pair = Vector(Cell(Node.solo(doc("a"))), Cell(Node.solo(doc("b"))))
+    val s    = edit.canonical(LayoutState.of(Node.Split(NodeId.fresh(), Axis.Horizontal, pair)))
+    val geom = sizing.geometry(s.root, Rect(0, 0, 801, 600), LayoutSettings.default)
+    assertEquals(geom.dividers.map(_.bounds.width), Vector(1.0))
+    geom.groups.values.foreach: gg =>
+      assertEqualsDouble(gg.bounds.width, 400.0, eps)
+      assertEqualsDouble(gg.header.height, 32.0, eps)
+      assertEqualsDouble(gg.content.height, 600.0 - 32.0, eps)
 
   property("hitTest picks the smallest containing hover area"):
     forAll(stateGen, Gen.choose(0.0, 800.0), Gen.choose(0.0, 600.0)) { (s, px, py) =>

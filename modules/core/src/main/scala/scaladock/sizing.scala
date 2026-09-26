@@ -2,8 +2,8 @@ package scaladock
 
 /** Metrics the pure layout math needs; the rendering layer styles everything else. */
 final case class LayoutSettings(
-    dividerPx: Double = 5,
-    headerPx: Double = 28,
+    dividerPx: Double = 1,
+    headerPx: Double = 32,
     edgeBandPx: Double = 50,
     defaultMinPanePx: Double = 40
 ) derives CanEqual

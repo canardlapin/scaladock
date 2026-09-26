@@ -1,12 +1,19 @@
 /* scaladock light theme: only the variables change; structure lives in dock.css. */
 
 .dock {
-  -dock-base: #f7f8fa;
-  -dock-surface: #ececee;
-  -dock-surface-veil: #ececeeee;
-  -dock-outline: #d5d7db;
-  -dock-accent: #2f6fe4;
-  -dock-accent-soft: #2f6fe44d;
-  -dock-text: #5a5e66;
-  -dock-text-strong: #1c1e22;
+  -dock-base: #ffffff;
+  -dock-surface: #f7f8fa;
+  -dock-surface-raised: #ffffff;
+  -dock-surface-veil: #f7f8faee;
+  -dock-outline: #e4e6eb;
+  -dock-accent: #3574f0;
+  -dock-accent-soft: #3574f033;
+  -dock-text: #6c707e;
+  -dock-text-strong: #1e1f22;
+  -dock-hover: #0000000d;
+  -dock-pressed: #00000017;
+  -dock-shadow: #0000003d;
+  -dock-selected-bar: #c4c7cf;
+  -dock-drop-scrim: #00000012;
+  -dock-slot-fill: #3574f01a;
 }

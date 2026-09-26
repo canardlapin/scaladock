@@ -6,113 +6,382 @@
    .dock-layout — defining the variables here is what lets it theme). */
 
 .dock {
-  -dock-base: #1e1f22;
-  -dock-surface: #2b2d30;
-  -dock-surface-veil: #2b2d30ee; /* ghost backdrop: surface, slightly translucent */
-  -dock-outline: #393b40;
+  -dock-base: #1e1f22;           /* content background */
+  -dock-surface: #2b2d30;        /* header and chrome */
+  -dock-surface-raised: #2b2d30; /* menus, tooltips, drag chip */
+  -dock-surface-veil: #2b2d30ee; /* legacy alias: translucent surface */
+  -dock-outline: #393b40;        /* hairlines */
   -dock-accent: #3574f0;
-  -dock-accent-soft: #3574f04d; /* accent at ~30%: drop-zone highlight fill */
-  -dock-text: #9da0a8;
-  -dock-text-strong: #dfe1e5;
+  -dock-accent-soft: #3574f04d;  /* drop-zone fill */
+  -dock-text: #8c8f94;           /* chrome text, icons */
+  -dock-text-strong: #dfe1e5;    /* selected / hovered chrome text */
+  -dock-hover: #ffffff12;        /* hover wash */
+  -dock-pressed: #ffffff1f;
+  -dock-shadow: #00000080;
+  -dock-selected-bar: #5a5d63;   /* selected tab of an unfocused group */
+  -dock-drop-scrim: #00000024;   /* neutral veil under the drop tint */
+  -dock-slot-fill: #3574f01f;    /* header-drop slot: a light accent tint */
 }
 
+/* ---- layout and groups ------------------------------------------------------------------ */
+
 .dock-layout {
-  -fx-background-color: -dock-base;
+  -fx-background-color: -dock-outline; /* shows through the 1px dividers as hairlines */
 }
 
 .dock-group {
-  -fx-background-color: -dock-surface;
-  -fx-border-color: -dock-outline;
-  -fx-border-width: 1;
-}
-
-.dock-group:active {
-  -fx-border-color: -dock-accent;
-}
-
-.dock-header {
-  -fx-background-color: -dock-surface;
-  -fx-alignment: center-left;
-}
-
-.dock-tab {
-  -fx-padding: 4 10 4 12;
-  -fx-spacing: 6;
-  -fx-alignment: center-left;
-}
-
-.dock-tab-title {
-  -fx-text-fill: -dock-text;
-}
-
-.dock-tab:selected {
   -fx-background-color: -dock-base;
-}
-
-.dock-tab:selected .dock-tab-title {
-  -fx-text-fill: -dock-text-strong;
-}
-
-.dock-tab-close {
-  -fx-text-fill: -dock-text;
-  -fx-font-size: 9;
-  -fx-padding: 0 2 0 2;
-}
-
-.dock-tab-close:hover {
-  -fx-text-fill: -dock-text-strong;
-}
-
-.dock-header-buttons {
-  -fx-alignment: center-right;
-  -fx-padding: 0 6 0 6;
-  -fx-spacing: 8;
-}
-
-.dock-header-button {
-  -fx-text-fill: -dock-text;
-  -fx-font-size: 11;
-}
-
-.dock-header-button:hover {
-  -fx-text-fill: -dock-text-strong;
-}
-
-.dock-tab-overflow {
-  -fx-background-color: transparent;
-  -fx-text-fill: -dock-text;
-  -fx-padding: 0 4 0 4;
-}
-
-.dock-tab-overflow > .arrow-button {
-  -fx-padding: 0;
-}
-
-.dock-tab-overflow > .arrow-button > .arrow {
-  -fx-background-color: transparent;
 }
 
 .dock-content {
   -fx-background-color: -dock-base;
 }
 
-.dock-divider {
-  -fx-background-color: -dock-base;
+/* ---- header and tabs -------------------------------------------------------------------- */
+
+.dock-header {
+  -fx-background-color: -dock-outline, -dock-surface;
+  -fx-background-insets: 0, 0 0 1 0; /* hairline under the strip; the selected tab covers it */
 }
+
+.dock-tab {
+  -fx-padding: 0 4 0 10;
+  -fx-spacing: 6;
+  -fx-alignment: center-left;
+  -fx-background-color: transparent;
+}
+
+.dock-tab-title {
+  -fx-text-fill: -dock-text;
+  -fx-font-size: 12.5px;
+}
+
+.dock-tab:hover {
+  -fx-background-color: -dock-hover;
+}
+
+.dock-tab:hover .dock-tab-title {
+  -fx-text-fill: -dock-text-strong;
+}
+
+.dock-tab:selected {
+  -fx-background-color: -dock-selected-bar, -dock-base;
+  -fx-background-insets: 0, 2 0 0 0;
+}
+
+.dock-tab:selected .dock-tab-title {
+  -fx-text-fill: -dock-text-strong;
+}
+
+/* the focused group's selected tab carries the accent: one glance says where input goes */
+.dock-group:active .dock-tab:selected {
+  -fx-background-color: -dock-accent, -dock-base;
+  -fx-background-insets: 0, 2 0 0 0;
+}
+
+.dock-tab:dragging {
+  -fx-opacity: 0.4;
+}
+
+.dock-tab-icon {
+  -fx-min-width: 16px; -fx-pref-width: 16px; -fx-max-width: 16px;
+  -fx-min-height: 16px; -fx-pref-height: 16px; -fx-max-height: 16px;
+  -fx-opacity: 0.85;
+}
+
+.dock-tab:selected .dock-tab-icon, .dock-tab:hover .dock-tab-icon {
+  -fx-opacity: 1;
+}
+
+/* close: always present for layout stability, visible on the selected or hovered tab */
+.dock-tab-close {
+  -fx-min-width: 18px; -fx-pref-width: 18px; -fx-max-width: 18px;
+  -fx-min-height: 18px; -fx-pref-height: 18px; -fx-max-height: 18px;
+  -fx-background-radius: 4px;
+  -fx-opacity: 0;
+}
+
+.dock-tab:selected .dock-tab-close, .dock-tab:hover .dock-tab-close {
+  -fx-opacity: 1;
+}
+
+.dock-tab-close:hover {
+  -fx-background-color: -dock-pressed;
+}
+
+.dock-tab-close:hover .dock-icon {
+  -fx-background-color: -dock-text-strong;
+}
+
+/* ---- header buttons: present on the active or hovered group only ------------------------- */
+
+.dock-header-buttons {
+  -fx-alignment: center-right;
+  -fx-padding: 0 6 1 4;
+  -fx-spacing: 2;
+  -fx-opacity: 0;
+}
+
+.dock-group:active .dock-header-buttons, .dock-group:hover .dock-header-buttons {
+  -fx-opacity: 1;
+}
+
+
+
+.dock-header-button {
+  -fx-min-width: 24px; -fx-pref-width: 24px; -fx-max-width: 24px;
+  -fx-min-height: 24px; -fx-pref-height: 24px; -fx-max-height: 24px;
+  -fx-background-radius: 5px;
+  -fx-cursor: hand;
+}
+
+.dock-header-button:hover {
+  -fx-background-color: -dock-hover;
+}
+
+.dock-header-button:pressed {
+  -fx-background-color: -dock-pressed;
+}
+
+.dock-group:maximized .dock-header-button.maximize {
+  -fx-background-color: -dock-accent-soft;
+}
+
+.dock-group:maximized .dock-header-button.maximize .dock-icon {
+  -fx-background-color: -dock-accent;
+}
+
+.dock-header-button:hover .dock-icon {
+  -fx-background-color: -dock-text-strong;
+}
+
+/* ---- overflow chevron and its menu ------------------------------------------------------- */
+
+.dock-tab-overflow {
+  -fx-border-color: transparent transparent transparent -dock-outline; /* separates it from tabs */
+  -fx-border-width: 0 0 0 1;
+  -fx-border-insets: 8 0 8 0;
+  -fx-background-color: transparent;
+  -fx-background-radius: 5px;
+  -fx-padding: 0 7 0 7;
+  -fx-cursor: hand;
+}
+
+.dock-tab-overflow:quiet {
+  -fx-opacity: 0;
+}
+
+.dock-group:active .dock-tab-overflow:quiet, .dock-group:hover .dock-tab-overflow:quiet {
+  -fx-opacity: 1;
+}
+
+/* while a pane is being dragged — or the window is in the background — group actions step
+   back everywhere; the extra .dock-group outranks the :active/:hover rules above */
+.dock-layout:dragging .dock-group .dock-header-buttons,
+.dock-layout:dragging .dock-group .dock-tab-overflow:quiet,
+.dock-layout:inactive .dock-group .dock-header-buttons,
+.dock-layout:inactive .dock-group .dock-tab-overflow:quiet {
+  -fx-opacity: 0;
+}
+
+/* a background window keeps its selection, but not the accent that says "input goes here" */
+.dock-layout:inactive .dock-group:active .dock-tab:selected {
+  -fx-background-color: -dock-selected-bar, -dock-base;
+}
+
+.dock-tab-overflow:hover, .dock-tab-overflow:showing {
+  -fx-background-color: -dock-hover;
+}
+
+.dock-tab-overflow > .label {
+  -fx-padding: 0;
+  -fx-text-fill: -dock-text;
+  -fx-font-size: 11px;
+  -fx-graphic-text-gap: 3;
+  -fx-content-display: right;
+}
+
+
+.dock-tab-overflow > .arrow-button {
+  -fx-padding: 0;
+}
+
+.dock-tab-overflow > .arrow-button > .arrow {
+  -fx-shape: none;
+  -fx-padding: 0;
+  -fx-background-color: transparent;
+}
+
+.dock .context-menu {
+  -fx-background-color: -dock-outline, -dock-surface-raised;
+  -fx-background-insets: 0, 1;
+  -fx-background-radius: 7px, 6px;
+  -fx-padding: 4px;
+  -fx-effect: dropshadow(gaussian, -dock-shadow, 18, 0.1, 0, 6);
+}
+
+.dock .context-menu .menu-item {
+  -fx-background-radius: 4px;
+  -fx-padding: 5 10 5 6;
+}
+
+.dock .context-menu .menu-item .label {
+  -fx-text-fill: -dock-text-strong;
+  -fx-font-size: 12.5px;
+}
+
+.dock .context-menu .menu-item:focused {
+  -fx-background-color: -dock-accent;
+}
+
+.dock .context-menu .menu-item:focused .label {
+  -fx-text-fill: white;
+}
+
+.dock .context-menu .check-menu-item:checked .mark {
+  -fx-background-color: -dock-text-strong;
+}
+
+.dock .tooltip {
+  -fx-background-color: -dock-outline, -dock-surface-raised;
+  -fx-background-insets: 0, 1;
+  -fx-background-radius: 5px, 4px;
+  -fx-text-fill: -dock-text-strong;
+  -fx-font-size: 12px;
+  -fx-padding: 4 8 4 8;
+  -fx-effect: dropshadow(gaussian, -dock-shadow, 10, 0.1, 0, 3);
+}
+
+/* ---- dividers ---------------------------------------------------------------------------- */
+
+.dock-divider {
+  -fx-background-color: -dock-outline;
+}
+
+.dock-divider-sash {
+  -fx-background-color: transparent;
+}
+
+.dock-divider:hot .dock-divider-sash, .dock-divider:dragging .dock-divider-sash {
+  -fx-background-color: -dock-accent;
+}
+
+/* ---- minimised strips -------------------------------------------------------------------- */
 
 .dock-strip {
   -fx-background-color: -dock-surface;
-  -fx-border-color: -dock-outline;
-  -fx-border-width: 1;
   -fx-cursor: hand;
+}
+
+/* the rail holds one stripe button per minimised group: icon above a rotated title */
+.dock-strip-stack {
+  -fx-alignment: top-center;
+  -fx-spacing: 8;
+  -fx-padding: 8 0 10 0;
+  -fx-background-radius: 5px;
+  -fx-background-insets: 4 3 0 3;
+}
+
+.dock-strip:hover .dock-strip-stack {
+  -fx-background-color: -dock-hover;
+}
+
+.dock-strip:pressed .dock-strip-stack {
+  -fx-background-color: -dock-pressed;
 }
 
 .dock-strip-title {
   -fx-text-fill: -dock-text;
+  -fx-font-size: 12.5px;
 }
 
 .dock-strip:hover .dock-strip-title {
   -fx-text-fill: -dock-text-strong;
+}
+
+/* a group minimised inside a column keeps its header as a stripe: no selected fill */
+.dock-group:minimized .dock-tab:selected {
+  -fx-background-color: transparent;
+}
+
+.dock-group:minimized .dock-tab:selected .dock-tab-title {
+  -fx-text-fill: -dock-text;
+}
+
+.dock-group:minimized .dock-header-buttons {
+  -fx-opacity: 1;
+}
+
+.dock-group:minimized .dock-tab-close {
+  -fx-opacity: 0;
+}
+
+/* ---- drag and drop ----------------------------------------------------------------------- */
+
+/* fill only: an outline would cut through whatever text lies under the preview's edge */
+.dock-drop-indicator {
+  -fx-background-color: -dock-accent-soft, -dock-drop-scrim;
+  -fx-background-radius: 6px;
+}
+
+/* a header drop previews as a tab-shaped slot: a light tint with the insertion edge in accent */
+.dock-drop-indicator:slot {
+  -fx-background-color: -dock-accent, -dock-surface, -dock-slot-fill;
+  -fx-background-insets: 0, 0 0 0 2, 0 0 0 2;
+  -fx-background-radius: 0;
+  -fx-border-color: transparent;
+}
+
+.dock-maximized-badge {
+  -fx-text-fill: -dock-text;
+  -fx-background-color: -dock-hover;
+  -fx-background-radius: 9px;
+  -fx-padding: 1 8 1 8;
+  -fx-font-size: 11px;
+  -fx-cursor: hand;
+}
+
+.dock-maximized-badge:hover {
+  -fx-text-fill: -dock-text-strong;
+}
+
+.dock-ghost {
+  -fx-background-color: transparent;
+  -fx-padding: 4 14 18 14; /* room for the shadow */
+}
+
+.dock-ghost-chip {
+  -fx-opacity: 0.88;
+  -fx-background-color: -dock-outline, -dock-surface-raised;
+  -fx-background-insets: 0, 1;
+  -fx-background-radius: 6px, 5px;
+  -fx-padding: 6 12 6 10;
+  -fx-spacing: 7;
+  -fx-alignment: center-left;
+  -fx-effect: dropshadow(gaussian, -dock-shadow, 16, 0.15, 0, 5);
+}
+
+.dock-ghost-title {
+  -fx-text-fill: -dock-text-strong;
+  -fx-font-size: 12.5px;
+}
+
+/* ---- empty window ------------------------------------------------------------------------ */
+
+.dock-empty {
+  -fx-background-color: -dock-base;
+  -fx-spacing: 8;
+}
+
+.dock-empty-title {
+  -fx-text-fill: -dock-text-strong;
+  -fx-font-size: 15px;
+  -fx-padding: 8 0 0 0;
+}
+
+.dock-empty-hint {
+  -fx-text-fill: -dock-text;
+  -fx-font-size: 12.5px;
 }
 
 .dock-unresolved {
@@ -120,21 +389,91 @@
   -fx-alignment: center;
 }
 
-.dock-drop-indicator {
-  -fx-background-color: -dock-accent-soft;
-  -fx-border-color: -dock-accent;
-  -fx-border-width: 1.5;
+/* ---- icons: outlines live here, so a theme can swap any glyph ---------------------------- */
+
+.dock-icon {
+  -fx-background-color: -dock-text;
+  -fx-scale-shape: false;
+  -fx-min-width: 16px; -fx-pref-width: 16px; -fx-max-width: 16px;
+  -fx-min-height: 16px; -fx-pref-height: 16px; -fx-max-height: 16px;
 }
 
-.dock-ghost {
-  -fx-background-color: -dock-surface-veil;
-  -fx-border-color: -dock-accent;
-  -fx-border-width: 1;
-  -fx-padding: 0;
+.dock-icon.close {
+  -fx-shape: "M0.85 0 L4 3.15 L7.15 0 L8 0.85 L4.85 4 L8 7.15 L7.15 8 L4 4.85 L0.85 8 L0 7.15 L3.15 4 L0 0.85 Z";
 }
 
-.dock-ghost-title {
+.dock-icon.minimize {
+  -fx-shape: "M0 0 H10 V1.25 H0 Z";
+}
+
+.dock-icon.maximize {
+  -fx-shape: "M0 0 H10 V10 H0 Z M1.25 1.25 V8.75 H8.75 V1.25 Z";
+}
+
+.dock-icon.popout {
+  -fx-shape: "M5.5 0 H11 V5.5 L9 3.5 L5.4 7.1 L3.9 5.6 L7.5 2 Z M0 2 H3.5 V3.25 H1.25 V9.75 H7.75 V7.5 H9 V11 H0 Z";
+}
+
+.dock-icon.dock-back {
+  -fx-shape: "M5.6 0 L7.1 1.5 L3.5 5.1 L5.5 7.1 H0 V1.6 L2 3.6 Z M4 2 H11 V11 H2 V7.5 H3.25 V9.75 H9.75 V3.25 H4 Z";
+}
+
+.dock-icon.chevron-down {
+  -fx-shape: "M0 0.9 L0.9 0 L4.5 3.6 L8.1 0 L9 0.9 L4.5 5.4 Z";
+}
+
+/* state swaps, CSS-only: maximised shows "restore", minimised shows "expand", a lone floating
+   group's pop-out reads "dock back" */
+.dock-group:maximized .dock-header-button.maximize .dock-icon {
+  -fx-shape: "M2.5 0 H11 V8.5 H9.75 V1.25 H2.5 Z M0 2.5 H8.5 V11 H0 Z M1.25 3.75 V9.75 H7.25 V3.75 Z";
+}
+
+.dock-group:minimized .dock-header-button.minimize .dock-icon {
+  -fx-shape: "M0 4.5 L4.5 0 L9 4.5 L8.1 5.4 L4.5 1.8 L0.9 5.4 Z";
+}
+
+.dock-group:floating .dock-header-button.popout .dock-icon {
+  -fx-shape: "M5.6 0 L7.1 1.5 L3.5 5.1 L5.5 7.1 H0 V1.6 L2 3.6 Z M4 2 H11 V11 H2 V7.5 H3.25 V9.75 H9.75 V3.25 H4 Z";
+}
+
+.dock-icon.empty-layout {
+  -fx-shape: "M0 0 H44 V34 H0 Z M1.5 1.5 V32.5 H42.5 V1.5 Z M14 1.5 H15.5 V32.5 H14 Z M15.5 21 H42.5 V22.5 H15.5 Z M3.5 4 H12 V5.5 H3.5 Z M3.5 7.5 H10 V9 H3.5 Z M3.5 11 H11 V12.5 H3.5 Z";
+  -fx-min-width: 44px; -fx-pref-width: 44px; -fx-max-width: 44px;
+  -fx-min-height: 34px; -fx-pref-height: 34px; -fx-max-height: 34px;
+  -fx-opacity: 0.8;
+}
+
+/* ---- floating windows' own title bar (JavaFX 25+) --------------------------------------- */
+
+.dock-window-bar {
+  -fx-background-color: -dock-outline, -dock-surface;
+  -fx-background-insets: 0, 0 0 1 0;
+  -fx-min-height: 34px;
+  -fx-pref-height: 34px;
+}
+
+.dock-window-chip {
+  -fx-alignment: center-left;
+  -fx-spacing: 7;
+  -fx-padding: 0 10 0 10;
+  -fx-cursor: default;
+}
+
+.dock-window-chip .dock-tab-icon {
+  -fx-opacity: 1;
+}
+
+.dock-window-title {
   -fx-text-fill: -dock-text-strong;
-  -fx-padding: 4 12 4 12;
-  -fx-background-color: -dock-surface;
+  -fx-font-size: 12.5px;
+}
+
+.dock-window-chip:quiet .dock-window-title {
+  -fx-text-fill: -dock-text;
+}
+
+.dock-window-actions {
+  -fx-alignment: center-right;
+  -fx-padding: 0 8 0 0;
+  -fx-spacing: 2;
 }
