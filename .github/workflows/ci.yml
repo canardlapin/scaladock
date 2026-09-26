@@ -13,11 +13,12 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: 21
+          # JavaFX 24 (fx) needs JDK 22+; the demo runs on JavaFX 27, which needs JDK 25
+          java-version: 25
           cache: sbt
       - uses: sbt/setup-sbt@v1
       - name: Check formatting
