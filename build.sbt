@@ -13,7 +13,7 @@ ThisBuild / scalaVersion       := scala3Version
 ThisBuild / versionScheme      := Some("early-semver")
 ThisBuild / version            := "0.1.0-SNAPSHOT"
 ThisBuild / licenses           := Seq(License.Apache2)
-ThisBuild / homepage           := Some(url("https://github.com/bbuchsbaum/scaladock"))
+ThisBuild / homepage           := Some(url("https://github.com/canardlapin/scaladock"))
 ThisBuild / semanticdbEnabled  := true
 
 val fxClassifier: String =
