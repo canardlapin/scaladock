@@ -1,0 +1,37 @@
+name: Release
+
+# Push a tag such as v0.1.0 to publish scaladock-core and scaladock-fx to Maven Central.
+# The version is the tag without its "v". Needs the repository secrets described in
+# docs/releasing.md; without them this job fails before anything is uploaded.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 25
+          cache: sbt
+      - uses: sbt/setup-sbt@v1
+      - name: Test before publishing
+        run: xvfb-run --auto-servernum sbt core/test fx/test
+      - name: Import the signing key
+        env:
+          PGP_SECRET: ${{ secrets.PGP_SECRET }}
+        run: echo "$PGP_SECRET" | base64 --decode | gpg --batch --import
+      - name: Sign, stage and release to Maven Central
+        env:
+          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          sbt "set ThisBuild / version := \"$VERSION\"" core/publishSigned fx/publishSigned sonaRelease
