@@ -29,3 +29,18 @@ jobs:
       - name: Compile and test (macOS)
         if: runner.os == 'macOS'
         run: sbt compile test
+
+  # The published libraries' floor: JDK 22 with the JavaFX 24.0.1 they compile against —
+  # the combination downstream apps (Eyes Studio) run. No demo here: it needs JavaFX 27 / JDK 25.
+  library-floor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 22
+          cache: sbt
+      - uses: sbt/setup-sbt@v1
+      - name: Test core and fx on JDK 22 / JavaFX 24 (virtual display)
+        run: xvfb-run --auto-servernum sbt core/test fx/test

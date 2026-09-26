@@ -52,9 +52,18 @@ val commonSettings = Seq(
   )
 )
 
+// The published libraries target JDK 22 (JavaFX 24's floor): compiled on a newer JDK, they must
+// still link only against the Java 22 API. The demo alone runs on JavaFX 27 / JDK 25.
+val libraryJdk = "22"
+
+val librarySettings = Seq(
+  scalacOptions ++= Seq("-java-output-version", libraryJdk)
+)
+
 lazy val core = project
   .in(file("modules/core"))
   .settings(commonSettings)
+  .settings(librarySettings)
   .settings(
     name := "scaladock-core",
     scalacOptions += "-language:strictEquality",
@@ -65,9 +74,9 @@ lazy val fx = project
   .in(file("modules/fx"))
   .dependsOn(core)
   .settings(commonSettings)
+  .settings(librarySettings)
   .settings(
     name := "scaladock-fx",
-    libraryDependencies += "org.scalafx" %% "scalafx" % scalafxVersion,
     // Published POM must not carry a platform classifier: consumers supply natives.
     libraryDependencies ++= javafxDeps(Provided),
     libraryDependencies ++= javafxDeps(Test),
@@ -82,6 +91,8 @@ lazy val demo = project
   .settings(
     name           := "scaladock-demo",
     publish / skip := true,
+    // ScalaFX is the demo's choice, not a dependency of the library (fx uses plain JavaFX)
+    libraryDependencies += "org.scalafx" %% "scalafx" % scalafxVersion,
     libraryDependencies ++= javafxDeps(Compile, demoJavafxVersion),
     // the fx module's Provided 24.x must not win the demo's runtime classpath
     dependencyOverrides ++= javafxDeps(Compile, demoJavafxVersion),
