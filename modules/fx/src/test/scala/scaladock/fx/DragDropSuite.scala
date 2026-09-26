@@ -87,10 +87,12 @@ final class DragDropSuite extends FunSuite:
         val bId         = dock.state.panes.find(_.title == "b").get.id
         val bNodeBefore = dock.nodeOf(bId).get
 
-        // the right group's content occupies roughly x in [600,1200]; drop into its lower half
+        // aim at the right group's own body, lower half, centre — measured, not assumed: a CI
+        // runner's screen can be smaller than the stage, and the OS then shrinks the window
         val tab    = tabOf(dock, leftGroup.id, 1)
         val origin = tab.localToScreen(5, 5)
-        val dropAt = dock.view.localToScreen(900, 700)
+        val body   = dock.view.asInstanceOf[DockRegion].geometry.groups(rightGroup.id).content
+        val dropAt = dock.view.localToScreen(body.x + body.width / 2, body.y + body.height * 0.75)
         dragFromTo(tab, (origin.getX, origin.getY), (dropAt.getX, dropAt.getY))
 
         edit.parentOf(dock.state, rightGroup.id) match
