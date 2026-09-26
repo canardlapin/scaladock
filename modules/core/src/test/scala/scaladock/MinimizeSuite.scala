@@ -4,6 +4,7 @@ import munit.ScalaCheckSuite
 import org.scalacheck.Gen
 import org.scalacheck.Prop.*
 import TestPanes.*
+import dsl.*
 
 /** True minimize: a group collapses to a header-thin strip in place. The design's central promise —
   * minimise is presentational, sizes are never touched — is what these laws pin.
@@ -15,6 +16,26 @@ final class MinimizeSuite extends ScalaCheckSuite:
   private val stateWithGroup: Gen[(LayoutState, Node.Group)] =
     stateGen.map(_.copy(minimized = Set.empty)).flatMap: s =>
       Gen.oneOf(s.groups).map(g => (s, g))
+
+  test("a floorless Fr container keeps its subtree minimum when fixed siblings over-claim"):
+    // the shape ScalaCheck found in CI: px/pct siblings claim more than the whole span, which used
+    // to squeeze the Fr cell (minPx 0) — and the strip of a group minimised inside it — to zero
+    val inner = column(Counter(1).titled("p1"), Counter(2).titled("p2"))
+    val layout = LayoutState.of(column(
+      inner sized 1.fr,
+      Counter(3).titled("p3") sized 600.px,
+      Counter(4).titled("p4") sized 600.px
+    ))
+    val g      = layout.groups(1) // the second group inside the Fr container
+    val minned = edit.minimize(layout, g.id)
+    val geom =
+      sizing.geometry(minned.root, Rect(0, 0, 1600, 1000), settings, None, minned.minimized)
+    assertEqualsDouble(geom.groups(g.id).bounds.height, sizing.stripPx(settings), 0.6)
+    val container = geom.splits(inner.id)
+    assert(
+      container.height + 0.6 >= sizing.minSpan(inner, Axis.Vertical, settings),
+      s"container squeezed to ${container.height}"
+    )
 
   property("minimize then unminimize is the exact identity — sizes are never touched"):
     forAll(stateWithGroup) { case (s, g) =>

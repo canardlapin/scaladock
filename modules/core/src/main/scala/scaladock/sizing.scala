@@ -41,13 +41,23 @@ object sizing:
     * and sums exactly to the available span (when it is non-negative).
     */
   def allocate(cells: Vector[Cell], span: Double, dividerPx: Double): Vector[Double] =
+    allocateWithMins(cells, span, dividerPx, cells.map(c => math.max(0.0, c.minPx)))
+
+  /** [[allocate]] against explicit per-cell minimums — layout passes each cell's recursive subtree
+    * minimum ([[cellMin]]), so a cell with no floor of its own (an `Fr` split, say) can never be
+    * squeezed below what its contents need when fixed siblings over-claim the span.
+    */
+  def allocateWithMins(
+      cells: Vector[Cell],
+      span: Double,
+      dividerPx: Double,
+      mins: Vector[Double]
+  ): Vector[Double] =
     val n = cells.length
     if n == 0 then Vector.empty
     else
       val available = math.max(0.0, span - (n - 1) * dividerPx)
-      val raw       = firstPass(cells, available)
-      val mins      = cells.map(c => math.max(0.0, c.minPx))
-      respectMinSizes(raw, mins, available)
+      respectMinSizes(firstPass(cells, available), mins, available)
 
   private def firstPass(cells: Vector[Cell], available: Double): Vector[Double] =
     val fixed = cells.map: c =>
@@ -222,7 +232,8 @@ object sizing:
             val available = math.max(0.0, span - (cells.length - 1) * settings.dividerPx)
             val liveSpan = math.max(0.0, available - stripSum) +
               math.max(0, live.length - 1) * settings.dividerPx
-            val liveSizes = allocate(live, liveSpan, settings.dividerPx).iterator
+            val liveMins  = live.map(c => cellMin(c, axis, settings))
+            val liveSizes = allocateWithMins(live, liveSpan, settings.dividerPx, liveMins).iterator
             val sizes     = cells.map(c => if isMinimized(c.node) then strip else liveSizes.next())
             var offset    = 0.0
             // a rect too small for its divider strips (available clamped to 0) must not leak
