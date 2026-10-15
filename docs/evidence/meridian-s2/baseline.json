@@ -1,0 +1,6 @@
+{
+  "git_head": "628c46fce92c4d31b0b08459ac0f18777b5ba527",
+  "s1_source_digest": "fbb37b53a59a273e5b0c221b35ecb393a83cd968590860b96ba19f9bd20526f5",
+  "s1_files_verified": 13,
+  "dirty_source_provenance": "Prior S1 implementation and tracker metadata, preserved; no source commit or provider-pin change."
+}

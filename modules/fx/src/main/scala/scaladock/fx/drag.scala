@@ -18,7 +18,7 @@ import scaladock.*
   * leaves everything as it was. Every path out of a drag runs through one idempotent cleanup door,
   * so an exception can never leave a dimmed tab or a stray ghost behind.
   */
-private[fx] final class DragController(dock: Dock, region: DockRegion, settings: LayoutSettings):
+private[fx] final class DragController(dock: Dock, region: DockRegion):
 
   private enum Phase:
     case Idle
@@ -37,6 +37,7 @@ private[fx] final class DragController(dock: Dock, region: DockRegion, settings:
       val sourced: Boolean,          // fabricated by a drag source: not yet in the layout
       val surfaces: Vector[Surface], // front-most first
       val ghost: Option[GhostPopup],
+      val settings: LayoutSettings,
       val filteredScenes: Vector[javafx.scene.Scene] // the scenes the ESC filter was added to
   ):
     var lastValid: Option[(Surface, DropArea)] = None
@@ -45,7 +46,9 @@ private[fx] final class DragController(dock: Dock, region: DockRegion, settings:
     var closed: Boolean                        = false
     val previews: collection.mutable.Map[DropArea, Option[Rect]] = collection.mutable.Map.empty
 
-  private var phase: Phase = Phase.Idle
+  private var phase: Phase     = Phase.Idle
+  private var generation: Long = 0L
+  private val sources          = new PresentationScope
 
   private val escFilter: EventHandler[KeyEvent] = e =>
     if e.getCode == KeyCode.ESCAPE then
@@ -75,18 +78,20 @@ private[fx] final class DragController(dock: Dock, region: DockRegion, settings:
 
   /** Abort any in-flight drag; the layout was never touched, so nothing needs restoring. */
   def cancel(): Unit =
+    generation += 1
     phase match
       case Phase.Dragging(session) => endSession(session)
       case _                       => phase = Phase.Idle
 
   /** Arm an external node as a factory of new panes (golden-layout's DragSource). */
   def installSource(handle: javafx.scene.Node)(make: () => PaneDef): Subscription =
-    var pressed: Option[(Double, Double)] = None
-    val onPress: EventHandler[MouseEvent] = e => pressed = Some((e.getScreenX, e.getScreenY))
+    var pressed: Option[(Double, Double, Long)] = None
+    val onPress: EventHandler[MouseEvent] =
+      e => pressed = Some((e.getScreenX, e.getScreenY, generation))
     val onDrag: EventHandler[MouseEvent] = e =>
       phase match
         case Phase.Idle =>
-          pressed.foreach: (sx, sy) =>
+          pressed.filter(_._3 == generation).foreach: (sx, sy, _) =>
             if math.abs(e.getScreenX - sx) > DragController.ThresholdPx
               || math.abs(e.getScreenY - sy) > DragController.ThresholdPx
             then
@@ -103,10 +108,15 @@ private[fx] final class DragController(dock: Dock, region: DockRegion, settings:
     handle.addEventHandler(MouseEvent.MOUSE_PRESSED, onPress)
     handle.addEventHandler(MouseEvent.MOUSE_DRAGGED, onDrag)
     handle.addEventHandler(MouseEvent.MOUSE_RELEASED, onRelease)
-    () =>
+    sources.own: () =>
+      pressed = None
       handle.removeEventHandler(MouseEvent.MOUSE_PRESSED, onPress)
       handle.removeEventHandler(MouseEvent.MOUSE_DRAGGED, onDrag)
       handle.removeEventHandler(MouseEvent.MOUSE_RELEASED, onRelease)
+
+  def dispose(): Unit =
+    cancel()
+    sources.cancel()
 
   // -- the drag itself -------------------------------------------------------------------------
 
@@ -123,8 +133,11 @@ private[fx] final class DragController(dock: Dock, region: DockRegion, settings:
             throw t
 
   private def beginSession(pane: Pane, sourced: Boolean, e: MouseEvent): Unit =
-    val surfaces = dock.dragSurfaces.map: (windowRef, surfaceRegion, root) =>
-      surfaceRegion.layout()
+    dock.refreshMetrics()
+    val windows = dock.dragSurfaces
+    windows.foreach(_._2.layout())
+    val settings = dock.settings
+    val surfaces = windows.map: (windowRef, surfaceRegion, root) =>
       val viewport = Rect(0, 0, surfaceRegion.getWidth, surfaceRegion.getHeight)
       Surface(
         surfaceRegion,
@@ -139,7 +152,7 @@ private[fx] final class DragController(dock: Dock, region: DockRegion, settings:
       val g = GhostPopup(pane.title, dock.iconOf(pane.id), dock.themeStylesheet)
       g.showAt(owner, e.getScreenX, e.getScreenY)
       g
-    phase = Phase.Dragging(Session(pane, sourced, surfaces, ghost, scenes))
+    phase = Phase.Dragging(Session(pane, sourced, surfaces, ghost, settings, scenes))
     dock.dragActive(true)
     dock.publish(DockEvent.DragStarted(pane.id))
 
@@ -235,7 +248,7 @@ private[fx] final class DragController(dock: Dock, region: DockRegion, settings:
         case None    => next.root
         case Some(w) => next.floating.find(_.window == w).map(_.root)
       val viewport = Rect(0, 0, surface.region.getWidth, surface.region.getHeight)
-      val geom     = sizing.geometry(root, viewport, settings, next.maximized, next.minimized)
+      val geom = sizing.geometry(root, viewport, session.settings, next.maximized, next.minimized)
       next.groupOf(session.pane.id).flatMap(g => geom.groups.get(g.id)).map(_.bounds)
 
   private def completeDrop(e: MouseEvent): Unit =
@@ -260,9 +273,9 @@ private[fx] final class DragController(dock: Dock, region: DockRegion, settings:
   private def endSession(session: Session): Unit =
     if !session.closed then
       session.closed = true
-      session.ghost.foreach(_.hide())
+      session.ghost.foreach(_.dispose())
       session.surfaces.foreach(_.region.hideIndicator())
-      closeGap(session)
+      closeGap(session, immediate = true)
       dock.dragActive(false)
       session.filteredScenes.foreach(_.removeEventFilter(KeyEvent.KEY_PRESSED, escFilter))
       dock.markDragging(None)
@@ -339,6 +352,10 @@ private[fx] final class GhostPopup(
   setAutoFix(false) // follow the pointer honestly, even near screen edges
   setAutoHide(false)
   getContent.add(box): Unit
+
+  def dispose(): Unit =
+    hide()
+    getContent.clear()
 
   def showAt(owner: javafx.stage.Window, screenX: Double, screenY: Double): Unit =
     show(owner, screenX + GhostPopup.OffsetPx, screenY + GhostPopup.OffsetPx)

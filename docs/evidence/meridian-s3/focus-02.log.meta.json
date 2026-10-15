@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "started_utc": "2026-10-15T11:33:57.761508+00:00",
+  "finished_utc": "2026-10-15T11:34:15.288311+00:00",
+  "duration_seconds": 17.526695,
+  "command": [
+    "python3",
+    "tools/meridian-s3/run_lane.py",
+    "floor",
+    "--focus"
+  ],
+  "cwd": "/Users/bbuchsbaum/code/scala/scaladock",
+  "log": "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s3/focus-02.log",
+  "exit_code": 1,
+  "child_returncode": 1,
+  "reason": "exited",
+  "detail": null,
+  "timeout_seconds": 240.0,
+  "log_bytes": 6146
+}

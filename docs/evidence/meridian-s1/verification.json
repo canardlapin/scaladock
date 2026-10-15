@@ -1,0 +1,401 @@
+{
+  "candidate": {
+    "base_git_head": "628c46fce92c4d31b0b08459ac0f18777b5ba527",
+    "candidate_source_digest": "fbb37b53a59a273e5b0c221b35ecb393a83cd968590860b96ba19f9bd20526f5",
+    "files": {
+      "build.sbt": "b6908d79077df16b8563afc8b367758600e51e114e5ad63ae76700d11d1b601e",
+      "docs/styling.md": "a3a70d54aa8a609b43e0bda253544360fa2f43dc0fb0219debe7df39865d5859",
+      "modules/demo/src/main/scala/scaladock/demo/shell.scala": "29c7a1b8d3e10198fc882966e80268db12389c568ce3c7378a1ce8bb8f816bcf",
+      "modules/fx/src/main/scala/scaladock/fx/Dock.scala": "aff54657197d64833cdf92552ecf18f701e35a36b37b874899b28d1866de7956",
+      "modules/fx/src/test/scala/scaladock/fx/ThemeNativeProbe.scala": "acf8ea1c4f81b29febcf6b52703e47fab22556314246a5aa868981f62c1d63e9",
+      "modules/fx/src/test/scala/scaladock/fx/ThemeSuite.scala": "a38db19b4cb2f3de6c29dfb670de6e57eda21788d5804cf49017d9c37443f365",
+      "project/build.properties": "d24588794d56b7bda7e561d899310803eba64264d1cfa5570f7d63f33641e4a7",
+      "project/plugins.sbt": "7828cc42771944e96fb2cdd67d5962cd048c0d9d91e6553efb06dcea3bb6270f",
+      "tools/meridian-s1/compat/UpdatedThemeClient.scala": "364e0ed77026d0548fc114ed15d005d66461cd5544aee2fdee6641d908e4591c",
+      "tools/meridian-s1/compat/build.sbt": "cee3a5aab94164e2c21b302b484a10006902abd2e732d49e1f984e26b7fdc021",
+      "tools/meridian-s1/compat/project/build.properties": "d24588794d56b7bda7e561d899310803eba64264d1cfa5570f7d63f33641e4a7",
+      "tools/meridian-s1/compat/src/main/scala/LegacyThemeClient.scala": "ad8866fe859263954cc517c10c417a43076c03eb8ff8113fc6bee8b7c3240de5",
+      "tools/meridian-s1/run_lane.py": "3e44db32103ea78669b0abd7756a13582a7e6858bf51bb36e43d0dd5440011c7"
+    },
+    "status": "Local uncommitted source; not an immutable Git review candidate"
+  },
+  "artifacts": {
+    "docs/evidence/meridian-s1/candidate-artifacts/scaladock-core_3-0.1.0-SNAPSHOT.jar": {
+      "sha256": "ae9fa5ec043ff8cbd0c021278cd3156bcc9fdb8478b1c0cac1660ed38b3d2278",
+      "class_count": 158,
+      "class_major_versions": [
+        66
+      ]
+    },
+    "docs/evidence/meridian-s1/candidate-artifacts/scaladock-fx_3-0.1.0-SNAPSHOT.jar": {
+      "sha256": "4ef237e11dc58ab90667c96d5bf4a8c363fcc72f0def155d2169c1469c2c4c98",
+      "class_count": 69,
+      "class_major_versions": [
+        66
+      ]
+    }
+  },
+  "commands": {
+    "baseline.log.meta.json": {
+      "schema_version": 1,
+      "started_utc": "2026-10-15T01:29:40.098545+00:00",
+      "finished_utc": "2026-10-15T01:30:01.349567+00:00",
+      "duration_seconds": 21.2507,
+      "command": [
+        "sbt",
+        "-batch",
+        "fx/testOnly scaladock.fx.ThemeSuite",
+        "fx/packageBin",
+        "core/packageBin"
+      ],
+      "cwd": "/Users/bbuchsbaum/code/scala/scaladock",
+      "log": "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/baseline.log",
+      "exit_code": 0,
+      "child_returncode": 0,
+      "reason": "exited",
+      "detail": null,
+      "timeout_seconds": 300.0,
+      "log_bytes": 1398
+    },
+    "current.log.meta.json": {
+      "schema_version": 1,
+      "started_utc": "2026-10-15T01:38:11.508606+00:00",
+      "finished_utc": "2026-10-15T01:38:34.932971+00:00",
+      "duration_seconds": 23.423945,
+      "command": [
+        "python3",
+        "tools/meridian-s1/run_lane.py",
+        "current"
+      ],
+      "cwd": "/Users/bbuchsbaum/code/scala/scaladock",
+      "log": "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/current.log",
+      "exit_code": 0,
+      "child_returncode": 0,
+      "reason": "exited",
+      "detail": null,
+      "timeout_seconds": 300.0,
+      "log_bytes": 3692
+    },
+    "floor-01.log.meta.json": {
+      "schema_version": 1,
+      "started_utc": "2026-10-15T01:33:44.881859+00:00",
+      "finished_utc": "2026-10-15T01:34:15.560852+00:00",
+      "duration_seconds": 30.678508,
+      "command": [
+        "sbt",
+        "-batch",
+        "scalafmtAll",
+        "scalafmtSbt",
+        "fx/testOnly scaladock.fx.ThemeSuite scaladock.fx.PopoutSuite",
+        "demo/compile",
+        "fx/packageBin",
+        "core/packageBin"
+      ],
+      "cwd": "/Users/bbuchsbaum/code/scala/scaladock",
+      "log": "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/floor-01.log",
+      "exit_code": 0,
+      "child_returncode": 0,
+      "reason": "exited",
+      "detail": null,
+      "timeout_seconds": 300.0,
+      "log_bytes": 3940
+    },
+    "floor-final.log.meta.json": {
+      "schema_version": 1,
+      "started_utc": "2026-10-15T01:37:29.605226+00:00",
+      "finished_utc": "2026-10-15T01:37:46.193087+00:00",
+      "duration_seconds": 16.587477,
+      "command": [
+        "python3",
+        "tools/meridian-s1/run_lane.py",
+        "floor"
+      ],
+      "cwd": "/Users/bbuchsbaum/code/scala/scaladock",
+      "log": "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/floor-final.log",
+      "exit_code": 0,
+      "child_returncode": 0,
+      "reason": "exited",
+      "detail": null,
+      "timeout_seconds": 300.0,
+      "log_bytes": 3771
+    },
+    "legacy-binary.log.meta.json": {
+      "schema_version": 1,
+      "started_utc": "2026-10-15T01:41:08.906347+00:00",
+      "finished_utc": "2026-10-15T01:41:09.293314+00:00",
+      "duration_seconds": 0.386751,
+      "command": [
+        "/Users/bbuchsbaum/Library/Java/JavaVirtualMachines/openjdk-22/Contents/Home/bin/java",
+        "-cp",
+        "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/legacy-binary:/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/candidate-artifacts/scaladock-fx_3-0.1.0-SNAPSHOT.jar:/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/candidate-artifacts/scaladock-core_3-0.1.0-SNAPSHOT.jar:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala3-library_3/3.7.4/scala3-library_3-3.7.4.jar:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-base/24.0.1/javafx-base-24.0.1-mac-aarch64.jar:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-graphics/24.0.1/javafx-graphics-24.0.1-mac-aarch64.jar:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-controls/24.0.1/javafx-controls-24.0.1-mac-aarch64.jar:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.16/scala-library-2.13.16.jar:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-base/24.0.1/javafx-base-24.0.1.jar:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-graphics/24.0.1/javafx-graphics-24.0.1.jar",
+        "legacy.LegacyThemeClient"
+      ],
+      "cwd": "/Users/bbuchsbaum/code/scala/scaladock",
+      "log": "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/legacy-binary.log",
+      "exit_code": 0,
+      "child_returncode": 0,
+      "reason": "exited",
+      "detail": null,
+      "timeout_seconds": 60.0,
+      "log_bytes": 83
+    },
+    "legacy-compile-final.log.meta.json": {
+      "schema_version": 1,
+      "started_utc": "2026-10-15T01:43:41.829310+00:00",
+      "finished_utc": "2026-10-15T01:43:47.419747+00:00",
+      "duration_seconds": 5.590113,
+      "command": [
+        "sbt",
+        "-batch",
+        "compile",
+        "export Compile/fullClasspath"
+      ],
+      "cwd": "/Users/bbuchsbaum/code/scala/scaladock/tools/meridian-s1/compat",
+      "log": "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/legacy-compile-final.log",
+      "exit_code": 0,
+      "child_returncode": 0,
+      "reason": "exited",
+      "detail": null,
+      "timeout_seconds": 180.0,
+      "log_bytes": 1941
+    },
+    "legacy-compile.log.meta.json": {
+      "schema_version": 1,
+      "started_utc": "2026-10-15T01:39:11.761001+00:00",
+      "finished_utc": "2026-10-15T01:39:18.567661+00:00",
+      "duration_seconds": 6.806452,
+      "command": [
+        "sbt",
+        "-batch",
+        "compile",
+        "export Compile/fullClasspath"
+      ],
+      "cwd": "/Users/bbuchsbaum/code/scala/scaladock/tools/meridian-s1/compat",
+      "log": "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/legacy-compile.log",
+      "exit_code": 0,
+      "child_returncode": 0,
+      "reason": "exited",
+      "detail": null,
+      "timeout_seconds": 180.0,
+      "log_bytes": 1941
+    },
+    "legacy-source-candidate.log.meta.json": {
+      "schema_version": 1,
+      "started_utc": "2026-10-15T01:41:09.375856+00:00",
+      "finished_utc": "2026-10-15T01:41:15.006747+00:00",
+      "duration_seconds": 5.630674,
+      "command": [
+        "sbt",
+        "-batch",
+        "set Compile / unmanagedJars := Seq(Attributed.blank(file(\"/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/candidate-artifacts/scaladock-fx_3-0.1.0-SNAPSHOT.jar\")),Attributed.blank(file(\"/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/candidate-artifacts/scaladock-core_3-0.1.0-SNAPSHOT.jar\")))",
+        "compile"
+      ],
+      "cwd": "/Users/bbuchsbaum/code/scala/scaladock/tools/meridian-s1/compat",
+      "log": "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/legacy-source-candidate.log",
+      "exit_code": 1,
+      "child_returncode": 1,
+      "reason": "exited",
+      "detail": null,
+      "timeout_seconds": 180.0,
+      "log_bytes": 1538
+    },
+    "native-02.log.meta.json": {
+      "schema_version": 1,
+      "started_utc": "2026-10-15T01:44:11.457219+00:00",
+      "finished_utc": "2026-10-15T01:44:42.395103+00:00",
+      "duration_seconds": 30.93746,
+      "command": [
+        "python3",
+        "tools/meridian-s1/run_lane.py",
+        "native",
+        "--output",
+        "docs/evidence/meridian-s1/native-02"
+      ],
+      "cwd": "/Users/bbuchsbaum/code/scala/scaladock",
+      "log": "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/native-02.log",
+      "exit_code": 0,
+      "child_returncode": 0,
+      "reason": "exited",
+      "detail": null,
+      "timeout_seconds": 240.0,
+      "log_bytes": 2801
+    },
+    "native.log.meta.json": {
+      "schema_version": 1,
+      "started_utc": "2026-10-15T01:40:53.373883+00:00",
+      "finished_utc": "2026-10-15T01:41:00.140589+00:00",
+      "duration_seconds": 6.766524,
+      "command": [
+        "python3",
+        "tools/meridian-s1/run_lane.py",
+        "native",
+        "--output",
+        "docs/evidence/meridian-s1/native-01"
+      ],
+      "cwd": "/Users/bbuchsbaum/code/scala/scaladock",
+      "log": "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/native.log",
+      "exit_code": 1,
+      "child_returncode": 1,
+      "reason": "exited",
+      "detail": null,
+      "timeout_seconds": 240.0,
+      "log_bytes": 4580
+    },
+    "probe-floor-final-02.log.meta.json": {
+      "schema_version": 1,
+      "started_utc": "2026-10-15T01:43:38.691443+00:00",
+      "finished_utc": "2026-10-15T01:43:49.535600+00:00",
+      "duration_seconds": 10.84387,
+      "command": [
+        "sbt",
+        "-batch",
+        "scalafmtAll",
+        "scalafmtCheckAll",
+        "scalafmtSbtCheck",
+        "fx/Test/compile"
+      ],
+      "cwd": "/Users/bbuchsbaum/code/scala/scaladock",
+      "log": "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/probe-floor-final-02.log",
+      "exit_code": 0,
+      "child_returncode": 0,
+      "reason": "exited",
+      "detail": null,
+      "timeout_seconds": 180.0,
+      "log_bytes": 956
+    },
+    "probe-floor-final.log.meta.json": {
+      "schema_version": 1,
+      "started_utc": "2026-10-15T01:42:51.430899+00:00",
+      "finished_utc": "2026-10-15T01:43:15.646350+00:00",
+      "duration_seconds": 24.215094,
+      "command": [
+        "sbt",
+        "-batch",
+        "scalafmtAll",
+        "scalafmtCheckAll",
+        "scalafmtSbtCheck",
+        "fx/Test/compile"
+      ],
+      "cwd": "/Users/bbuchsbaum/code/scala/scaladock",
+      "log": "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/probe-floor-final.log",
+      "exit_code": 0,
+      "child_returncode": 0,
+      "reason": "exited",
+      "detail": null,
+      "timeout_seconds": 180.0,
+      "log_bytes": 1284
+    },
+    "scene-final.log.meta.json": {
+      "schema_version": 1,
+      "started_utc": "2026-10-15T01:44:42.523357+00:00",
+      "finished_utc": "2026-10-15T01:44:51.239678+00:00",
+      "duration_seconds": 8.716032,
+      "command": [
+        "python3",
+        "tools/meridian-s1/run_lane.py",
+        "scene",
+        "--output",
+        "docs/evidence/meridian-s1/scene-final"
+      ],
+      "cwd": "/Users/bbuchsbaum/code/scala/scaladock",
+      "log": "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/scene-final.log",
+      "exit_code": 0,
+      "child_returncode": 0,
+      "reason": "exited",
+      "detail": null,
+      "timeout_seconds": 240.0,
+      "log_bytes": 2385
+    },
+    "scene.log.meta.json": {
+      "schema_version": 1,
+      "started_utc": "2026-10-15T01:42:28.986979+00:00",
+      "finished_utc": "2026-10-15T01:42:42.850174+00:00",
+      "duration_seconds": 13.862916,
+      "command": [
+        "python3",
+        "tools/meridian-s1/run_lane.py",
+        "scene",
+        "--output",
+        "docs/evidence/meridian-s1/scene-01"
+      ],
+      "cwd": "/Users/bbuchsbaum/code/scala/scaladock",
+      "log": "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/scene.log",
+      "exit_code": 0,
+      "child_returncode": 0,
+      "reason": "exited",
+      "detail": null,
+      "timeout_seconds": 240.0,
+      "log_bytes": 2911
+    },
+    "updated-source-candidate.log.meta.json": {
+      "schema_version": 1,
+      "started_utc": "2026-10-15T01:41:15.095118+00:00",
+      "finished_utc": "2026-10-15T01:41:20.810483+00:00",
+      "duration_seconds": 5.715132,
+      "command": [
+        "sbt",
+        "-batch",
+        "set Compile / unmanagedJars := Seq(Attributed.blank(file(\"/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/candidate-artifacts/scaladock-fx_3-0.1.0-SNAPSHOT.jar\")),Attributed.blank(file(\"/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/candidate-artifacts/scaladock-core_3-0.1.0-SNAPSHOT.jar\")))",
+        "set Compile / sources := Seq(file(\"/Users/bbuchsbaum/code/scala/scaladock/tools/meridian-s1/compat/UpdatedThemeClient.scala\"))",
+        "compile"
+      ],
+      "cwd": "/Users/bbuchsbaum/code/scala/scaladock/tools/meridian-s1/compat",
+      "log": "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/updated-source-candidate.log",
+      "exit_code": 0,
+      "child_returncode": 0,
+      "reason": "exited",
+      "detail": null,
+      "timeout_seconds": 180.0,
+      "log_bytes": 1185
+    }
+  },
+  "captures": {
+    "native-02/custom-dark-new-scene.png": "e2ed3c003696a5c0e3ca3c03863840ac3e2abff93cabd8117a4c189248233f4a",
+    "native-02/custom-dark-new-window.png": "026bf7b321976259a5db509b8b8f960cf0eb8f68269282adfd9602bf8704c79d",
+    "native-02/custom-dark-new.properties": "0490e912604d73aad8a75cfed7afc755563f2fa3dffb8f8e46976be993beab2c",
+    "native-02/custom-dark-restored-scene.png": "e2ed3c003696a5c0e3ca3c03863840ac3e2abff93cabd8117a4c189248233f4a",
+    "native-02/custom-dark-restored-window.png": "d51a606e5de6ddc911583f388031d8c11c99f7596ff3801b0c5758c5e201f865",
+    "native-02/custom-dark-restored.properties": "7e7340ef0acdedf84a5f68ea8d697c48e8dba8319075aefaf02f1f2a40ae159e",
+    "native-02/custom-light-existing-scene.png": "afdd6ffbf4892ae662efd69ee17bd1c739d5f5bca1f35871d3c8ddfcc8083975",
+    "native-02/custom-light-existing-window.png": "2ceb68ff9cbc50104339716c25e5bfe6c01635c11bf2ab99542caf886c31c9b1",
+    "native-02/custom-light-existing.properties": "2133338779673434a590686ba258f403c4d66cba2768ad1a88dc97fcc1b15abe",
+    "native-02/dark-name-light-palette.css": "e20f5d8e6817fc606e2722ecf15a6ad38c229a9f748e2ae338bb01bc262bf7f5",
+    "native-02/light-name-dark-palette.css": "0d2f111c9a0f7d5f4f9405293e1d9bc67b82babcaa8ea599f2b11c3405e76684",
+    "native-02/unknown-platform-scene.png": "afdd6ffbf4892ae662efd69ee17bd1c739d5f5bca1f35871d3c8ddfcc8083975",
+    "native-02/unknown-platform-window.png": "5b5a15b360c2472f83a36393ec03904da1247722c9fe6ccd425cd544001a34fe",
+    "native-02/unknown-platform.properties": "664af1ab46d2484c7a0f4d43ca6d6ad5cad09bb074eaebad4abf5e31dff3b7b5",
+    "scene-final/custom-dark-new-scene.png": "e2ed3c003696a5c0e3ca3c03863840ac3e2abff93cabd8117a4c189248233f4a",
+    "scene-final/custom-dark-new.properties": "457ebb35d932f4054e81a6b3ae57138d758239de210437f72dbbecd6c952db0e",
+    "scene-final/custom-dark-restored-scene.png": "e2ed3c003696a5c0e3ca3c03863840ac3e2abff93cabd8117a4c189248233f4a",
+    "scene-final/custom-dark-restored.properties": "f3767c712313f1389ec350a69272e4ec8fc77a0d218d54025e45a3ae0f7bfa12",
+    "scene-final/custom-light-existing-scene.png": "afdd6ffbf4892ae662efd69ee17bd1c739d5f5bca1f35871d3c8ddfcc8083975",
+    "scene-final/custom-light-existing.properties": "65267a8c6e56d0773c762993c1396557eba7bfb0a0ba3013c084b2864e3f6877",
+    "scene-final/dark-name-light-palette.css": "e20f5d8e6817fc606e2722ecf15a6ad38c229a9f748e2ae338bb01bc262bf7f5",
+    "scene-final/light-name-dark-palette.css": "0d2f111c9a0f7d5f4f9405293e1d9bc67b82babcaa8ea599f2b11c3405e76684",
+    "scene-final/unknown-platform-scene.png": "afdd6ffbf4892ae662efd69ee17bd1c739d5f5bca1f35871d3c8ddfcc8083975",
+    "scene-final/unknown-platform.properties": "65267a8c6e56d0773c762993c1396557eba7bfb0a0ba3013c084b2864e3f6877"
+  },
+  "owned_source_zip_sha256": "fc0bed621b4f8f33781bed411a7e820fe994285122468c310ea8ddc02d4f3075",
+  "tracked_patch_sha256": "098484920d4e20127ff89d6eb1c753bad6edaeba8e6dd3e7d1398cb8ec060064",
+  "limitations": [
+    "macOS14.3/aarch64 only; other OS decorations unqualified",
+    "No hosted CI, commit, push, merge, release or publication",
+    "Independent provider-wide review belongs to S6; Meridian default provider pin unchanged"
+  ],
+  "checks": {
+    "floor_tests": 14,
+    "current_tests": 14,
+    "native_frames": 4,
+    "scene_frames": 4,
+    "old_client_binary": "pass for original values",
+    "old_exhaustive_source": "expected Werror failure",
+    "updated_exhaustive_source": "pass"
+  },
+  "compatibility_files": {
+    "legacy-binary/legacy/LegacyThemeClient$.class": "749afbd90712dde4570342ab6f078668ca8bb670cfb7af4c36ce07cefc5a34fa",
+    "legacy-binary/legacy/LegacyThemeClient.class": "2a7200be6f1327560cc322b15c86166e8c0f4cc736104690243d6ef34817d110",
+    "legacy-binary/legacy/LegacyThemeClient.tasty": "44669160c7aab4ec2ef0273137b13ec83c67cfbe4637aed68c729a85ea8a5407",
+    "baseline-artifacts/scaladock-core_3-0.1.0-SNAPSHOT.jar": "53f7a51ea5830531883fe14c8148b9239865966e2a0af8694884e40887e15156",
+    "baseline-artifacts/scaladock-fx_3-0.1.0-SNAPSHOT.jar": "0d711cb89a42964c5449e990c9ed98996bde1c0a0476bc0d8377f1f119cb1a6d"
+  }
+}

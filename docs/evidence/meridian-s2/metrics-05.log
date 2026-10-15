@@ -1,0 +1,27 @@
+[info] welcome to sbt 1.12.14 (Oracle Corporation Java 22)
+[info] loading settings for project scaladock-build from plugins.sbt...
+[info] loading project definition from /Users/bbuchsbaum/code/scala/scaladock/project
+[info] loading settings for project root from build.sbt...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] Defining fx / Test / javaOptions
+[info] The new value will be used by fx / Test / bspBuildTargetJvmEnvironmentItem, fx / Test / bspBuildTargetRun and 6 others.
+[info] 	Run `last` for details.
+[info] Reapplying settings...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] Defining fx / Test / fullClasspath
+[info] The new value will be used by fx / Test / bspBuildTargetJvmEnvironmentItem, fx / Test / console and 6 others.
+[info] 	Run `last` for details.
+[info] Reapplying settings...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[success] Total time: 1 s, completed Oct 14, 2026, 10:45:16 p.m.
+scaladock.fx.MetricsSuite:
+  + 32 -> 28 -> 32 -> enlarged metrics preserve identity, selected IDs and application state 0.746s
+  + existing, newly created and restored floating renderers share current effective metrics 0.166s
+  + minimized horizontal and vertical strips use live metrics without changing stored sizes 0.07s
+  + CSS preferred text and control minima raise density globally and can shrink again 0.076s
+  + metrics update cancels both armed and active tab gestures; the next drop uses enlarged headers 0.097s
+  + metrics invalidate pending and active external drag sources 0.066s
+  + metrics cancel divider preview and cursor without commit; next drag honors enlarged minima 0.06s
+  + metrics mutation requires JavaFX and null or invalid values do not change live settings 0.157s
+[info] Passed: Total 8, Failed 0, Errors 0, Passed 8
+[success] Total time: 2 s, completed Oct 14, 2026, 10:45:18 p.m.

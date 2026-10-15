@@ -1,0 +1,16 @@
+[info] welcome to sbt 1.12.14 (Oracle Corporation Java 22)
+[info] loading project definition from /Users/bbuchsbaum/code/scala/scaladock/tools/meridian-s1/compat/project
+[info] loading settings for project compat from build.sbt...
+[info] set current project to compat (in build file:/Users/bbuchsbaum/code/scala/scaladock/tools/meridian-s1/compat/)
+[info] Executing in batch mode. For better performance use sbt's shell
+[info] Defining Compile / unmanagedJars
+[info] The new value will be used by no settings or tasks.
+[info] Reapplying settings...
+[info] set current project to compat (in build file:/Users/bbuchsbaum/code/scala/scaladock/tools/meridian-s1/compat/)
+[info] Defining Compile / sources
+[info] The new value will be used by Compile / compile / compileOptions, Compile / doc, Compile / packageSrc / mappings
+[info] Reapplying settings...
+[info] set current project to compat (in build file:/Users/bbuchsbaum/code/scala/scaladock/tools/meridian-s1/compat/)
+[info] compiling 1 Scala source to /Users/bbuchsbaum/code/scala/scaladock/tools/meridian-s1/compat/target/scala-3.7.4/classes ...
+[info] done compiling
+[success] Total time: 2 s, completed Oct 14, 2026, 9:41:20 p.m.

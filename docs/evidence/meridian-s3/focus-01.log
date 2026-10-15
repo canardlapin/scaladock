@@ -1,0 +1,37 @@
+[info] welcome to sbt 1.12.14 (Oracle Corporation Java 22)
+[info] loading settings for project scaladock-build from plugins.sbt...
+[info] loading project definition from /Users/bbuchsbaum/code/scala/scaladock/project
+[info] loading settings for project root from build.sbt...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] Defining fx / Test / javaOptions
+[info] The new value will be used by fx / Test / bspBuildTargetJvmEnvironmentItem, fx / Test / bspBuildTargetRun and 6 others.
+[info] 	Run `last` for details.
+[info] Reapplying settings...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] Defining fx / Test / fullClasspath
+[info] The new value will be used by fx / Test / bspBuildTargetJvmEnvironmentItem, fx / Test / console and 6 others.
+[info] 	Run `last` for details.
+[info] Reapplying settings...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] scalafmt: Formatting 3 Scala sources (/Users/bbuchsbaum/code/scala/scaladock/modules/fx)...
+[info] scalafmt: Formatting 1 Scala sources (/Users/bbuchsbaum/code/scala/scaladock/modules/fx)...
+[info] scalafmt: Reformatted 1 Scala sources
+[info] scalafmt: Reformatted 3 Scala sources
+[success] Total time: 2 s, completed Oct 15, 2026, 7:32:27 a.m.
+[info] compiling 3 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/fx/target/scala-3.7.4/classes ...
+[info] done compiling
+[info] compiling 17 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/fx/target/scala-3.7.4/test-classes ...
+[error] -- Error: /Users/bbuchsbaum/code/scala/scaladock/modules/fx/src/test/scala/scaladock/fx/PresentationSuite.scala:131:12 
+[error] 131 |            case r: Parent => r.getStyleClass.contains("dock-ghost")
+[error]     |            ^^^^
+[error]     |            indented definitions expected, case found
+[error] -- [E007] Type Mismatch Error: /Users/bbuchsbaum/code/scala/scaladock/modules/fx/src/test/scala/scaladock/fx/PresentationSuite.scala:130:40 
+[error] 130 |      case popup: javafx.stage.Popup if popup.getContent.toArray.exists:
+[error]     |                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[error]     |                              Found:    (Object => Boolean) => Boolean
+[error]     |                              Required: Boolean
+[error]     |
+[error]     | longer explanation available when compiling with `-explain`
+[error] two errors found
+[error] (fx / Test / compileIncremental) Compilation failed
+[error] Total time: 10 s, completed Oct 15, 2026, 7:32:37 a.m.

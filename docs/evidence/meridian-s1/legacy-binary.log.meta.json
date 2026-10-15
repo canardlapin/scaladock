@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "started_utc": "2026-10-15T01:41:08.906347+00:00",
+  "finished_utc": "2026-10-15T01:41:09.293314+00:00",
+  "duration_seconds": 0.386751,
+  "command": [
+    "/Users/bbuchsbaum/Library/Java/JavaVirtualMachines/openjdk-22/Contents/Home/bin/java",
+    "-cp",
+    "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/legacy-binary:/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/candidate-artifacts/scaladock-fx_3-0.1.0-SNAPSHOT.jar:/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/candidate-artifacts/scaladock-core_3-0.1.0-SNAPSHOT.jar:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala3-library_3/3.7.4/scala3-library_3-3.7.4.jar:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-base/24.0.1/javafx-base-24.0.1-mac-aarch64.jar:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-graphics/24.0.1/javafx-graphics-24.0.1-mac-aarch64.jar:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-controls/24.0.1/javafx-controls-24.0.1-mac-aarch64.jar:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.16/scala-library-2.13.16.jar:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-base/24.0.1/javafx-base-24.0.1.jar:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-graphics/24.0.1/javafx-graphics-24.0.1.jar",
+    "legacy.LegacyThemeClient"
+  ],
+  "cwd": "/Users/bbuchsbaum/code/scala/scaladock",
+  "log": "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/legacy-binary.log",
+  "exit_code": 0,
+  "child_returncode": 0,
+  "reason": "exited",
+  "detail": null,
+  "timeout_seconds": 60.0,
+  "log_bytes": 83
+}

@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "started_utc": "2026-10-15T01:29:40.098545+00:00",
+  "finished_utc": "2026-10-15T01:30:01.349567+00:00",
+  "duration_seconds": 21.2507,
+  "command": [
+    "sbt",
+    "-batch",
+    "fx/testOnly scaladock.fx.ThemeSuite",
+    "fx/packageBin",
+    "core/packageBin"
+  ],
+  "cwd": "/Users/bbuchsbaum/code/scala/scaladock",
+  "log": "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/baseline.log",
+  "exit_code": 0,
+  "child_returncode": 0,
+  "reason": "exited",
+  "detail": null,
+  "timeout_seconds": 300.0,
+  "log_bytes": 1398
+}

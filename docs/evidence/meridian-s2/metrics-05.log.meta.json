@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "started_utc": "2026-10-15T02:45:11.755368+00:00",
+  "finished_utc": "2026-10-15T02:45:19.058427+00:00",
+  "duration_seconds": 7.302931,
+  "command": [
+    "python3",
+    "tools/meridian-s2/run_lane.py",
+    "floor",
+    "--focus"
+  ],
+  "cwd": "/Users/bbuchsbaum/code/scala/scaladock",
+  "log": "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s2/metrics-05.log",
+  "exit_code": 0,
+  "child_returncode": 0,
+  "reason": "exited",
+  "detail": null,
+  "timeout_seconds": 180.0,
+  "log_bytes": 1991
+}

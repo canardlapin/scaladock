@@ -1,0 +1,32 @@
+[info] welcome to sbt 1.12.14 (Homebrew Java 25.0.1)
+[info] loading settings for project scaladock-build from plugins.sbt...
+[info] loading project definition from /Users/bbuchsbaum/code/scala/scaladock/project
+[info] loading settings for project root from build.sbt...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] Defining fx / Test / javaOptions
+[info] The new value will be used by fx / Test / bspBuildTargetJvmEnvironmentItem, fx / Test / bspBuildTargetRun and 6 others.
+[info] 	Run `last` for details.
+[info] Reapplying settings...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] Defining fx / Test / fullClasspath
+[info] The new value will be used by fx / Test / bspBuildTargetJvmEnvironmentItem, fx / Test / console and 6 others.
+[info] 	Run `last` for details.
+[info] Reapplying settings...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] Defining fx / Test / run / fork
+[info] The new value will be used by fx / Test / run / runner, fx / Test / run / testGrouping
+[info] Reapplying settings...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] running (fork) scaladock.fx.MetricsNativeProbe /Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s2/native
+[error] WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+[error] WARNING: sun.misc.Unsafe::objectFieldOffset has been called by scala.runtime.LazyVals$ (file:/Users/bbuchsbaum/code/scala/scaladock/target/bg-jobs/sbt_d1f3e5e6/target/16f4dc48/adca020a/scala3-library_3-3.7.4.jar)
+[error] WARNING: Please consider reporting this to the maintainers of class scala.runtime.LazyVals$
+[error] WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+[info] S2_NATIVE_FRAME_OK phase=comfortable-32 built=4 disposed=0 metrics=LayoutSettings(1.0,32.0,50.0,40.0)
+[info] S2_NATIVE_FRAME_OK phase=compact-28 built=4 disposed=0 metrics=LayoutSettings(1.0,28.0,50.0,40.0)
+[info] S2_NATIVE_FRAME_OK phase=restored-comfortable-32 built=4 disposed=0 metrics=LayoutSettings(1.0,32.0,50.0,40.0)
+[info] S2_NATIVE_FRAME_OK phase=enlarged-64 built=4 disposed=0 metrics=LayoutSettings(1.0,64.0,50.0,40.0)
+[info] S2_NATIVE_FRAME_OK phase=css-font-42 built=4 disposed=0 metrics=LayoutSettings(1.0,52.0,50.0,40.0)
+[info] S2_NATIVE_FRAME_OK phase=css-reset-28 built=4 disposed=0 metrics=LayoutSettings(1.0,28.0,50.0,40.0)
+[info] S2_NATIVE_PROBE_OK phases=6 captures=12 paneRebuilds=0 ownedWindowsClosed=true
+[success] Total time: 4 s, completed Oct 14, 2026, 10:51:24 p.m.

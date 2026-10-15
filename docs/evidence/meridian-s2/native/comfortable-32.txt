@@ -1,0 +1,10 @@
+capture=JavaFX scene snapshots after native pulses; no OS window capture
+java=25.0.1
+javafx=27+30
+os=Mac OS X/aarch64
+requested=LayoutSettings(1.0,32.0,50.0,40.0)
+effective=LayoutSettings(1.0,32.0,50.0,40.0)
+built=4
+disposedBeforeCleanup=0
+comfortable-32	Some(c212f9c4-e061-425d-853a-5e9bb0041508)	header=32.0	content=584.0
+comfortable-32	None	header=32.0	content=618.0

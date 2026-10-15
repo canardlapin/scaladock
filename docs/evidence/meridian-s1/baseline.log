@@ -1,0 +1,20 @@
+[info] welcome to sbt 1.11.7 (Oracle Corporation Java 22)
+[info] loading settings for project scaladock-build from plugins.sbt...
+[info] loading project definition from /Users/bbuchsbaum/code/scala/scaladock/project
+[info] loading settings for project root from build.sbt...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] compiling 9 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/core/target/scala-3.7.0/classes ...
+[info] done compiling
+[info] compiling 7 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/fx/target/scala-3.7.0/classes ...
+[info] done compiling
+[info] compiling 13 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/fx/target/scala-3.7.0/test-classes ...
+[info] done compiling
+Oct 14, 2026 9:29:59 P.M. com.sun.javafx.application.PlatformImpl startup
+WARNING: Unsupported JavaFX configuration: classes were loaded from 'unnamed module @56ed9f5e'
+scaladock.fx.ThemeSuite:
+  + the drop indicator resolves its colors from theme variables, not hardcoded values 0.642s
+  + the ghost popup carries the variable-bearing marker class 0.249s
+[info] Passed: Total 2, Failed 0, Errors 0, Passed 2
+[success] Total time: 18 s, completed Oct 14, 2026, 9:30:01 p.m.
+[success] Total time: 0 s, completed Oct 14, 2026, 9:30:01 p.m.
+[success] Total time: 0 s, completed Oct 14, 2026, 9:30:01 p.m.

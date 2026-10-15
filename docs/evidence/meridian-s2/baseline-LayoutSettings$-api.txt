@@ -1,0 +1,37 @@
+Compiled from "sizing.scala"
+public final class scaladock.LayoutSettings$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final scaladock.LayoutSettings$ MODULE$;
+    descriptor: Lscaladock/LayoutSettings$;
+  public static {};
+    descriptor: ()V
+
+  public scaladock.LayoutSettings apply(double, double, double, double);
+    descriptor: (DDDD)Lscaladock/LayoutSettings;
+
+  public scaladock.LayoutSettings unapply(scaladock.LayoutSettings);
+    descriptor: (Lscaladock/LayoutSettings;)Lscaladock/LayoutSettings;
+
+  public double $lessinit$greater$default$1();
+    descriptor: ()D
+
+  public double $lessinit$greater$default$2();
+    descriptor: ()D
+
+  public double $lessinit$greater$default$3();
+    descriptor: ()D
+
+  public double $lessinit$greater$default$4();
+    descriptor: ()D
+
+  public scaladock.LayoutSettings default();
+    descriptor: ()Lscaladock/LayoutSettings;
+
+  public scala.CanEqual<scaladock.LayoutSettings, scaladock.LayoutSettings> derived$CanEqual();
+    descriptor: ()Lscala/CanEqual;
+
+  public scaladock.LayoutSettings fromProduct(scala.Product);
+    descriptor: (Lscala/Product;)Lscaladock/LayoutSettings;
+
+  public java.lang.Object fromProduct(scala.Product);
+    descriptor: (Lscala/Product;)Ljava/lang/Object;
+}

@@ -1,0 +1,159 @@
+[info] welcome to sbt 1.12.14 (Oracle Corporation Java 22)
+[info] loading settings for project scaladock-build from plugins.sbt...
+[info] loading project definition from /Users/bbuchsbaum/code/scala/scaladock/project
+[info] loading settings for project root from build.sbt...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] Executing in batch mode. For better performance use sbt's shell
+[info] Defining fx / Test / javaOptions
+[info] The new value will be used by fx / Test / bspBuildTargetJvmEnvironmentItem, fx / Test / bspBuildTargetRun and 6 others.
+[info] 	Run `last` for details.
+[info] Reapplying settings...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] Defining fx / Test / fullClasspath
+[info] The new value will be used by fx / Test / bspBuildTargetJvmEnvironmentItem, fx / Test / console and 6 others.
+[info] 	Run `last` for details.
+[info] Reapplying settings...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] scalafmt: Formatting 3 Scala sources (/Users/bbuchsbaum/code/scala/scaladock/modules/fx)...
+[info] scalafmt: Formatting 1 Scala sources (/Users/bbuchsbaum/code/scala/scaladock/modules/core)...
+[info] scalafmt: Formatting 1 Scala sources (/Users/bbuchsbaum/code/scala/scaladock/modules/core)...
+[info] scalafmt: Formatting 1 Scala sources (/Users/bbuchsbaum/code/scala/scaladock/modules/fx)...
+[info] scalafmt: Reformatted 1 Scala sources
+[info] scalafmt: Reformatted 1 Scala sources
+[info] scalafmt: Reformatted 2 Scala sources
+[success] Total time: 2 s, completed Oct 14, 2026, 10:41:23 p.m.
+[info] scalafmt: Checking 2 Scala sources (/Users/bbuchsbaum/code/scala/scaladock)...
+[success] Total time: 0 s, completed Oct 14, 2026, 10:41:23 p.m.
+[success] Total time: 0 s, completed Oct 14, 2026, 10:41:23 p.m.
+[info] compiling 1 Scala source to /Users/bbuchsbaum/code/scala/scaladock/modules/core/target/scala-3.7.4/classes ...
+[info] done compiling
+[info] compiling 3 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/fx/target/scala-3.7.4/classes ...
+[warn] -- Warning: /Users/bbuchsbaum/code/scala/scaladock/modules/fx/src/main/scala/scaladock/fx/Dock.scala:46:37 
+[warn] 46 |  private val main   = WindowRenderer(this, floating = false)
+[warn]    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[warn]    |Problematic object instantiation: arg 1 is not transitively initialized (Hot). Calling trace:
+[warn]    |??? final class Dock private (	[ Dock.scala:21 ]
+[warn]    |?   ^
+[warn]    |??? private val main   = WindowRenderer(this, floating = false)	[ Dock.scala:46 ]
+[warn]    |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[warn]    |
+[warn]    |It leads to the following error during object initialization:
+[warn]    |The RHS of reassignment must be transitively initialized (Hot). It was found to be a function where "this" is (a non-transitively initialized (Warm) object of type (class WindowRenderer) { outer = a transitively initialized (Hot) object, args = (an uninitialized (Cold) object, a transitively initialized (Hot) object) }).  Calling trace:
+[warn]    |??? private[fx] final class WindowRenderer(dock: Dock, floating: Boolean):	[ Dock.scala:867 ]
+[warn]    |?   ^
+[warn]    |??? region.settings = () => dock.settings	[ Dock.scala:870 ]
+[warn]    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[warn]    |
+[warn]    |Promoting the value to transitively initialized (Hot) failed due to the following problem:
+[warn]    |Call method method settings on an uninitialized (Cold) object. Promotion trace:
+[warn]    |??? region.settings = () => dock.settings	[ Dock.scala:870 ]
+[warn]    |                            ^^^^^^^^^^^^^
+[warn] one warning found
+[info] done compiling
+[info] compiling 2 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/fx/target/scala-3.7.4/classes ...
+[warn] one warning found
+[info] done compiling
+[success] Total time: 8 s, completed Oct 14, 2026, 10:41:31 p.m.
+scaladock.DslSuite:
+  + a VS Code-style layout reads as a picture and builds the expected tree 0.027s
+  + bare panes auto-wrap into their own group 0.001s
+  + atLeast attaches a minimum pixel extent 0.0s
+scaladock.GeometrySuite:
+  + Edge axis and leading are consistent 0.008s
+  + Axis.cross is an involution 0.0s
+  + Rect.contains respects exclusive right/bottom bounds 0.037s
+scaladock.EventsSuite:
+  + diff derives the full event vocabulary from one transition 0.041s
+  + diff reports retitles and cleared focus 0.002s
+  + a throwing subscriber does not starve the others 0.005s
+  + subscribing the same function twice yields independent subscriptions 0.001s
+  + Topic delivers, collect filters, cancel stops 0.002s
+scaladock.CanonicalSuite:
+  + canonical is idempotent 0.149s
+  + canonical preserves the multiset of panes 0.036s
+  + canonical output satisfies the tree grammar's laws 0.032s
+  + canonical clears dangling maximized and focused references 0.029s
+  + a dissolving split's promoted child keeps the dissolved slot's size 0.0s
+scaladock.SizingSuite:
+  + allocation sums exactly to the available span 0.103s
+  + min sizes are honoured whenever they are jointly feasible 0.029s
+  + fr cells share the remainder by weight 0.0s
+  + px cells take their pixels when fr capacity absorbs the rest 0.001s
+  + pct cells take their share of the available span 0.001s
+  + commitDivider changes only the two adjacent cells 0.025s
+  + commitDivider preserves the neighbours' combined pixels in the normalized regime 0.048s
+  + commitDivider lands the divider at the requested fraction 0.0s
+  + commitDivider clamps to the neighbours' min sizes 0.001s
+  + geometry tiles the viewport: no group escapes it 0.03s
+  + default metrics: a hairline 1px divider and a 32px header 0.004s
+  + hitTest picks the smallest containing hover area 0.029s
+  + layout metrics reject negative and non-finite fields but allow zero 0.0s
+  + zero and tiny viewports keep chrome, content and hit areas finite and inside bounds 0.008s
+  + a maximized hidden header remains absent from geometry and hit tests 0.0s
+  + divider commit uses actual constrained live span beside a minimized sibling 0.001s
+scaladock.CodecSuite:
+  + encode/decode round-trips canonical states exactly 0.194s
+  + unknown pane types survive a save/load/save cycle byte-for-byte 0.072s
+  + unresolved panes resolve on the next load once the type is known 0.043s
+  + malformed input yields LoadError, not an exception 0.001s
+  + the persisted format is pinned (golden fixture) 0.0s
+scaladock.AdversarialSuite:
+  + drop never loses the pane, even on stale targets 0.143s
+  + detaching a group's only tab and dropping back on its own header keeps the pane 0.0s
+  + every public transition sequence preserves canonical invariants 0.08s
+  + sizes at numeric extremes survive the codec round trip 0.012s
+  + divider commits near the edge persist and reload (the 8.3e-4 percent case) 0.001s
+  + duplicate ids are rejected with a LoadError, not accepted silently 0.012s
+  + popping one half of a pair and docking back restores structure, sizes, and minPx 0.0s
+  + popping out a floating window's root is a no-op 0.001s
+  + diff of identical states is empty 0.026s
+  + commitDivider is a fixed point when reapplied with its own outcome 0.02s
+scaladock.MinimizeSuite:
+  + a floorless Fr container keeps its subtree minimum when fixed siblings over-claim 0.011s
+  + minimize then unminimize is the exact identity — sizes are never touched 0.128s
+  + a minimized group presents as a strip; siblings absorb the space; restore is exact 0.043s
+  + focusing a pane restores its minimized group 0.029s
+  + dropping into a minimized group restores it 0.027s
+  + maximize and minimize are mutually exclusive per group 0.018s
+  + canonical clears minimized ids whose group is gone 0.024s
+  + the minimized set survives the codec round trip 0.027s
+  + diff reports minimize and restore 0.001s
+scaladock.EditSuite:
+  + drop IntoGroup inserts the tab at the index, activates and focuses it 0.141s
+  + drop Beside adds exactly the dropped pane and stays canonical 0.051s
+  + drop Beside merges into a parent split when the axis matches (no new split) 0.001s
+  + drop Beside on the cross axis wraps the target in a fresh split, 50/50 0.0s
+  + drop at a window edge merges into a same-axis root split, halving the neighbour 0.001s
+  + drop at a window edge on an empty layout creates the root group 0.005s
+  + detach then drop anywhere preserves the pane multiset 0.041s
+  + closing every pane empties the layout 0.039s
+  + focus activates the pane's tab in its group 0.015s
+  + maximize is at most one group and survives only while the group exists 0.013s
+  + a drop always restores from maximise first (golden-layout rule) 0.007s
+  + dragDivider touches only the named split 0.008s
+  + popOut then dockBack restores the original tree exactly 0.001s
+  + popOut preserves panes and stays canonical; dockBack always re-docks them 0.007s
+[info] Passed: Total 70, Failed 0, Errors 0, Passed 70
+[success] Total time: 1 s, completed Oct 14, 2026, 10:41:31 p.m.
+[info] compiling 15 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/fx/target/scala-3.7.4/test-classes ...
+[error] -- [E008] Not Found Error: /Users/bbuchsbaum/code/scala/scaladock/modules/fx/src/test/scala/scaladock/fx/MetricsSuite.scala:29:49 
+[error] 29 |        def snapshot(): Text         = Text(node.getText)
+[error]    |                                            ^^^^^^^^^^^^
+[error]    |                      value getText is not a member of javafx.scene.Node
+[error] -- [E007] Type Mismatch Error: /Users/bbuchsbaum/code/scala/scaladock/modules/fx/src/test/scala/scaladock/fx/MetricsSuite.scala:254:34 
+[error] 254 |      withDock(LayoutState.of(pane("home"))): (dock, _, _) =>
+[error]     |                              ^^^^^^^^^^^^
+[error]     |                              Found:    scaladock.PaneDef
+[error]     |                              Required: scaladock.Node
+[error]     |
+[error]     | longer explanation available when compiling with `-explain`
+[error] -- [E007] Type Mismatch Error: /Users/bbuchsbaum/code/scala/scaladock/modules/fx/src/test/scala/scaladock/fx/MetricsSuite.scala:314:63 
+[error] 314 |    val (dock, stage) = onFx(staged(counts, LayoutState.of(pane("one"))))
+[error]     |                                                           ^^^^^^^^^^^
+[error]     |                                           Found:    scaladock.PaneDef
+[error]     |                                           Required: scaladock.Node
+[error]     |
+[error]     | longer explanation available when compiling with `-explain`
+[error] three errors found
+[error] (fx / Test / compileIncremental) Compilation failed
+[error] Total time: 5 s, completed Oct 14, 2026, 10:41:36 p.m.

@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "started_utc": "2026-10-15T02:38:30.829241+00:00",
+  "finished_utc": "2026-10-15T02:39:02.260873+00:00",
+  "duration_seconds": 31.431489,
+  "command": [
+    "sbt",
+    "-batch",
+    "scalafmtAll",
+    "compile",
+    "core/testOnly scaladock.SizingSuite"
+  ],
+  "cwd": "/Users/bbuchsbaum/code/scala/scaladock",
+  "log": "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s2/compile-01.log",
+  "exit_code": 1,
+  "child_returncode": 1,
+  "reason": "exited",
+  "detail": null,
+  "timeout_seconds": 240.0,
+  "log_bytes": 10598
+}

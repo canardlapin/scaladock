@@ -1,0 +1,23 @@
+[info] welcome to sbt 1.12.14 (Oracle Corporation Java 22)
+[info] loading project definition from /Users/bbuchsbaum/code/scala/scaladock/tools/meridian-s1/compat/project
+[info] loading settings for project compat from build.sbt...
+[info] set current project to compat (in build file:/Users/bbuchsbaum/code/scala/scaladock/tools/meridian-s1/compat/)
+[info] Executing in batch mode. For better performance use sbt's shell
+[info] Defining Compile / unmanagedJars
+[info] The new value will be used by no settings or tasks.
+[info] Reapplying settings...
+[info] set current project to compat (in build file:/Users/bbuchsbaum/code/scala/scaladock/tools/meridian-s1/compat/)
+[info] compiling 2 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/tools/meridian-s1/compat/target/scala-3.7.4/classes ...
+[warn] -- [E029] Pattern Match Exhaustivity Warning: /Users/bbuchsbaum/code/scala/scaladock/tools/meridian-s1/compat/src/main/scala/LegacyThemeClient.scala:7:40 
+[warn] 7 |  def label(theme: DockTheme): String = theme match
+[warn]   |                                        ^^^^^
+[warn]   |match may not be exhaustive.
+[warn]   |
+[warn]   |It would fail on pattern case: scaladock.fx.DockTheme.CustomWithScheme(_, _)
+[warn]   |
+[warn]   | longer explanation available when compiling with `-explain`
+[error] No warnings can be incurred under -Werror (or -Xfatal-warnings)
+[warn] one warning found
+[error] one error found
+[error] (Compile / compileIncremental) Compilation failed
+[error] Total time: 2 s, completed Oct 14, 2026, 9:41:14 p.m.

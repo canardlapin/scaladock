@@ -1,0 +1,53 @@
+[info] welcome to sbt 1.12.14 (Oracle Corporation Java 22)
+[info] loading settings for project scaladock-build from plugins.sbt...
+[info] loading project definition from /Users/bbuchsbaum/code/scala/scaladock/project
+[info] loading settings for project root from build.sbt...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] scalafmt: Formatting 7 Scala sources (/Users/bbuchsbaum/code/scala/scaladock/modules/fx)...
+[info] scalafmt: Formatting 12 Scala sources (/Users/bbuchsbaum/code/scala/scaladock/modules/demo)...
+[info] scalafmt: Formatting 11 Scala sources (/Users/bbuchsbaum/code/scala/scaladock/modules/core)...
+[info] scalafmt: Formatting 9 Scala sources (/Users/bbuchsbaum/code/scala/scaladock/modules/core)...
+[info] scalafmt: Formatting 13 Scala sources (/Users/bbuchsbaum/code/scala/scaladock/modules/fx)...
+[info] scalafmt: Reformatted 1 Scala sources
+[info] scalafmt: Reformatted 1 Scala sources
+[success] Total time: 3 s, completed Oct 14, 2026, 9:33:53 p.m.
+[info] scalafmt: Formatting 2 Scala sources (/Users/bbuchsbaum/code/scala/scaladock)...
+[info] scalafmt: Reformatted 2 Scala sources
+[success] Total time: 0 s, completed Oct 14, 2026, 9:33:53 p.m.
+[info] compiling 9 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/core/target/scala-3.7.4/classes ...
+[info] done compiling
+[info] compiling 7 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/fx/target/scala-3.7.4/classes ...
+[info] done compiling
+[info] compiling 13 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/fx/target/scala-3.7.4/test-classes ...
+[info] done compiling
+Oct 14, 2026 9:34:09 P.M. com.sun.javafx.application.PlatformImpl startup
+WARNING: Unsupported JavaFX configuration: classes were loaded from 'unnamed module @56ed9f5e'
+2026-10-14 21:34:09.961 java[3645:7689115] CVDisplayLinkCreateWithActiveCGDisplays error: -6661
+2026-10-14 21:34:09.961 java[3645:7689115] CVDisplayLinkSetCurrentCGDisplay error: -6661
+2026-10-14 21:34:09.961 java[3645:7689115] CVDisplayLinkSetOutputCallback error: -6661
+2026-10-14 21:34:09.961 java[3645:7689115] CVDisplayLinkStart error: -6661
+scaladock.fx.ThemeSuite:
+  + the drop indicator resolves its colors from theme variables, not hardcoded values 0.559s
+  + the ghost popup carries the variable-bearing marker class 0.006s
+  + legacy Custom constructor, extractor, ordinals and unknown metadata remain intact 0.002s
+  + custom scheme metadata affects equality but preserves stylesheet order 0.004s
+  + main scene schemes are explicit host hooks with legacy no-op and platform fallback 0.003s
+  + known custom schemes reach existing, new and restored floats without changing main ownership or pane identity 0.182s
+scaladock.fx.PopoutSuite:
+  + popOut opens a Stage, moves the same pane node into it, and dockBack closes it 0.082s
+  + multi-window layouts save and load, restoring the floating Stage 0.086s
+  + closing a floating window docks its content back at the home anchor 0.071s
+[info] Passed: Total 9, Failed 0, Errors 0, Passed 9
+[success] Total time: 18 s, completed Oct 14, 2026, 9:34:10 p.m.
+[warn] build source files have changed
+[warn] modified files: 
+[warn]   /Users/bbuchsbaum/code/scala/scaladock/build.sbt
+[warn]   /Users/bbuchsbaum/code/scala/scaladock/project/plugins.sbt
+[warn] Apply these changes by running `reload`.
+[warn] Automatically reload the build when source changes are detected by setting `Global / onChangedBuildSource := ReloadOnSourceChanges`.
+[warn] Disable this warning by setting `Global / onChangedBuildSource := IgnoreSourceChanges`.
+[info] compiling 12 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/demo/target/scala-3.7.4/classes ...
+[info] done compiling
+[success] Total time: 4 s, completed Oct 14, 2026, 9:34:15 p.m.
+[success] Total time: 0 s, completed Oct 14, 2026, 9:34:15 p.m.
+[success] Total time: 0 s, completed Oct 14, 2026, 9:34:15 p.m.

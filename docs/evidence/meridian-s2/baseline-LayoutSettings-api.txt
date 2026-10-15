@@ -1,0 +1,103 @@
+Compiled from "sizing.scala"
+public final class scaladock.LayoutSettings implements scala.Product,java.io.Serializable {
+  public static final long OFFSET$_m_0;
+    descriptor: J
+  public static scaladock.LayoutSettings apply(double, double, double, double);
+    descriptor: (DDDD)Lscaladock/LayoutSettings;
+
+  public static scaladock.LayoutSettings default();
+    descriptor: ()Lscaladock/LayoutSettings;
+
+  public static scala.CanEqual<scaladock.LayoutSettings, scaladock.LayoutSettings> derived$CanEqual();
+    descriptor: ()Lscala/CanEqual;
+
+  public static scaladock.LayoutSettings fromProduct(scala.Product);
+    descriptor: (Lscala/Product;)Lscaladock/LayoutSettings;
+
+  public static scaladock.LayoutSettings unapply(scaladock.LayoutSettings);
+    descriptor: (Lscaladock/LayoutSettings;)Lscaladock/LayoutSettings;
+
+  public static double $lessinit$greater$default$1();
+    descriptor: ()D
+
+  public static double $lessinit$greater$default$2();
+    descriptor: ()D
+
+  public static double $lessinit$greater$default$3();
+    descriptor: ()D
+
+  public static double $lessinit$greater$default$4();
+    descriptor: ()D
+
+  public scaladock.LayoutSettings(double, double, double, double);
+    descriptor: (DDDD)V
+
+  public scala.collection.Iterator productIterator();
+    descriptor: ()Lscala/collection/Iterator;
+
+  public scala.collection.Iterator productElementNames();
+    descriptor: ()Lscala/collection/Iterator;
+
+  public int hashCode();
+    descriptor: ()I
+
+  public boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+
+  public java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public boolean canEqual(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+
+  public int productArity();
+    descriptor: ()I
+
+  public java.lang.String productPrefix();
+    descriptor: ()Ljava/lang/String;
+
+  public java.lang.Object productElement(int);
+    descriptor: (I)Ljava/lang/Object;
+
+  public java.lang.String productElementName(int);
+    descriptor: (I)Ljava/lang/String;
+
+  public double dividerPx();
+    descriptor: ()D
+
+  public double headerPx();
+    descriptor: ()D
+
+  public double edgeBandPx();
+    descriptor: ()D
+
+  public double defaultMinPanePx();
+    descriptor: ()D
+
+  public scaladock.LayoutSettings copy(double, double, double, double);
+    descriptor: (DDDD)Lscaladock/LayoutSettings;
+
+  public double copy$default$1();
+    descriptor: ()D
+
+  public double copy$default$2();
+    descriptor: ()D
+
+  public double copy$default$3();
+    descriptor: ()D
+
+  public double copy$default$4();
+    descriptor: ()D
+
+  public double _1();
+    descriptor: ()D
+
+  public double _2();
+    descriptor: ()D
+
+  public double _3();
+    descriptor: ()D
+
+  public double _4();
+    descriptor: ()D
+}

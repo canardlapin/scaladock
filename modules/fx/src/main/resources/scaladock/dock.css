@@ -160,7 +160,7 @@
 .dock-tab-overflow {
   -fx-border-color: transparent transparent transparent -dock-outline; /* separates it from tabs */
   -fx-border-width: 0 0 0 1;
-  -fx-border-insets: 8 0 8 0;
+  -fx-border-insets: 4 0 4 0; /* keep decoration from imposing a 32px control minimum */
   -fx-background-color: transparent;
   -fx-background-radius: 5px;
   -fx-padding: 0 7 0 7;

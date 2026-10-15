@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "started_utc": "2026-10-15T11:27:46.568320+00:00",
+  "finished_utc": "2026-10-15T11:28:00.680746+00:00",
+  "duration_seconds": 14.112242,
+  "command": [
+    "sbt",
+    "-batch",
+    "scalafmtAll",
+    "compile"
+  ],
+  "cwd": "/Users/bbuchsbaum/code/scala/scaladock",
+  "log": "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s3/compile-01.log",
+  "exit_code": 0,
+  "child_returncode": 0,
+  "reason": "exited",
+  "detail": null,
+  "timeout_seconds": 240.0,
+  "log_bytes": 7158
+}

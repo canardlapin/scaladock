@@ -1,0 +1,20 @@
+{
+  "base_git_head": "628c46fce92c4d31b0b08459ac0f18777b5ba527",
+  "candidate_source_digest": "fbb37b53a59a273e5b0c221b35ecb393a83cd968590860b96ba19f9bd20526f5",
+  "files": {
+    "build.sbt": "b6908d79077df16b8563afc8b367758600e51e114e5ad63ae76700d11d1b601e",
+    "docs/styling.md": "a3a70d54aa8a609b43e0bda253544360fa2f43dc0fb0219debe7df39865d5859",
+    "modules/demo/src/main/scala/scaladock/demo/shell.scala": "29c7a1b8d3e10198fc882966e80268db12389c568ce3c7378a1ce8bb8f816bcf",
+    "modules/fx/src/main/scala/scaladock/fx/Dock.scala": "aff54657197d64833cdf92552ecf18f701e35a36b37b874899b28d1866de7956",
+    "modules/fx/src/test/scala/scaladock/fx/ThemeNativeProbe.scala": "acf8ea1c4f81b29febcf6b52703e47fab22556314246a5aa868981f62c1d63e9",
+    "modules/fx/src/test/scala/scaladock/fx/ThemeSuite.scala": "a38db19b4cb2f3de6c29dfb670de6e57eda21788d5804cf49017d9c37443f365",
+    "project/build.properties": "d24588794d56b7bda7e561d899310803eba64264d1cfa5570f7d63f33641e4a7",
+    "project/plugins.sbt": "7828cc42771944e96fb2cdd67d5962cd048c0d9d91e6553efb06dcea3bb6270f",
+    "tools/meridian-s1/compat/UpdatedThemeClient.scala": "364e0ed77026d0548fc114ed15d005d66461cd5544aee2fdee6641d908e4591c",
+    "tools/meridian-s1/compat/build.sbt": "cee3a5aab94164e2c21b302b484a10006902abd2e732d49e1f984e26b7fdc021",
+    "tools/meridian-s1/compat/project/build.properties": "d24588794d56b7bda7e561d899310803eba64264d1cfa5570f7d63f33641e4a7",
+    "tools/meridian-s1/compat/src/main/scala/LegacyThemeClient.scala": "ad8866fe859263954cc517c10c417a43076c03eb8ff8113fc6bee8b7c3240de5",
+    "tools/meridian-s1/run_lane.py": "3e44db32103ea78669b0abd7756a13582a7e6858bf51bb36e43d0dd5440011c7"
+  },
+  "status": "Local uncommitted source; not an immutable Git review candidate"
+}

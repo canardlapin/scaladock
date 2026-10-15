@@ -161,4 +161,60 @@ final class SizingSuite extends ScalaCheckSuite:
         case None => ()
       true
     }
+  test("layout metrics reject negative and non-finite fields but allow zero"):
+    for bad <- Vector(-0.01, Double.NaN, Double.PositiveInfinity, Double.NegativeInfinity) do
+      val _ = intercept[IllegalArgumentException](LayoutSettings(dividerPx = bad))
+      val _ = intercept[IllegalArgumentException](LayoutSettings(headerPx = bad))
+      val _ = intercept[IllegalArgumentException](LayoutSettings(edgeBandPx = bad))
+      val _ = intercept[IllegalArgumentException](LayoutSettings(defaultMinPanePx = bad))
+    assertEquals(LayoutSettings(0, 0, 0, 0).headerPx, 0.0)
+
+  test("zero and tiny viewports keep chrome, content and hit areas finite and inside bounds"):
+    val groups = Vector("a", "b", "c").map(t => Node.solo(doc(t)))
+    val root   = Node.Split(NodeId.fresh(), Axis.Horizontal, groups.map(g => Cell(g)))
+    for
+      metrics <- Vector(
+        LayoutSettings(),
+        LayoutSettings(0, 0, 0, 0),
+        LayoutSettings(headerPx = 80),
+        LayoutSettings(defaultMinPanePx = Double.MaxValue)
+      )
+      span <- Vector(0.0, 0.25, 1.0, 20.0)
+    do
+      val viewport = Rect(0, 0, span, span)
+      val geom =
+        sizing.geometry(Some(root), viewport, metrics, minimized = groups.take(2).map(_.id).toSet)
+      val areas = sizing.dropAreas(Some(root), geom, viewport, None, metrics)
+      val rects = geom.groups.values.toVector.flatMap(g => Vector(g.bounds, g.header, g.content)) ++
+        geom.dividers.map(_.bounds) ++ areas.flatMap(a => Vector(a.hover, a.highlight))
+      rects.foreach: r =>
+        assert(Vector(r.x, r.y, r.width, r.height).forall(_.isFinite), s"$metrics $span $r")
+        assert(r.width >= 0 && r.height >= 0)
+        assert(r.x >= 0 && r.y >= 0 && r.right <= span + eps && r.bottom <= span + eps)
+
+  test("a maximized hidden header remains absent from geometry and hit tests"):
+    val group = Node.solo(doc("hidden")).copy(header = Header.Hidden)
+    val geom = sizing.geometry(
+      Some(group),
+      Rect(0, 0, 200, 100),
+      LayoutSettings(headerPx = 64),
+      Some(group.id)
+    )
+    assertEquals(geom.groups(group.id).header.height, 0.0)
+    assertEquals(geom.groups(group.id).content, Rect(0, 0, 200, 100))
+
+  test("divider commit uses actual constrained live span beside a minimized sibling"):
+    val groups  = Vector("a", "b", "strip").map(t => Node.solo(doc(t)))
+    val cells   = Vector(Cell(groups(0)), Cell(groups(1)), Cell(groups(2), Size.Px(250)))
+    val root    = Node.Split(NodeId.fresh(), Axis.Vertical, cells)
+    val state   = edit.canonical(LayoutState.of(root)).copy(minimized = Set(groups(2).id))
+    val metrics = LayoutSettings(headerPx = 64)
+    val next    = edit.dragDivider(state, root.id, 0, 0.4, 600, metrics)
+    val geom = sizing.geometry(next.root, Rect(0, 0, 400, 600), metrics, minimized = next.minimized)
+    assertEqualsDouble(geom.groups(groups(0).id).bounds.height, 213.6, eps)
+    assertEqualsDouble(geom.groups(groups(1).id).bounds.height, 320.4, eps)
+    assertEqualsDouble(geom.groups(groups(2).id).bounds.height, 64.0, eps)
+    assertEquals(next.findSplit(root.id).get.cells(2), cells(2))
+    assertEquals(next.groups.map(_.id), state.groups.map(_.id))
+
 end SizingSuite

@@ -1,0 +1,83 @@
+{
+  "verdict": "Existing public JVM signatures retained; additive setSettings/requestedSettings. Shape check only, not independent binary qualification.",
+  "commands": [
+    {
+      "command": [
+        "/Users/bbuchsbaum/Library/Java/JavaVirtualMachines/openjdk-22/Contents/Home/bin/javap",
+        "-public",
+        "-s",
+        "-classpath",
+        "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/baseline-artifacts/scaladock-core_3-0.1.0-SNAPSHOT.jar",
+        "scaladock.LayoutSettings"
+      ],
+      "exit_code": 0,
+      "output": "baseline-LayoutSettings-api.txt",
+      "sha256": "20080c5327082a944ddb6229d06cd2b5686db519518771640b5587901066424a"
+    },
+    {
+      "command": [
+        "/Users/bbuchsbaum/Library/Java/JavaVirtualMachines/openjdk-22/Contents/Home/bin/javap",
+        "-public",
+        "-s",
+        "-classpath",
+        "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s2/candidate-artifacts/scaladock-core_3-0.1.0-SNAPSHOT.jar",
+        "scaladock.LayoutSettings"
+      ],
+      "exit_code": 0,
+      "output": "candidate-LayoutSettings-api.txt",
+      "sha256": "20080c5327082a944ddb6229d06cd2b5686db519518771640b5587901066424a"
+    },
+    {
+      "command": [
+        "/Users/bbuchsbaum/Library/Java/JavaVirtualMachines/openjdk-22/Contents/Home/bin/javap",
+        "-public",
+        "-s",
+        "-classpath",
+        "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/baseline-artifacts/scaladock-core_3-0.1.0-SNAPSHOT.jar",
+        "scaladock.LayoutSettings$"
+      ],
+      "exit_code": 0,
+      "output": "baseline-LayoutSettings$-api.txt",
+      "sha256": "b347fd01d0e3e78f74226b0784a21ac24a3d388a53a1999001b1c8c405a18374"
+    },
+    {
+      "command": [
+        "/Users/bbuchsbaum/Library/Java/JavaVirtualMachines/openjdk-22/Contents/Home/bin/javap",
+        "-public",
+        "-s",
+        "-classpath",
+        "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s2/candidate-artifacts/scaladock-core_3-0.1.0-SNAPSHOT.jar",
+        "scaladock.LayoutSettings$"
+      ],
+      "exit_code": 0,
+      "output": "candidate-LayoutSettings$-api.txt",
+      "sha256": "b347fd01d0e3e78f74226b0784a21ac24a3d388a53a1999001b1c8c405a18374"
+    },
+    {
+      "command": [
+        "/Users/bbuchsbaum/Library/Java/JavaVirtualMachines/openjdk-22/Contents/Home/bin/javap",
+        "-public",
+        "-s",
+        "-classpath",
+        "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/baseline-artifacts/scaladock-fx_3-0.1.0-SNAPSHOT.jar",
+        "scaladock.fx.Dock"
+      ],
+      "exit_code": 0,
+      "output": "baseline-Dock-api.txt",
+      "sha256": "a1e08941ba7cf9ed87a0b8c62470ce15ea81b7f9e0cbada30323f156607498b7"
+    },
+    {
+      "command": [
+        "/Users/bbuchsbaum/Library/Java/JavaVirtualMachines/openjdk-22/Contents/Home/bin/javap",
+        "-public",
+        "-s",
+        "-classpath",
+        "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s2/candidate-artifacts/scaladock-fx_3-0.1.0-SNAPSHOT.jar",
+        "scaladock.fx.Dock"
+      ],
+      "exit_code": 0,
+      "output": "candidate-Dock-api.txt",
+      "sha256": "a1f74fd1f4bf2a092656434b1066b305ba14af3247353a831607af3605a2dd1d"
+    }
+  ]
+}

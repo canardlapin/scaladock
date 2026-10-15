@@ -1,0 +1,10 @@
+capture=JavaFX scene snapshots after native pulses; no OS window capture
+java=25.0.1
+javafx=27+30
+os=Mac OS X/aarch64
+requested=LayoutSettings(1.0,28.0,50.0,40.0)
+effective=LayoutSettings(1.0,52.0,50.0,40.0)
+built=4
+disposedBeforeCleanup=0
+css-font-42	Some(c212f9c4-e061-425d-853a-5e9bb0041508)	header=52.0	content=546.0
+css-font-42	None	header=52.0	content=598.0

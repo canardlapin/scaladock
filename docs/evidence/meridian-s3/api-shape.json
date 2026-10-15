@@ -1,0 +1,40 @@
+{
+  "s2": {
+    "command": [
+      "/Users/bbuchsbaum/Library/Java/JavaVirtualMachines/openjdk-22/Contents/Home/bin/javap",
+      "-public",
+      "-classpath",
+      "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s2/candidate-artifacts/scaladock-fx_3-0.1.0-SNAPSHOT.jar",
+      "scaladock.fx.Dock"
+    ],
+    "exit_code": 0,
+    "jar_sha256": "1e8c95f9cf74f8d3c647288a2d556be08c7048d35a9b6c6c4f0353b08cb6c1f0"
+  },
+  "s3": {
+    "command": [
+      "/Users/bbuchsbaum/Library/Java/JavaVirtualMachines/openjdk-22/Contents/Home/bin/javap",
+      "-public",
+      "-classpath",
+      "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s3/candidate-artifacts/scaladock-fx_3-0.1.0-SNAPSHOT.jar",
+      "scaladock.fx.Dock"
+    ],
+    "exit_code": 0,
+    "jar_sha256": "298225350093f3b2089e33ef2d6f34ed7836681aa1a17e6d275e8d4937571c6a"
+  },
+  "removed_public_jvm_signatures": [],
+  "added_public_jvm_signatures": [
+    "  public boolean isDisposed();",
+    "  public boolean scaladock$fx$Dock$$disposed;",
+    "  public final scaladock.Events$Topic<scaladock.DockEvent> scaladock$fx$Dock$$topic;",
+    "  public final scaladock.Events$Topic<scaladock.fx.DockTheme> scaladock$fx$Dock$$themeTopic;",
+    "  public final scaladock.fx.PresentationScope scaladock$fx$Dock$$lifetime;",
+    "  public int ownedBindingCount();",
+    "  public int styleBindingCount();",
+    "  public scaladock.Subscription bindStylesheets(javafx.scene.Parent);",
+    "  public static final void scaladock$fx$Dock$$anon$1$$_$subscribe$$anonfun$1();",
+    "  public static final void scaladock$fx$Dock$$anon$1$$_$subscribe$$anonfun$2(scaladock.Subscription);",
+    "  public static final void scaladock$fx$Dock$$anon$5$$_$subscribe$$anonfun$3();",
+    "  public static final void scaladock$fx$Dock$$anon$5$$_$subscribe$$anonfun$4(scaladock.Subscription);"
+  ],
+  "limit": "Public JVM shape comparison only; not independent provider qualification or full binary/source compatibility proof"
+}

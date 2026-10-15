@@ -65,15 +65,20 @@ private[demo] object Shell:
 
     def syncTheme(): Unit =
       shell.getStylesheets.setAll((dock.theme.stylesheets ++ DemoStyle.sheets)*)
-      val dark = dock.theme != DockTheme.Light
+      val dark = dock.theme.isDark.getOrElse(
+        javafx.application.Platform.getPreferences.getColorScheme == javafx.application.ColorScheme.DARK
+      )
       // the label names the action: the theme you switch *to*
       theme.setText(if dark then "Light" else "Dark")
       theme.setGraphic(if dark then Icons.sun() else Icons.moon())
       // the native title bar follows the theme too (JavaFX 25+)
-      Option(shell.getScene).foreach(dock.theme.applyWindowScheme(_): Unit)
+      Option(shell.getScene).foreach(dock.theme.applyWindowSchemeOrPlatform(_): Unit)
 
     theme.setOnAction: _ =>
-      dock.setTheme(if dock.theme == DockTheme.Light then DockTheme.Dark else DockTheme.Light)
+      val dark = dock.theme.isDark.getOrElse(
+        javafx.application.Platform.getPreferences.getColorScheme == javafx.application.ColorScheme.DARK
+      )
+      dock.setTheme(if dark then DockTheme.Light else DockTheme.Dark)
       syncTheme()
 
     val divider = Region()
@@ -158,7 +163,7 @@ private[demo] object Shell:
       case _                          => ()
     dock.events.subscribe(onEvent): Unit
     shell.sceneProperty.addListener((_, _, scene) =>
-      if scene != null then dock.theme.applyWindowScheme(scene): Unit
+      if scene != null then dock.theme.applyWindowSchemeOrPlatform(scene): Unit
     )
     // follow every theme change, whether from this button or from any other host code
     val _ = dock.themeChanges.subscribe(_ => syncTheme())

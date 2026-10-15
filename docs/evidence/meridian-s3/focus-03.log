@@ -1,0 +1,33 @@
+[info] welcome to sbt 1.12.14 (Oracle Corporation Java 22)
+[info] loading settings for project scaladock-build from plugins.sbt...
+[info] loading project definition from /Users/bbuchsbaum/code/scala/scaladock/project
+[info] loading settings for project root from build.sbt...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] Defining fx / Test / javaOptions
+[info] The new value will be used by fx / Test / bspBuildTargetJvmEnvironmentItem, fx / Test / bspBuildTargetRun and 6 others.
+[info] 	Run `last` for details.
+[info] Reapplying settings...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] Defining fx / Test / fullClasspath
+[info] The new value will be used by fx / Test / bspBuildTargetJvmEnvironmentItem, fx / Test / console and 6 others.
+[info] 	Run `last` for details.
+[info] Reapplying settings...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] scalafmt: Formatting 1 Scala sources (/Users/bbuchsbaum/code/scala/scaladock/modules/fx)...
+[info] scalafmt: Formatting 1 Scala sources (/Users/bbuchsbaum/code/scala/scaladock/modules/fx)...
+[info] scalafmt: Reformatted 1 Scala sources
+[success] Total time: 3 s, completed Oct 15, 2026, 7:35:32 a.m.
+[info] compiling 1 Scala source to /Users/bbuchsbaum/code/scala/scaladock/modules/fx/target/scala-3.7.4/classes ...
+[info] done compiling
+[info] compiling 1 Scala source to /Users/bbuchsbaum/code/scala/scaladock/modules/fx/target/scala-3.7.4/test-classes ...
+[info] done compiling
+scaladock.fx.PresentationSuite:
+  + repeated host root leases preserve foreign styles/classes and share one live binding 0.643s
+  + open tab menus dismiss on theme/density changes and reopen with current computed colors 0.147s
+  + overflow menus and tooltips dismiss and reopen using current custom styles 0.115s
+  + theme and metric changes cancel ghosts; next ghost owns the current independent root 0.096s
+  + repeated bindings/subscriptions and source handles are released by Dock.dispose 0.063s
+  + scene/window transfer detaches old owners; hide/show recreates float presentation without rebuilding panes 0.176s
+  + retired floating regions have no input bindings and preserve unrelated styles 0.09s
+[info] Passed: Total 7, Failed 0, Errors 0, Passed 7
+[success] Total time: 11 s, completed Oct 15, 2026, 7:35:43 a.m.

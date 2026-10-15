@@ -33,7 +33,15 @@ private[fx] def dockIcon(kind: String): Region =
   * buttons, overflow menu) is cheap and rebuilt freely; the hosted pane nodes are only ever
   * reparented.
   */
-private[fx] final class GroupView(val nodeId: NodeId, settings: LayoutSettings) extends Region:
+private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => LayoutSettings)
+    extends Region:
+  private var settings    = initialSettings
+  private val overlayLife = new PresentationScope
+  private val menus    = collection.mutable.Map.empty[javafx.scene.control.ContextMenu, () => Unit]
+  private var disposed = false
+  private var presentationAttached                                = false
+  private[fx] var stylePopup: javafx.scene.Parent => Subscription = _ => () => ()
+
   // gesture callbacks, wired once by Dock at creation
   private[fx] var onTabActivated: PaneId => Unit                                 = _ => ()
   private[fx] var onTabPressed: (PaneId, javafx.scene.input.MouseEvent) => Unit  = (_, _) => ()
@@ -46,6 +54,10 @@ private[fx] final class GroupView(val nodeId: NodeId, settings: LayoutSettings) 
   private[fx] var onMinimizeToggled: () => Unit                                  = () => ()
   private[fx] var onPopOut: () => Unit                                           = () => ()
   private[fx] var onContentResized: (PaneId, Double, Double) => Unit             = (_, _, _) => ()
+
+  private def bindPopup(popup: javafx.scene.control.PopupControl): Unit =
+    val sub = PresentationBindings.popup(popup)(root => stylePopup(root))
+    val _   = overlayLife.own(() => sub.cancel())
 
   /** Tooltips are installed once and only retitled on update. */
   private val tips = collection.mutable.Map.empty[FxNode, Tooltip]
@@ -135,6 +147,12 @@ private[fx] final class GroupView(val nodeId: NodeId, settings: LayoutSettings) 
   header.getStyleClass.add("dock-header")
   header.add(tabsViewport, overflow, buttons)
   getChildren.addAll(header, content, stripFace)
+  // Infeasible viewports can reach zero: children with larger minima must not spill into siblings.
+  for container <- Vector(header, content) do
+    val clip = new javafx.scene.shape.Rectangle
+    clip.widthProperty.bind(container.widthProperty)
+    clip.heightProperty.bind(container.heightProperty)
+    container.setClip(clip)
 
   tabsViewport.setOnScroll: e =>
     val delta = if math.abs(e.getDeltaX) > math.abs(e.getDeltaY) then e.getDeltaX else e.getDeltaY
@@ -250,6 +268,73 @@ private[fx] final class GroupView(val nodeId: NodeId, settings: LayoutSettings) 
     header.requestLayout()
   end update
 
+  def attachPresentation(): Unit =
+    if !presentationAttached then
+      presentationAttached = true
+      tips.values.foreach(bindPopup)
+
+  def dismissOverlays(): Unit =
+    overflow.hide()
+    menus.toVector.foreach((menu, release) =>
+      menu.hide()
+      release()
+    )
+    tips.values.foreach(_.hide())
+
+  def dispose(): Unit =
+    if !disposed then
+      disposed = true
+      dismissOverlays()
+      overlayLife.cancel()
+      tips.foreach((n, t) => Tooltip.uninstall(n, t))
+      tips.clear()
+      overflow.getItems.clear()
+      overflow.setSkin(null)
+      resetInsertion()
+      content.getChildren.clear()
+      tabViews.values.foreach(_.dispose())
+      tabsBox.getChildren.clear()
+      buttons.getChildren.clear()
+      tabViews.clear()
+      getChildren.clear()
+      tabNodes = Vector.empty
+      settings = () => LayoutSettings.default
+      stylePopup = _ => () => ()
+      onTabActivated = _ => ()
+      onTabPressed = (_, _) => ()
+      onTabDragged = (_, _) => ()
+      onTabReleased = (_, _) => ()
+      onTabClosed = _ => ()
+      onTabMenu = _ => Seq.empty
+      onGroupClosed = () => ()
+      onMaximizeToggled = () => ()
+      onMinimizeToggled = () => ()
+      onPopOut = () => ()
+      onContentResized = (_, _, _) => ()
+
+  def bindingCount: Int = overlayLife.size
+
+  def usesHeader: Boolean = headerVisible
+
+  /** Natural CSS chrome minima, never a previously allocated height or a density ceiling. */
+  def preferredHeaderPx: Double =
+    stripLabel.autosize()
+    val chrome = Vector(
+      tabsBox.minHeight(-1),
+      tabsBox.prefHeight(-1),
+      buttons.minHeight(-1),
+      buttons.prefHeight(-1),
+      overflow.minHeight(-1),
+      overflow.prefHeight(-1)
+    ).max + header.getInsets.getTop + header.getInsets.getBottom
+    Vector(
+      chrome,
+      math.max(0.0, header.getMinHeight),
+      math.max(0.0, header.getPrefHeight),
+      stripStack.minWidth(-1),
+      stripStack.prefWidth(-1)
+    ).max
+
   /** While any drag is in flight, content ignores the pointer: no hover or crosshair reacts to a
     * pointer that is carrying a pane.
     */
@@ -312,8 +397,23 @@ private[fx] final class GroupView(val nodeId: NodeId, settings: LayoutSettings) 
     setOnContextMenuRequested: e =>
       val items = onTabMenu(id)
       if items.nonEmpty then
-        val menu = new javafx.scene.control.ContextMenu(items*)
-        menu.show(this, e.getScreenX, e.getScreenY)
+        val menu     = new javafx.scene.control.ContextMenu(items*)
+        val lease    = stylePopup(menu.getScene.getRoot)
+        var released = false
+        def release(): Unit =
+          if !released then
+            released = true
+            lease.cancel()
+            menus.remove(menu): Unit
+            menu.getItems.clear()
+            menu.setOnHidden(null)
+        menus(menu) = () => release()
+        menu.setOnHidden(_ => release())
+        try menu.show(this, e.getScreenX, e.getScreenY)
+        catch
+          case scala.util.control.NonFatal(error) =>
+            release()
+            throw error
       e.consume()
 
     setOnMousePressed: e =>
@@ -325,6 +425,14 @@ private[fx] final class GroupView(val nodeId: NodeId, settings: LayoutSettings) 
       // double-click a tab: maximise its group (or restore), as in VS Code and JetBrains
       else if e.getButton == MouseButton.PRIMARY && e.getClickCount == 2 && chromeAllowed.maximize
       then onMaximizeToggled()
+
+    def dispose(): Unit =
+      setOnContextMenuRequested(null)
+      setOnMousePressed(null)
+      setOnMouseDragged(null)
+      setOnMouseReleased(null)
+      setOnMouseClicked(null)
+      getChildren.clear()
 
     def sync(pane: Pane, selected: Boolean): Unit =
       if title.getText != pane.title then title.setText(pane.title)
@@ -414,7 +522,7 @@ private[fx] final class GroupView(val nodeId: NodeId, settings: LayoutSettings) 
     Tooltip.install(n, t)
     tips(n) = t
 
-  private def tipOf(n: FxNode): Option[Tooltip] = tips.get(n)
+  private[fx] def tipOf(n: FxNode): Option[Tooltip] = tips.get(n)
 
   def setActiveStyle(focused: Boolean): Unit =
     pseudoClassStateChanged(pseudo.Active, focused)
@@ -532,7 +640,7 @@ private[fx] final class GroupView(val nodeId: NodeId, settings: LayoutSettings) 
       content.resizeRelocate(0, 0, 0, 0)
     else
       val w       = getWidth
-      val headerH = if headerVisible then math.min(settings.headerPx, getHeight) else 0.0
+      val headerH = if headerVisible then math.min(settings().headerPx, getHeight) else 0.0
       header.resizeRelocate(0, 0, w, headerH)
       content.resizeRelocate(0, headerH, w, math.max(0, getHeight - headerH))
 
@@ -605,6 +713,23 @@ private[fx] final class DividerView(val splitId: NodeId, val index: Int) extends
     borrowed.foreach((scene, cursor) => scene.setCursor(cursor))
     borrowed = None
     onPreviewEnd()
+
+  /** End transient resizing without committing a ratio; restore the borrowed scene cursor. */
+  def cancel(): Unit =
+    hoverDelay.stop()
+    pseudoClassStateChanged(pseudo.Hot, false)
+    endGesture()
+
+  def dispose(): Unit =
+    cancel()
+    dragContext = () => None
+    onCommit = (_, _) => ()
+    onPreview = (_, _) => ()
+    onPreviewEnd = () => ()
+    hoverDelay.setOnFinished(null)
+    setOnMousePressed(null)
+    setOnMouseDragged(null)
+    setOnMouseReleased(null)
 
   // a divider removed mid-gesture (its split dissolved) never sees the release: clean up now
   sceneProperty.addListener: (_, _, scene) =>

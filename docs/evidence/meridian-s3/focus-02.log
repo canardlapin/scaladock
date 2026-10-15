@@ -1,0 +1,84 @@
+[info] welcome to sbt 1.12.14 (Oracle Corporation Java 22)
+[info] loading settings for project scaladock-build from plugins.sbt...
+[info] loading project definition from /Users/bbuchsbaum/code/scala/scaladock/project
+[info] loading settings for project root from build.sbt...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] Defining fx / Test / javaOptions
+[info] The new value will be used by fx / Test / bspBuildTargetJvmEnvironmentItem, fx / Test / bspBuildTargetRun and 6 others.
+[info] 	Run `last` for details.
+[info] Reapplying settings...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] Defining fx / Test / fullClasspath
+[info] The new value will be used by fx / Test / bspBuildTargetJvmEnvironmentItem, fx / Test / console and 6 others.
+[info] 	Run `last` for details.
+[info] Reapplying settings...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] scalafmt: Formatting 1 Scala sources (/Users/bbuchsbaum/code/scala/scaladock/modules/fx)...
+[info] scalafmt: Reformatted 1 Scala sources
+[success] Total time: 1 s, completed Oct 15, 2026, 7:34:03 a.m.
+[info] compiling 17 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/fx/target/scala-3.7.4/test-classes ...
+[info] done compiling
+scaladock.fx.PresentationSuite:
+==> X scaladock.fx.PresentationSuite.repeated host root leases preserve foreign styles/classes and share one live binding  0.623s munit.ComparisonFailException: modules/fx/src/test/scala/scaladock/fx/PresentationSuite.scala:164
+163:          assertEquals(root.getStylesheets.toArray.toVector, initial)
+164:          assertEquals(root.getStyleClass.toArray.toVector, originalClasses)
+165:
+values are not the same
+=> Obtained
+Vector(
+  "root",
+  "host-marker"
+)
+=> Diff (- expected, + obtained)
+ Vector(
++  "root",
+   "host-marker"
+    at munit.FunSuite.assertEquals(FunSuite.scala:13)
+    at scaladock.fx.PresentationSuite.$init$$$anonfun$1$$anonfun$1$$anonfun$1$$anonfun$1(PresentationSuite.scala:164)
+    at scaladock.fx.PresentationSuite.fixture(PresentationSuite.scala:44)
+    at scaladock.fx.PresentationSuite.$init$$$anonfun$1$$anonfun$1$$anonfun$1(PresentationSuite.scala:140)
+    at scaladock.fx.PresentationSuite.sheets(PresentationSuite.scala:67)
+    at scaladock.fx.PresentationSuite.$init$$$anonfun$1$$anonfun$1(PresentationSuite.scala:139)
+    at scaladock.fx.PresentationSuite.$init$$$anonfun$1$$anonfun$adapted$1(PresentationSuite.scala:164)
+    at scaladock.fx.FxFixture$.onFx$$anonfun$2(FxFixture.scala:26)
+    at com.sun.javafx.application.PlatformImpl.lambda$runLater$4(PlatformImpl.java:419)
+    at com.sun.glass.ui.InvokeLaterDispatcher$Future.run(InvokeLaterDispatcher.java:95)
+==> X scaladock.fx.PresentationSuite.open tab menus dismiss on theme/density changes and reopen with current computed colors  0.128s munit.FailException: modules/fx/src/test/scala/scaladock/fx/PresentationSuite.scala:100 .context-menu expected #f5eee2; paints=Vector(0x393b40ff, 0x30405aff)
+99:     .flatten
+100:    assert(colors.contains(Color.web(expected)), s"$selector expected $expected; paints=$colors")
+101:
+    at munit.FunSuite.assert(FunSuite.scala:13)
+    at scaladock.fx.PresentationSuite.assertPaint(PresentationSuite.scala:100)
+    at scaladock.fx.PresentationSuite.$init$$$anonfun$2$$anonfun$1$$anonfun$1$$anonfun$1(PresentationSuite.scala:180)
+    at scaladock.fx.PresentationSuite.fixture(PresentationSuite.scala:44)
+    at scaladock.fx.PresentationSuite.$init$$$anonfun$2$$anonfun$1$$anonfun$1(PresentationSuite.scala:169)
+    at scaladock.fx.PresentationSuite.sheets(PresentationSuite.scala:67)
+    at scaladock.fx.PresentationSuite.$init$$$anonfun$2$$anonfun$1(PresentationSuite.scala:168)
+    at scaladock.fx.PresentationSuite.$init$$$anonfun$2$$anonfun$adapted$1(PresentationSuite.scala:186)
+    at scaladock.fx.FxFixture$.onFx$$anonfun$2(FxFixture.scala:26)
+    at com.sun.javafx.application.PlatformImpl.lambda$runLater$4(PlatformImpl.java:419)
+    at com.sun.glass.ui.InvokeLaterDispatcher$Future.run(InvokeLaterDispatcher.java:95)
+==> X scaladock.fx.PresentationSuite.overflow menus and tooltips dismiss and reopen using current custom styles  0.1s munit.FailException: modules/fx/src/test/scala/scaladock/fx/PresentationSuite.scala:100 .context-menu expected #f5eee2; paints=Vector(0x393b40ff, 0x30405aff)
+99:     .flatten
+100:    assert(colors.contains(Color.web(expected)), s"$selector expected $expected; paints=$colors")
+101:
+    at munit.FunSuite.assert(FunSuite.scala:13)
+    at scaladock.fx.PresentationSuite.assertPaint(PresentationSuite.scala:100)
+    at scaladock.fx.PresentationSuite.$init$$$anonfun$3$$anonfun$1$$anonfun$1$$anonfun$1(PresentationSuite.scala:203)
+    at scaladock.fx.PresentationSuite.fixture(PresentationSuite.scala:44)
+    at scaladock.fx.PresentationSuite.$init$$$anonfun$3$$anonfun$1$$anonfun$1(PresentationSuite.scala:191)
+    at scaladock.fx.PresentationSuite.sheets(PresentationSuite.scala:67)
+    at scaladock.fx.PresentationSuite.$init$$$anonfun$3$$anonfun$1(PresentationSuite.scala:190)
+    at scaladock.fx.PresentationSuite.$init$$$anonfun$3$$anonfun$adapted$1(PresentationSuite.scala:217)
+    at scaladock.fx.FxFixture$.onFx$$anonfun$2(FxFixture.scala:26)
+    at com.sun.javafx.application.PlatformImpl.lambda$runLater$4(PlatformImpl.java:419)
+    at com.sun.glass.ui.InvokeLaterDispatcher$Future.run(InvokeLaterDispatcher.java:95)
+  + theme and metric changes cancel ghosts; next ghost owns the current independent root 0.087s
+  + repeated bindings/subscriptions and source handles are released by Dock.dispose 0.073s
+  + scene/window transfer detaches old owners; hide/show recreates float presentation without rebuilding panes 0.189s
+  + retired floating regions have no input bindings and preserve unrelated styles 0.111s
+[error] Failed: Total 7, Failed 3, Errors 0, Passed 4
+[error] Failed tests:
+[error] 	scaladock.fx.PresentationSuite
+[error] (fx / Test / testOnly) sbt.TestsFailedException: Tests unsuccessful
+[error] Total time: 12 s, completed Oct 15, 2026, 7:34:15 a.m.

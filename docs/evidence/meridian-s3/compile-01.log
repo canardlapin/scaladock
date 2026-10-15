@@ -1,0 +1,94 @@
+[info] welcome to sbt 1.12.14 (Oracle Corporation Java 22)
+[info] loading settings for project scaladock-build from plugins.sbt...
+[info] loading project definition from /Users/bbuchsbaum/code/scala/scaladock/project
+[info] loading settings for project root from build.sbt...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] Executing in batch mode. For better performance use sbt's shell
+[info] scalafmt: Formatting 5 Scala sources (/Users/bbuchsbaum/code/scala/scaladock/modules/fx)...
+[info] scalafmt: Reformatted 5 Scala sources
+[success] Total time: 2 s, completed Oct 15, 2026, 7:27:51 a.m.
+[info] compiling 9 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/core/target/scala-3.7.4/classes ...
+[info] done compiling
+[info] compiling 8 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/fx/target/scala-3.7.4/classes ...
+[warn] -- Warning: /Users/bbuchsbaum/code/scala/scaladock/modules/fx/src/main/scala/scaladock/fx/views.scala:158:2 
+[warn] 158 |  getStyleClass.add("dock-group")
+[warn]     |  ^^^^^^^^^^^^^
+[warn]     |Calling the external method method getStyleClass may cause initialization errors. Calling trace:
+[warn]     |??? private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => LayoutSettings)	[ views.scala:36 ]
+[warn]     |?   ^
+[warn]     |??? getStyleClass.add("dock-group")	[ views.scala:158 ]
+[warn]     |    ^^^^^^^^^^^^^
+[warn] -- Warning: /Users/bbuchsbaum/code/scala/scaladock/modules/fx/src/main/scala/scaladock/fx/views.scala:159:2 
+[warn] 159 |  header.getStyleClass.add("dock-header")
+[warn]     |  ^^^^^^^^^^^^^^^^^^^^
+[warn]     |Calling the external method method getStyleClass may cause initialization errors. Calling trace:
+[warn]     |??? private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => LayoutSettings)	[ views.scala:36 ]
+[warn]     |?   ^
+[warn]     |??? header.getStyleClass.add("dock-header")	[ views.scala:159 ]
+[warn]     |    ^^^^^^^^^^^^^^^^^^^^
+[warn] -- Warning: /Users/bbuchsbaum/code/scala/scaladock/modules/fx/src/main/scala/scaladock/fx/views.scala:655:42 
+[warn] 655 |    def add(ns: FxNode*): Unit          = getChildren.addAll(ns*): Unit
+[warn]     |                                          ^^^^^^^^^^^
+[warn]     |Calling the external method method getChildren may cause initialization errors. Calling trace:
+[warn]     |??? private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => LayoutSettings)	[ views.scala:36 ]
+[warn]     |?   ^
+[warn]     |??? header.add(tabsViewport, overflow, buttons)	[ views.scala:160 ]
+[warn]     |?   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[warn]     |??? def add(ns: FxNode*): Unit          = getChildren.addAll(ns*): Unit	[ views.scala:655 ]
+[warn]     |                                          ^^^^^^^^^^^
+[warn] -- Warning: /Users/bbuchsbaum/code/scala/scaladock/modules/fx/src/main/scala/scaladock/fx/views.scala:161:2 
+[warn] 161 |  getChildren.addAll(header, content, stripFace)
+[warn]     |  ^^^^^^^^^^^
+[warn]     |Calling the external method method getChildren may cause initialization errors. Calling trace:
+[warn]     |??? private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => LayoutSettings)	[ views.scala:36 ]
+[warn]     |?   ^
+[warn]     |??? getChildren.addAll(header, content, stripFace)	[ views.scala:161 ]
+[warn]     |    ^^^^^^^^^^^
+[warn] -- Warning: /Users/bbuchsbaum/code/scala/scaladock/modules/fx/src/main/scala/scaladock/fx/views.scala:161:21 
+[warn] 161 |  getChildren.addAll(header, content, stripFace)
+[warn]     |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+[warn]     |Could not verify that the method argument is transitively initialized (Hot). It was found to be a non-transitively initialized (Warm) object of type (class HeaderBar) { outer = a transitively initialized (Hot) object, args = (an uninitialized (Cold) object) }. Only transitively initialized arguments may be passed to methods (except constructors). Calling trace:
+[warn]     |??? private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => LayoutSettings)	[ views.scala:36 ]
+[warn]     |?   ^
+[warn]     |??? getChildren.addAll(header, content, stripFace)	[ views.scala:161 ]
+[warn]     |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^
+[warn]     |
+[warn]     |Promoting the value to transitively initialized (Hot) failed due to the following problem:
+[warn]     |Could not verify that the field value layout is transitively initialized (Hot). It was found to be an uninitialized (Cold) object. Promotion trace:
+[warn]     |??? private final class HeaderBar(layout: (Double, Double) => Unit) extends Region:	[ views.scala:654 ]
+[warn]     |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[warn] -- Warning: /Users/bbuchsbaum/code/scala/scaladock/modules/fx/src/main/scala/scaladock/fx/views.scala:163:2 
+[warn] 163 |  for container <- Vector(header, content) do
+[warn]     |  ^
+[warn]     |Call method method foreach on an uninitialized (Cold) object. Calling trace:
+[warn]     |??? private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => LayoutSettings)	[ views.scala:36 ]
+[warn]     |?   ^
+[warn]     |??? for container <- Vector(header, content) do	[ views.scala:163 ]
+[warn]     |    ^
+[warn] 164 |    val clip = new javafx.scene.shape.Rectangle
+[warn] 165 |    clip.widthProperty.bind(container.widthProperty)
+[warn] 166 |    clip.heightProperty.bind(container.heightProperty)
+[warn] 167 |    container.setClip(clip)
+[warn] -- Warning: /Users/bbuchsbaum/code/scala/scaladock/modules/fx/src/main/scala/scaladock/fx/views.scala:169:28 
+[warn] 169 |  tabsViewport.setOnScroll: e =>
+[warn]     |                            ^
+[warn]     |Could not verify that the method argument is transitively initialized (Hot). It was found to be a function where "this" is (the original object of type (class GroupView) where initialization checking started). Only transitively initialized arguments may be passed to methods (except constructors). Calling trace:
+[warn]     |??? private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => LayoutSettings)	[ views.scala:36 ]
+[warn]     |?   ^
+[warn]     |??? tabsViewport.setOnScroll: e =>	[ views.scala:169 ]
+[warn]     |                              ^
+[warn]     |
+[warn]     |Promoting the value to transitively initialized (Hot) failed due to the following problem:
+[warn]     |Calling the external method method requestLayout may cause initialization errors. Promotion trace:
+[warn]     |??? header.requestLayout()	[ views.scala:175 ]
+[warn]     |    ^^^^^^^^^^^^^^^^^^^^^^
+[warn] 170 |    val delta = if math.abs(e.getDeltaX) > math.abs(e.getDeltaY) then e.getDeltaX else e.getDeltaY
+[warn] 171 |    wheel += delta
+[warn] 172 |    if math.abs(wheel) >= GroupView.WheelStepPx then
+[warn] 173 |      manualFirst = Some(lastFirst + (if wheel < 0 then 1 else -1))
+[warn] 174 |      wheel = 0
+[warn] 175 |      header.requestLayout()
+[warn] 176 |    e.consume()
+[warn] 7 warnings found
+[info] done compiling
+[success] Total time: 9 s, completed Oct 15, 2026, 7:28:00 a.m.

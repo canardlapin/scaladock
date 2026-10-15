@@ -1,0 +1,233 @@
+Compiled from "Dock.scala"
+public final class scaladock.fx.Dock {
+  public static scaladock.fx.Dock apply(scaladock.fx.PaneFactories, scaladock.LayoutState, scaladock.LayoutSettings, scaladock.HeaderButtons);
+    descriptor: (Lscaladock/fx/PaneFactories;Lscaladock/LayoutState;Lscaladock/LayoutSettings;Lscaladock/HeaderButtons;)Lscaladock/fx/Dock;
+
+  public static scaladock.LayoutState apply$default$2();
+    descriptor: ()Lscaladock/LayoutState;
+
+  public static scaladock.LayoutSettings apply$default$3();
+    descriptor: ()Lscaladock/LayoutSettings;
+
+  public static scaladock.HeaderButtons apply$default$4();
+    descriptor: ()Lscaladock/HeaderButtons;
+
+  public scaladock.fx.Dock(scaladock.fx.PaneFactories, scaladock.LayoutSettings, scaladock.HeaderButtons);
+    descriptor: (Lscaladock/fx/PaneFactories;Lscaladock/LayoutSettings;Lscaladock/HeaderButtons;)V
+
+  public scaladock.LayoutSettings settings();
+    descriptor: ()Lscaladock/LayoutSettings;
+
+  public javafx.scene.Parent view();
+    descriptor: ()Ljavafx/scene/Parent;
+
+  public scaladock.LayoutState state();
+    descriptor: ()Lscaladock/LayoutState;
+
+  public scaladock.Events<scaladock.DockEvent> events();
+    descriptor: ()Lscaladock/Events;
+
+  public void update(scala.Function1<scaladock.LayoutState, scaladock.LayoutState>);
+    descriptor: (Lscala/Function1;)V
+
+  public void switchTo(scaladock.LayoutState);
+    descriptor: (Lscaladock/LayoutState;)V
+
+  public scala.collection.immutable.Vector<java.lang.String> detachedPanes();
+    descriptor: ()Lscala/collection/immutable/Vector;
+
+  public scala.concurrent.Future<java.lang.Object> releaseDetached(scala.collection.immutable.Set<java.lang.String>);
+    descriptor: (Lscala/collection/immutable/Set;)Lscala/concurrent/Future;
+
+  public boolean isUpdating();
+    descriptor: ()Z
+
+  public scaladock.PaneTypes paneTypes();
+    descriptor: ()Lscaladock/PaneTypes;
+
+  public scala.concurrent.Future<java.lang.Object> releaseDetached();
+    descriptor: ()Lscala/concurrent/Future;
+
+  public scaladock.LayoutState snapshot();
+    descriptor: ()Lscaladock/LayoutState;
+
+  public scaladock.LayoutState withLiveStateOf(scaladock.LayoutState);
+    descriptor: (Lscaladock/LayoutState;)Lscaladock/LayoutState;
+
+  public java.lang.String open(scaladock.PaneDef, scaladock.DockAt);
+    descriptor: (Lscaladock/PaneDef;Lscaladock/DockAt;)Ljava/lang/String;
+
+  public scaladock.DockAt open$default$2();
+    descriptor: ()Lscaladock/DockAt;
+
+  public void close(java.lang.String);
+    descriptor: (Ljava/lang/String;)V
+
+  public scala.concurrent.Future<java.lang.Object> requestClose(java.lang.String);
+    descriptor: (Ljava/lang/String;)Lscala/concurrent/Future;
+
+  public scala.concurrent.Future<java.lang.Object> requestCloseAll();
+    descriptor: ()Lscala/concurrent/Future;
+
+  public void focus(java.lang.String);
+    descriptor: (Ljava/lang/String;)V
+
+  public void setTabMenu(scala.Function2<scaladock.fx.TabMenuContext, scala.collection.immutable.Vector<javafx.scene.control.MenuItem>, scala.collection.immutable.Seq<javafx.scene.control.MenuItem>>);
+    descriptor: (Lscala/Function2;)V
+
+  public scala.collection.immutable.Vector<javafx.scene.control.MenuItem> defaultTabMenu(java.lang.String, scaladock.Node$Group);
+    descriptor: (Ljava/lang/String;Lscaladock/Node$Group;)Lscala/collection/immutable/Vector;
+
+  public scala.collection.immutable.Seq<javafx.scene.control.MenuItem> tabMenuItems(java.lang.String);
+    descriptor: (Ljava/lang/String;)Lscala/collection/immutable/Seq;
+
+  public void focusNextGroup();
+    descriptor: ()V
+
+  public void focusPreviousGroup();
+    descriptor: ()V
+
+  public void nextTab();
+    descriptor: ()V
+
+  public void previousTab();
+    descriptor: ()V
+
+  public void toggleMaximizeFocused();
+    descriptor: ()V
+
+  public void closeFocused();
+    descriptor: ()V
+
+  public void perform(scaladock.fx.DockAction);
+    descriptor: (Lscaladock/fx/DockAction;)V
+
+  public scala.collection.immutable.Map<javafx.scene.input.KeyCombination, scaladock.fx.DockAction> keyBindings();
+    descriptor: ()Lscala/collection/immutable/Map;
+
+  public void setKeyBindings(scala.collection.immutable.Map<javafx.scene.input.KeyCombination, scaladock.fx.DockAction>);
+    descriptor: (Lscala/collection/immutable/Map;)V
+
+  public void handleKey(javafx.scene.input.KeyEvent);
+    descriptor: (Ljavafx/scene/input/KeyEvent;)V
+
+  public void focusContent(java.lang.String);
+    descriptor: (Ljava/lang/String;)V
+
+  public void attach();
+    descriptor: ()V
+
+  public void installKeyboard(scaladock.fx.DockRegion);
+    descriptor: (Lscaladock/fx/DockRegion;)V
+
+  public void maximize(java.lang.String);
+    descriptor: (Ljava/lang/String;)V
+
+  public void restore();
+    descriptor: ()V
+
+  public void toggleMaximize(java.lang.String);
+    descriptor: (Ljava/lang/String;)V
+
+  public void minimize(java.lang.String);
+    descriptor: (Ljava/lang/String;)V
+
+  public void unminimize(java.lang.String);
+    descriptor: (Ljava/lang/String;)V
+
+  public void toggleMinimize(java.lang.String);
+    descriptor: (Ljava/lang/String;)V
+
+  public void popOut(java.lang.String);
+    descriptor: (Ljava/lang/String;)V
+
+  public void dockBack(java.lang.String);
+    descriptor: (Ljava/lang/String;)V
+
+  public void dockAllBack();
+    descriptor: ()V
+
+  public ujson.Value save();
+    descriptor: ()Lujson/Value;
+
+  public scala.util.Either<scaladock.LoadError, scala.runtime.BoxedUnit> load(ujson.Value, boolean);
+    descriptor: (Lujson/Value;Z)Lscala/util/Either;
+
+  public boolean load$default$2();
+    descriptor: ()Z
+
+  public scaladock.Subscription dragSource(javafx.scene.Node, scala.Function0<scaladock.PaneDef>);
+    descriptor: (Ljavafx/scene/Node;Lscala/Function0;)Lscaladock/Subscription;
+
+  public void dispose();
+    descriptor: ()V
+
+  public void setTheme(scaladock.fx.DockTheme);
+    descriptor: (Lscaladock/fx/DockTheme;)V
+
+  public void setPlaceholder(scala.Option<javafx.scene.Node>);
+    descriptor: (Lscala/Option;)V
+
+  public scaladock.Events<scaladock.fx.DockTheme> themeChanges();
+    descriptor: ()Lscaladock/Events;
+
+  public scaladock.fx.DockTheme theme();
+    descriptor: ()Lscaladock/fx/DockTheme;
+
+  public scala.Option<javafx.scene.Node> nodeOf(java.lang.String);
+    descriptor: (Ljava/lang/String;)Lscala/Option;
+
+  public void publish(scaladock.DockEvent);
+    descriptor: (Lscaladock/DockEvent;)V
+
+  public scaladock.fx.BoundPane<?> boundPane(scaladock.PaneContent, java.lang.String);
+    descriptor: (Lscaladock/PaneContent;Ljava/lang/String;)Lscaladock/fx/BoundPane;
+
+  public scala.Option<javafx.scene.Node> paneNodeFor(java.lang.String);
+    descriptor: (Ljava/lang/String;)Lscala/Option;
+
+  public scala.Option<scaladock.fx.GroupView> groupViewFor(java.lang.String);
+    descriptor: (Ljava/lang/String;)Lscala/Option;
+
+  public scala.collection.immutable.Vector<scala.Tuple3<scala.Option<java.lang.String>, scaladock.fx.DockRegion, scala.Option<scaladock.Node>>> dragSurfaces();
+    descriptor: ()Lscala/collection/immutable/Vector;
+
+  public long nextFocusStamp();
+    descriptor: ()J
+
+  public scala.Option<java.lang.String> themeStylesheet();
+    descriptor: ()Lscala/Option;
+
+  public scala.Option<scaladock.HeaderButtons> resolvedHeader(scaladock.Node$Group);
+    descriptor: (Lscaladock/Node$Group;)Lscala/Option;
+
+  public void signal(java.lang.String, scaladock.PaneSignal);
+    descriptor: (Ljava/lang/String;Lscaladock/PaneSignal;)V
+
+  public void wireGroupView(scaladock.fx.GroupView);
+    descriptor: (Lscaladock/fx/GroupView;)V
+
+  public void wireDividerView(scaladock.fx.DividerView, scaladock.fx.DockRegion);
+    descriptor: (Lscaladock/fx/DividerView;Lscaladock/fx/DockRegion;)V
+
+  public void markDragging(scala.Option<java.lang.String>);
+    descriptor: (Lscala/Option;)V
+
+  public void dragActive(boolean);
+    descriptor: (Z)V
+
+  public scala.Option<javafx.scene.Node> iconOf(java.lang.String);
+    descriptor: (Ljava/lang/String;)Lscala/Option;
+
+  public void chipPressed(java.lang.String, javafx.scene.input.MouseEvent);
+    descriptor: (Ljava/lang/String;Ljavafx/scene/input/MouseEvent;)V
+
+  public void chipDragged(java.lang.String, javafx.scene.input.MouseEvent);
+    descriptor: (Ljava/lang/String;Ljavafx/scene/input/MouseEvent;)V
+
+  public void chipReleased(java.lang.String, javafx.scene.input.MouseEvent);
+    descriptor: (Ljava/lang/String;Ljavafx/scene/input/MouseEvent;)V
+
+  public scala.Option<java.lang.String> loneFloatingWindowOf(java.lang.String);
+    descriptor: (Ljava/lang/String;)Lscala/Option;
+}

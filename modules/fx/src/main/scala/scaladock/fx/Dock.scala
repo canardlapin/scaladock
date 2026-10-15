@@ -12,7 +12,7 @@ import scaladock.*
 
 /** The JavaFX entry point: one dock, one immutable state value, one mutation door.
   *
-  * Every change flows through [[update]], which canonicalizes the next state, reconciles the
+  * Every model change flows through [[update]], which canonicalizes the next state, reconciles the
   * long-lived JavaFX views (keyed by stable ids — pane nodes are reparented, never rebuilt, even
   * across OS windows), and publishes the derived [[DockEvent]]s. Floating windows are plain data in
   * [[LayoutState]]; their Stages are reconciled from it exactly like group views. Construct and use
@@ -20,11 +20,19 @@ import scaladock.*
   */
 final class Dock private (
     factories: PaneFactories,
-    val settings: LayoutSettings,
+    initialSettings: LayoutSettings,
     defaultHeader: HeaderButtons
 ):
-  private var current: LayoutState = LayoutState.empty
-  private var updating             = false
+  private var requestedMetrics: LayoutSettings = initialSettings
+  private var currentMetrics: LayoutSettings   = initialSettings
+  private var refreshingMetrics                = false
+  private var current: LayoutState             = LayoutState.empty
+  private var updating                         = false
+  private var disposed                         = false
+  private val lifetime                         = new PresentationScope
+  private final class StyledRoot(val styles: RootStyles):
+    var users = 0
+  private val styledRoots = mutable.Map.empty[Parent, StyledRoot]
 
   /** Pending transitions, each with whether panes leaving the layout are retained (not disposed).
     */
@@ -40,32 +48,97 @@ final class Dock private (
   private val detached = mutable.LinkedHashMap.empty[PaneId, (BoundPane[?], Pane)]
   private val closing  = mutable.Map.empty[(Set[PaneId], Boolean), Future[Boolean]]
 
-  private val main   = WindowRenderer(this, settings, floating = false)
+  private val main   = WindowRenderer(this, floating = false)
   private val floats = mutable.Map.empty[WindowId, FloatingStage]
 
-  private val dragController = DragController(this, main.region, settings)
-
-  // floating windows must not outlive the main window: when the scene's window hides
-  // (app closing), close every floating Stage — the state is untouched, so a save made
-  // before exit still restores them
-  locally:
-    main.region.sceneProperty.addListener: (_, _, scene) =>
-      if scene != null then
-        scene.windowProperty.addListener: (_, _, window) =>
-          if window != null then
-            window.addEventHandler(
-              javafx.stage.WindowEvent.WINDOW_HIDDEN,
-              _ => floats.values.foreach(_.dispose())
-            )
+  private val dragController = DragController(this, main.region)
 
   // -- public surface --------------------------------------------------------------------------
+
+  /** Current effective metrics: requested density raised by CSS text/control preferred minima. Read
+    * and update presentation on the JavaFX application thread.
+    */
+  def settings: LayoutSettings = currentMetrics
+
+  /** The requested density before CSS preferred minima are applied. */
+  def requestedSettings: LayoutSettings = requestedMetrics
+
+  /** Atomically change presentation without rebuilding panes or modifying LayoutState. Validate
+    * first; cancel armed/active gestures before publishing new metrics. CSS minima may raise
+    * headerPx above the requested floor. New/restored windows read this same snapshot.
+    */
+  def setSettings(next: LayoutSettings): Unit =
+    require(javafx.application.Platform.isFxApplicationThread, "Metrics updates require JavaFX")
+    require(next != null, "Metrics must not be null")
+    require(!disposed, "Dock is disposed")
+    if next != requestedMetrics then
+      dismissPresentation()
+      requestedMetrics = next
+    refreshMetrics()
+    allRegions.foreach(_.layout())
+    floats.values.foreach(_.layoutMetrics())
+
+  private def allRenderers: Vector[WindowRenderer] =
+    main +: floats.values.toVector.map(_.renderer)
+
+  private def cancelGestures(): Unit =
+    dragController.cancel()
+    allRenderers.foreach(_.cancelGestures())
+
+  private def dismissPresentation(): Unit =
+    cancelGestures()
+    allRenderers.foreach(_.dismissOverlays())
+    floats.values.foreach(_.dismissOverlays())
+
+  /** Bind this dock's CSS resources to a host-owned root. The host retains scene/native-scheme
+    * ownership and cancels the lease on root/dialog disposal. Repeated leases share one binding.
+    * Theme changes update hidden or visible roots; unrelated classes and stylesheets are preserved.
+    */
+  def bindStylesheets(root: Parent): Subscription =
+    require(javafx.application.Platform.isFxApplicationThread, "Style bindings require JavaFX")
+    require(!disposed && root != null, "A live dock and non-null root are required")
+    val entry = styledRoots.getOrElseUpdate(root, new StyledRoot(new RootStyles(root)))
+    entry.users += 1
+    entry.styles.update(currentTheme.stylesheets)
+    lifetime.own: () =>
+      entry.users -= 1
+      if entry.users == 0 then
+        entry.styles.cancel()
+        styledRoots.remove(root): Unit
+
+  private[fx] def styleBindingCount: Int = styledRoots.size
+  private[fx] def ownedBindingCount: Int =
+    lifetime.size + main.bindingCount + floats.values.map(_.bindingCount).sum
+  private[fx] def isDisposed: Boolean = disposed
+
+  /** Recompute the shared snapshot before layout or interaction. No state mutation or pane bind. */
+  private[fx] def refreshMetrics(): Unit =
+    if !refreshingMetrics then
+      refreshingMetrics = true
+      try
+        allRegions.foreach(_.applyCss())
+        val floors = allRenderers.map(_.preferredHeaderPx) ++ floats.values.map(_.preferredHeaderPx)
+        val floor  = floors.maxOption.getOrElse(0.0)
+        val next   = requestedMetrics.copy(headerPx = math.max(requestedMetrics.headerPx, floor))
+        if next != currentMetrics then
+          dismissPresentation()
+          currentMetrics = next
+          allRenderers.foreach(_.invalidateMetrics())
+        floats.values.foreach(_.refreshMetrics())
+      finally refreshingMetrics = false
 
   /** Put this into your scene. */
   def view: Parent = main.region
 
   def state: LayoutState = current
 
-  def events: Events[DockEvent] = topic
+  def events: Events[DockEvent] = new Events[DockEvent]:
+    def subscribe(f: DockEvent => Unit): Subscription =
+      val sub = topic.subscribe(f)
+      if disposed then
+        sub.cancel()
+        () => ()
+      else lifetime.own(() => sub.cancel())
 
   /** The single mutation door: canonicalize, reconcile views, publish events. Reentrant calls (a
     * pane closing itself from an event handler, say) are queued and applied in order.
@@ -347,14 +420,27 @@ final class Dock private (
     Iterator.iterate(n)(_.getParent).takeWhile(_ != null).flatMap(byNode.get).nextOption()
 
   /** Wiring that needs a fully constructed dock (called once by [[Dock.apply]]). */
-  private[fx] def attach(): Unit = installKeyboard(main.region)
+  private[fx] def attach(): Unit =
+    main.attachMetrics()
+    val owner = PresentationBindings.window(main.region): window =>
+      val hidden: javafx.event.EventHandler[javafx.stage.WindowEvent] = _ =>
+        dismissPresentation()
+        floats.values.foreach(_.dispose())
+        floats.clear()
+      val shown: javafx.event.EventHandler[javafx.stage.WindowEvent] = _ =>
+        if !disposed && current.floating.nonEmpty && floats.isEmpty then
+          reconcile(current, current, retain = false): Unit
+      window.addEventHandler(javafx.stage.WindowEvent.WINDOW_HIDDEN, hidden)
+      window.addEventHandler(javafx.stage.WindowEvent.WINDOW_SHOWN, shown)
+      () =>
+        window.removeEventHandler(javafx.stage.WindowEvent.WINDOW_HIDDEN, hidden)
+        window.removeEventHandler(javafx.stage.WindowEvent.WINDOW_SHOWN, shown)
+    val _ = lifetime.own(() => owner.cancel())
 
   /** Keys, and the model's focus following keyboard focus (Tab traversal into another pane). */
   private[fx] def installKeyboard(region: DockRegion): Unit =
-    region.addEventHandler(
-      javafx.scene.input.KeyEvent.KEY_PRESSED,
-      (e: javafx.scene.input.KeyEvent) => handleKey(e)
-    )
+    val key: javafx.event.EventHandler[javafx.scene.input.KeyEvent] = e => handleKey(e)
+    region.addEventHandler(javafx.scene.input.KeyEvent.KEY_PRESSED, key)
     // Follow only a USER's move of keyboard focus (Tab traversal, a press): the previous owner
     // is still in the scene. When the owner left the scene instead (a tab switch, pop-out, or
     // perspective change removed it), JavaFX's focus cleanup hands focus to an arbitrary node;
@@ -372,10 +458,12 @@ final class Dock private (
           )
           .filterNot(id => paneContaining(owner).contains(id))
           .foreach(focusContent)
-    Option(region.getScene).foreach(_.focusOwnerProperty.addListener(follow))
-    region.sceneProperty.addListener: (_, old, scene) =>
-      Option(old).foreach(_.focusOwnerProperty.removeListener(follow))
-      Option(scene).foreach(_.focusOwnerProperty.addListener(follow))
+    val binding = PresentationBindings.scene(region): scene =>
+      scene.focusOwnerProperty.addListener(follow)
+      () => scene.focusOwnerProperty.removeListener(follow)
+    val _ = region.own: () =>
+      region.removeEventHandler(javafx.scene.input.KeyEvent.KEY_PRESSED, key)
+      binding.cancel()
   def maximize(group: NodeId): Unit       = update(edit.maximize(_, group))
   def restore(): Unit                     = update(edit.unmaximized)
   def toggleMaximize(group: NodeId): Unit = update(edit.toggleMaximize(_, group))
@@ -417,22 +505,34 @@ final class Dock private (
     * view. The dock must not be used afterwards.
     */
   def dispose(): Unit =
-    dragController.cancel()
-    floats.values.foreach(_.dispose())
-    floats.clear()
-    panes.values.foreach(_.dispose())
-    panes.clear()
-    detached.values.foreach(_._1.dispose())
-    detached.clear()
-    contexts.clear()
+    if !disposed then
+      dismissPresentation()
+      disposed = true
+      lifetime.cancel()
+      dragController.dispose()
+      floats.values.foreach(_.dispose())
+      floats.clear()
+      main.dispose()
+      panes.values.foreach(_.dispose())
+      panes.clear()
+      detached.values.foreach(_._1.dispose())
+      detached.clear()
+      contexts.clear()
 
   /** Restyle every dock window. Themes redefine only CSS variables; see docs/styling.md. */
   def setTheme(theme: DockTheme): Unit =
+    require(javafx.application.Platform.isFxApplicationThread, "Theme changes require JavaFX")
+    require(!disposed && theme != null, "A live dock and non-null theme are required")
     val changed = theme != currentTheme
+    if changed then dismissPresentation()
     currentTheme = theme
     allRegions.foreach(_.setThemeSheet(theme.stylesheet))
     // floating windows are the dock's own: their title bars follow the theme too
     floats.values.foreach(_.applyTheme(theme))
+    styledRoots.values.foreach(_.styles.update(theme.stylesheets))
+    // Popups can reopen in this same FX turn: resolve owner lookups before their skins inherit.
+    floats.values.foreach(_.applyCss())
+    allRegions.foreach(_.applyCss())
     if changed then themeTopic.publish(theme)
 
   /** What the main window shows when the layout is empty. A custom placeholder is laid out to fill
@@ -442,7 +542,13 @@ final class Dock private (
   def setPlaceholder(node: Option[javafx.scene.Node]): Unit = main.region.setPlaceholder(node)
 
   /** Fires after every theme change, so host chrome styled with the dock's variables can follow. */
-  def themeChanges: Events[DockTheme] = themeTopic
+  def themeChanges: Events[DockTheme] = new Events[DockTheme]:
+    def subscribe(f: DockTheme => Unit): Subscription =
+      val sub = themeTopic.subscribe(f)
+      if disposed then
+        sub.cancel()
+        () => ()
+      else lifetime.own(() => sub.cancel())
 
   private val themeTopic = Events.Topic[DockTheme]()
 
@@ -505,6 +611,8 @@ final class Dock private (
 
   private[fx] def wireGroupView(gv: GroupView): Unit =
     val groupId = gv.nodeId
+    gv.stylePopup = root => bindStylesheets(root)
+    gv.attachPresentation()
     gv.onTabActivated = id => update(edit.focus(_, id))
     gv.onTabPressed = (id, e) =>
       // arm the drag BEFORE the focus update: focusing reconciles and rebuilds the tab strip,
@@ -538,7 +646,15 @@ final class Dock private (
       update(edit.dragDivider(_, dv.splitId, dv.index, fraction, ctx.span, settings))
     dv.onPreview = (fraction, ctx) =>
       current.findSplit(dv.splitId).foreach: sp =>
-        val cells = sizing.commitDivider(sp.cells, sp.axis, dv.index, fraction, ctx.span, settings)
+        val cells = sizing.commitDivider(
+          sp.cells,
+          sp.axis,
+          dv.index,
+          fraction,
+          ctx.span,
+          settings,
+          current.minimized
+        )
         region.previewSplit(Some(sp.id -> cells.map(_.size)))
     dv.onPreviewEnd = () => region.previewSplit(None)
 
@@ -562,7 +678,12 @@ final class Dock private (
       val span = split.axis match
         case Axis.Horizontal => rect.width
         case Axis.Vertical   => rect.height
-      val alloc = sizing.allocate(split.cells, span, settings.dividerPx)
+      // Read the exact constrained layout, including any other minimized siblings.
+      def extent(cell: Cell): Double =
+        val bounds = region.geometry.groups.get(cell.node.id).map(_.bounds)
+          .orElse(region.geometry.splits.get(cell.node.id)).get
+        if split.axis == Axis.Horizontal then bounds.width else bounds.height
+      val alloc = split.cells.map(extent)
       DividerView.DragContext(
         aPx = alloc(index),
         bPx = alloc(index + 1),
@@ -662,9 +783,6 @@ final class Dock private (
       val f = floats.getOrElseUpdate(
         fl.window, {
           val created = FloatingStage(this, fl)
-          installKeyboard(created.renderer.region)
-          created.renderer.region.setThemeSheet(currentTheme.stylesheet)
-          created.applyTheme(currentTheme)
           created
         }
       )
@@ -740,32 +858,42 @@ enum DockTheme:
   case Light
   case Custom(url: String)
 
+  /** Explicit scheme metadata; the original Custom(url) constructor/extractor stays unchanged. */
+  case CustomWithScheme(url: String, dark: Boolean)
+
   /** Whether this theme is dark, light, or unknown (a custom sheet). */
   def isDark: Option[Boolean] = this match
-    case Dark      => Some(true)
-    case Light     => Some(false)
-    case Custom(_) => None
+    case Dark                      => Some(true)
+    case Light                     => Some(false)
+    case Custom(_)                 => None
+    case CustomWithScheme(_, dark) => Some(dark)
 
   /** Ask the platform to draw a window's native decorations (title bar, window controls) in this
-    * theme's colour scheme. Needs JavaFX 25+ at runtime (`Scene.getPreferences`); on older
-    * runtimes, or for a custom theme, it does nothing and returns false.
+    * theme's colour scheme. Needs JavaFX 25+ at runtime (`Scene.getPreferences`); on older runtimes
+    * it returns false. A legacy Custom(url) without metadata is a no-op and returns false; hosts
+    * can explicitly choose applyWindowSchemeOrPlatform instead.
     */
   def applyWindowScheme(scene: javafx.scene.Scene): Boolean =
-    isDark.exists: dark =>
-      try
-        // resolve on the public API types: the implementation class lives in a package JavaFX
-        // does not export, so invoking through it fails for apps on the module path
-        val prefs     = classOf[javafx.scene.Scene].getMethod("getPreferences").invoke(scene)
-        val prefsType = Class.forName("javafx.scene.Scene$Preferences")
-        val scheme    = Class.forName("javafx.application.ColorScheme")
-        val value =
-          scheme.getMethod(
-            "valueOf",
-            classOf[String]
-          ).invoke(null, if dark then "DARK" else "LIGHT")
-        prefsType.getMethod("setColorScheme", scheme).invoke(prefs, value)
-        true
-      catch case scala.util.control.NonFatal(_) | _: LinkageError => false
+    isDark.exists(dark => applyScheme(scene, Some(dark)))
+
+  /** Apply known metadata, or clear the scene override to follow the platform for an unknown custom
+    * theme. Hosts opt into this fallback; dock-owned floating windows always use it. Returns false
+    * when the runtime has no public scene preference API (JavaFX 24).
+    */
+  def applyWindowSchemeOrPlatform(scene: javafx.scene.Scene): Boolean = applyScheme(scene, isDark)
+
+  private def applyScheme(scene: javafx.scene.Scene, dark: Option[Boolean]): Boolean =
+    try
+      // Invoke through exported public API types, never the non-exported implementation class.
+      // String-based resolution keeps JavaFX 25+ symbols out of the JavaFX 24 linkage path.
+      val prefs     = classOf[javafx.scene.Scene].getMethod("getPreferences").invoke(scene)
+      val prefsType = Class.forName("javafx.scene.Scene$Preferences")
+      val scheme    = Class.forName("javafx.application.ColorScheme")
+      val value = dark.map: value =>
+        scheme.getMethod("valueOf", classOf[String]).invoke(null, if value then "DARK" else "LIGHT")
+      prefsType.getMethod("setColorScheme", scheme).invoke(prefs, value.orNull)
+      true
+    catch case scala.util.control.NonFatal(_) | _: LinkageError => false
 
   /** Every stylesheet this theme needs, base first: hosts add these to their own chrome (a toolbar,
     * a status bar) and mark it with the `dock` style class to share the `-dock-*` variables.
@@ -776,7 +904,8 @@ enum DockTheme:
   private[fx] def stylesheet: Option[String] = this match
     case Dark  => None // the base sheet's defaults are the dark theme
     case Light => Option(getClass.getResource("/scaladock/dock-light.css")).map(_.toExternalForm)
-    case Custom(url) => Some(url)
+    case Custom(url)              => Some(url)
+    case CustomWithScheme(url, _) => Some(url)
 end DockTheme
 
 object Dock:
@@ -786,6 +915,7 @@ object Dock:
       settings: LayoutSettings = LayoutSettings.default,
       defaultHeader: HeaderButtons = HeaderButtons()
   ): Dock =
+    require(settings != null, "Metrics must not be null")
     val dock = new Dock(factories, settings, defaultHeader)
     dock.attach()
     dock.update(_ => initial)
@@ -794,14 +924,48 @@ object Dock:
 /** One window's rendering: a flat region plus keyed maps of group and divider views. The main
   * window and every floating window each own one of these.
   */
-private[fx] final class WindowRenderer(dock: Dock, settings: LayoutSettings, floating: Boolean):
-  private[fx] val region = DockRegion(settings)
+private[fx] final class WindowRenderer(dock: Dock, floating: Boolean):
+  private[fx] val region = new DockRegion
+  private var attached   = false
+
+  /** Wire only after Dock construction: callbacks must never escape an uninitialized Dock. */
+  def attachMetrics(): Unit =
+    if !attached then
+      attached = true
+      region.settings = () => dock.settings
+      region.refreshMetrics = () => dock.refreshMetrics()
+      region.attach()
+      region.setThemeSheet(dock.themeStylesheet)
+      dock.installKeyboard(region)
 
   /** Set by a floating window whose title bar stands in for its lone single-tab group's header. */
   private[fx] var barOwnsLoneHeader: Boolean = false
 
   private val groupViews   = mutable.Map.empty[NodeId, GroupView]
   private val dividerViews = mutable.Map.empty[(NodeId, Int), DividerView]
+
+  def bindingCount: Int       = region.bindingCount + groupViews.values.map(_.bindingCount).sum
+  def dismissOverlays(): Unit = groupViews.values.foreach(_.dismissOverlays())
+
+  def dispose(): Unit =
+    groupViews.values.foreach(_.dispose())
+    groupViews.clear()
+    dividerViews.values.foreach(_.dispose())
+    dividerViews.clear()
+    region.dispose()
+
+  def preferredHeaderPx: Double =
+    groupViews.values.map(_.preferredHeaderPx).maxOption.getOrElse(0.0)
+
+  def invalidateMetrics(): Unit =
+    groupViews.values.foreach(_.requestLayout())
+    region.requestLayout()
+
+  def cancelGestures(): Unit =
+    dividerViews.values.foreach(_.cancel())
+    groupViews.values.foreach(_.resetInsertion())
+    region.previewSplit(None)
+    region.hideIndicator()
 
   def groupViewFor(id: NodeId): Option[GroupView] = groupViews.get(id)
 
@@ -811,7 +975,7 @@ private[fx] final class WindowRenderer(dock: Dock, settings: LayoutSettings, flo
     groupsHere.foreach: g =>
       val gv = groupViews.getOrElseUpdate(
         g.id, {
-          val created = GroupView(g.id, settings)
+          val created = GroupView(g.id, () => dock.settings)
           dock.wireGroupView(created)
           region.addView(created)
           created
@@ -834,7 +998,10 @@ private[fx] final class WindowRenderer(dock: Dock, settings: LayoutSettings, flo
       gv.setActiveStyle(state.focused.exists(f => g.tabs.exists(_.id == f)))
     val liveGroups = groupsHere.map(_.id).toSet
     groupViews.keys.toVector.filterNot(liveGroups).foreach: id =>
-      groupViews.remove(id).foreach(region.removeView)
+      groupViews.remove(id).foreach(g =>
+        g.dispose()
+        region.removeView(g)
+      )
 
     def splitsOf(n: Node): Vector[Node.Split] = n match
       case _: Node.Group                => Vector.empty
@@ -849,7 +1016,10 @@ private[fx] final class WindowRenderer(dock: Dock, settings: LayoutSettings, flo
       dividerViews(key) = dv
       region.addView(dv)
     dividerViews.keys.toVector.filterNot(neededDividers).foreach: key =>
-      dividerViews.remove(key).foreach(region.removeView)
+      dividerViews.remove(key).foreach(d =>
+        d.dispose()
+        region.removeView(d)
+      )
 
     // dividers above groups (their invisible grab reach extends over neighbours), then the
     // drop indicator above everything — addView keeps the indicator frontmost
@@ -867,15 +1037,19 @@ end WindowRenderer
   */
 private[fx] final class FloatingStage(dock: Dock, initial: Floating):
   val window: WindowId         = initial.window
-  val renderer: WindowRenderer = WindowRenderer(dock, dock.settings, floating = true)
+  val renderer: WindowRenderer = WindowRenderer(dock, floating = true)
   private val stage: Stage     = new Stage
   private var applyingBounds   = false
+  private val lifetime         = new PresentationScope
+  private lazy val rootStyles  = new RootStyles(root)
 
   /** On JavaFX 25+ the window draws its own title bar in the dock's theme; a single-tab window's
     * bar then carries the pane's identity and actions, so there is one row of chrome, not two.
     */
   private val bar: Option[WindowBar] = WindowBar.create(dock, window)
   renderer.barOwnsLoneHeader = bar.isDefined
+  bar.foreach(_.attachPresentation())
+  renderer.attachMetrics()
 
   /** The scene root: the dock region, under the themed title bar when there is one. */
   private val root: javafx.scene.Parent = bar match
@@ -886,10 +1060,22 @@ private[fx] final class FloatingStage(dock: Dock, initial: Floating):
       pane
     case None => renderer.region
 
+  def bindingCount: Int = lifetime.size + renderer.bindingCount + bar.fold(0)(_.bindingCount)
+
+  def dismissOverlays(): Unit = bar.foreach(_.dismissOverlays())
+
+  def preferredHeaderPx: Double = bar.fold(0.0)(_.preferredHeaderPx)
+
+  def refreshMetrics(): Unit = bar.foreach(_.refreshMetrics())
+
+  def layoutMetrics(): Unit = root.layout()
+
+  def applyCss(): Unit = root.applyCss()
+
   /** Theme the window's own chrome (the region themes itself). */
   def applyTheme(theme: DockTheme): Unit =
-    if !(root eq renderer.region) then root.getStylesheets.setAll(theme.stylesheets*): Unit
-    Option(root.getScene).foreach(theme.applyWindowScheme(_): Unit)
+    if !(root eq renderer.region) then rootStyles.update(theme.stylesheets)
+    Option(root.getScene).foreach(theme.applyWindowSchemeOrPlatform(_): Unit)
 
   /** Ordering stamp for hit-testing: bumped whenever this window gains OS focus. */
   private[fx] var focusStamp: Long = 0
@@ -905,6 +1091,9 @@ private[fx] final class FloatingStage(dock: Dock, initial: Floating):
       val b = FloatingStage.clampToScreens(initial.bounds)
       if bar.isDefined then stage.initStyle(javafx.stage.StageStyle.valueOf("EXTENDED"))
       stage.setScene(new Scene(root))
+      // Apply CSS and native scheme before the first show, including restored windows.
+      renderer.region.setThemeSheet(dock.theme.stylesheet)
+      applyTheme(dock.theme)
       stage.setX(b.x)
       stage.setY(b.y)
       stage.setWidth(b.width)
@@ -925,8 +1114,16 @@ private[fx] final class FloatingStage(dock: Dock, initial: Floating):
     stage.yProperty.addListener(onMoved)
     stage.widthProperty.addListener(onMoved)
     stage.heightProperty.addListener(onMoved)
-    stage.focusedProperty.addListener: (_, _, focused) =>
+    val focus: javafx.beans.value.ChangeListener[java.lang.Boolean] = (_, _, focused) =>
       if focused then focusStamp = dock.nextFocusStamp()
+    stage.focusedProperty.addListener(focus)
+    val _ = lifetime.own: () =>
+      stage.xProperty.removeListener(onMoved)
+      stage.yProperty.removeListener(onMoved)
+      stage.widthProperty.removeListener(onMoved)
+      stage.heightProperty.removeListener(onMoved)
+      stage.focusedProperty.removeListener(focus)
+      stage.setOnCloseRequest(null)
 
   def setBoundsIfChanged(b: Rect): Unit =
     val differs =
@@ -944,7 +1141,12 @@ private[fx] final class FloatingStage(dock: Dock, initial: Floating):
     if stage.getTitle != title then stage.setTitle(title)
     bar.foreach(_.sync(tree))
 
-  def dispose(): Unit = stage.close()
+  def dispose(): Unit =
+    lifetime.cancel()
+    bar.foreach(_.dispose())
+    renderer.dispose()
+    if !(root eq renderer.region) then rootStyles.cancel()
+    stage.close()
 end FloatingStage
 
 /** A floating window's own title bar: a JavaFX `HeaderBar` styled by the dock theme. It needs
@@ -958,7 +1160,9 @@ private[fx] final class WindowBar private (
     window: WindowId,
     val node: javafx.scene.layout.Region
 ):
-  private val iconBox = new javafx.scene.layout.StackPane
+  private val overlays = new PresentationScope
+  private val tips     = mutable.Map.empty[javafx.scene.Node, javafx.scene.control.Tooltip]
+  private val iconBox  = new javafx.scene.layout.StackPane
   iconBox.getStyleClass.add("dock-tab-icon")
   private val title = new Label
   title.getStyleClass.add("dock-window-title")
@@ -984,7 +1188,9 @@ private[fx] final class WindowBar private (
   private def button(kind: String, icon: String, tip: String)(action: => Unit): javafx.scene.Node =
     val b = new javafx.scene.layout.StackPane(dockIcon(icon))
     b.getStyleClass.addAll("dock-header-button", kind)
-    javafx.scene.control.Tooltip.install(b, new javafx.scene.control.Tooltip(tip))
+    val tooltip = new javafx.scene.control.Tooltip(tip)
+    javafx.scene.control.Tooltip.install(b, tooltip)
+    tips(b) = tooltip
     b.setOnMouseClicked(_ => action)
     b
 
@@ -1003,6 +1209,41 @@ private[fx] final class WindowBar private (
     // JavaFX 27 names the slots left/right; the 25/26 previews called them leading/trailing
     WindowBar.call(node, Seq("setLeft", "setLeading"), chip)
     WindowBar.call(node, Seq("setRight", "setTrailing"), actions)
+
+  def bindingCount: Int = overlays.size
+
+  def attachPresentation(): Unit =
+    tips.values.foreach: tooltip =>
+      val binding = PresentationBindings.popup(tooltip)(root => dock.bindStylesheets(root))
+      val _       = overlays.own(() => binding.cancel())
+
+  def dismissOverlays(): Unit = tips.values.foreach(_.hide())
+
+  def dispose(): Unit =
+    overlays.cancel()
+    tips.foreach((n, t) =>
+      t.hide()
+      javafx.scene.control.Tooltip.uninstall(n, t)
+    )
+    tips.clear()
+    chip.setOnMousePressed(null)
+    chip.setOnMouseDragged(null)
+    chip.setOnMouseReleased(null)
+    actions.getChildren.clear()
+    WindowBar.call(node, Seq("setLeft", "setLeading"), null)
+    WindowBar.call(node, Seq("setRight", "setTrailing"), null)
+
+  def preferredHeaderPx: Double =
+    Vector(
+      chip.minHeight(-1),
+      chip.prefHeight(-1),
+      actions.minHeight(-1),
+      actions.prefHeight(-1)
+    ).max
+
+  def refreshMetrics(): Unit =
+    // Native HeaderBar/CSS minima remain authoritative (34px in the built-in theme).
+    node.setPrefHeight(Vector(node.minHeight(-1), dock.settings.headerPx, preferredHeaderPx).max)
 
   /** Mirror the window's tree: the chip names the first group's active pane. */
   def sync(tree: Node): Unit =

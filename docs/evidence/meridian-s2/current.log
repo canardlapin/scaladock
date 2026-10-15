@@ -1,0 +1,193 @@
+[info] welcome to sbt 1.12.14 (Homebrew Java 25.0.1)
+[info] loading settings for project scaladock-build from plugins.sbt...
+[info] loading project definition from /Users/bbuchsbaum/code/scala/scaladock/project
+[info] loading settings for project root from build.sbt...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] Defining fx / Test / javaOptions
+[info] The new value will be used by fx / Test / bspBuildTargetJvmEnvironmentItem, fx / Test / bspBuildTargetRun and 6 others.
+[info] 	Run `last` for details.
+[info] Reapplying settings...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] Defining fx / Test / fullClasspath
+[info] The new value will be used by fx / Test / bspBuildTargetJvmEnvironmentItem, fx / Test / console and 6 others.
+[info] 	Run `last` for details.
+[info] Reapplying settings...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] Defining fx / Test / javaOptions
+[info] The new value will be used by fx / Test / bspBuildTargetJvmEnvironmentItem, fx / Test / bspBuildTargetRun and 6 others.
+[info] 	Run `last` for details.
+[info] Reapplying settings...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] compiling 9 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/core/target/scala-3.7.4/classes ...
+[info] done compiling
+[info] compiling 11 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/core/target/scala-3.7.4/test-classes ...
+[info] done compiling
+scaladock.DslSuite:
+  + a VS Code-style layout reads as a picture and builds the expected tree 0.03s
+  + bare panes auto-wrap into their own group 0.0s
+  + atLeast attaches a minimum pixel extent 0.001s
+scaladock.GeometrySuite:
+  + Edge axis and leading are consistent 0.007s
+  + Axis.cross is an involution 0.0s
+  + Rect.contains respects exclusive right/bottom bounds 0.041s
+scaladock.EventsSuite:
+  + diff derives the full event vocabulary from one transition 0.047s
+  + diff reports retitles and cleared focus 0.001s
+  + a throwing subscriber does not starve the others 0.002s
+  + subscribing the same function twice yields independent subscriptions 0.001s
+  + Topic delivers, collect filters, cancel stops 0.001s
+scaladock.CanonicalSuite:
+  + canonical is idempotent 0.148s
+  + canonical preserves the multiset of panes 0.055s
+  + canonical output satisfies the tree grammar's laws 0.03s
+  + canonical clears dangling maximized and focused references 0.023s
+  + a dissolving split's promoted child keeps the dissolved slot's size 0.001s
+scaladock.SizingSuite:
+  + allocation sums exactly to the available span 0.083s
+  + min sizes are honoured whenever they are jointly feasible 0.043s
+  + fr cells share the remainder by weight 0.001s
+  + px cells take their pixels when fr capacity absorbs the rest 0.0s
+  + pct cells take their share of the available span 0.0s
+  + commitDivider changes only the two adjacent cells 0.044s
+  + commitDivider preserves the neighbours' combined pixels in the normalized regime 0.052s
+  + commitDivider lands the divider at the requested fraction 0.0s
+  + commitDivider clamps to the neighbours' min sizes 0.001s
+  + geometry tiles the viewport: no group escapes it 0.037s
+  + default metrics: a hairline 1px divider and a 32px header 0.001s
+  + hitTest picks the smallest containing hover area 0.033s
+  + layout metrics reject negative and non-finite fields but allow zero 0.002s
+  + zero and tiny viewports keep chrome, content and hit areas finite and inside bounds 0.005s
+  + a maximized hidden header remains absent from geometry and hit tests 0.001s
+  + divider commit uses actual constrained live span beside a minimized sibling 0.001s
+scaladock.AdversarialSuite:
+  + drop never loses the pane, even on stale targets 0.148s
+  + detaching a group's only tab and dropping back on its own header keeps the pane 0.001s
+  + every public transition sequence preserves canonical invariants 0.084s
+  + sizes at numeric extremes survive the codec round trip 0.024s
+  + divider commits near the edge persist and reload (the 8.3e-4 percent case) 0.001s
+  + duplicate ids are rejected with a LoadError, not accepted silently 0.012s
+  + popping one half of a pair and docking back restores structure, sizes, and minPx 0.001s
+  + popping out a floating window's root is a no-op 0.001s
+  + diff of identical states is empty 0.03s
+  + commitDivider is a fixed point when reapplied with its own outcome 0.022s
+scaladock.MinimizeSuite:
+  + a floorless Fr container keeps its subtree minimum when fixed siblings over-claim 0.013s
+  + minimize then unminimize is the exact identity — sizes are never touched 0.107s
+  + a minimized group presents as a strip; siblings absorb the space; restore is exact 0.082s
+  + focusing a pane restores its minimized group 0.033s
+  + dropping into a minimized group restores it 0.025s
+  + maximize and minimize are mutually exclusive per group 0.026s
+  + canonical clears minimized ids whose group is gone 0.023s
+  + the minimized set survives the codec round trip 0.035s
+  + diff reports minimize and restore 0.001s
+scaladock.CodecSuite:
+  + encode/decode round-trips canonical states exactly 0.208s
+  + unknown pane types survive a save/load/save cycle byte-for-byte 0.094s
+  + unresolved panes resolve on the next load once the type is known 0.069s
+  + malformed input yields LoadError, not an exception 0.001s
+  + the persisted format is pinned (golden fixture) 0.001s
+scaladock.EditSuite:
+  + drop IntoGroup inserts the tab at the index, activates and focuses it 0.154s
+  + drop Beside adds exactly the dropped pane and stays canonical 0.069s
+  + drop Beside merges into a parent split when the axis matches (no new split) 0.001s
+  + drop Beside on the cross axis wraps the target in a fresh split, 50/50 0.0s
+  + drop at a window edge merges into a same-axis root split, halving the neighbour 0.0s
+  + drop at a window edge on an empty layout creates the root group 0.006s
+  + detach then drop anywhere preserves the pane multiset 0.03s
+  + closing every pane empties the layout 0.023s
+  + focus activates the pane's tab in its group 0.022s
+  + maximize is at most one group and survives only while the group exists 0.018s
+  + a drop always restores from maximise first (golden-layout rule) 0.02s
+  + dragDivider touches only the named split 0.017s
+  + popOut then dockBack restores the original tree exactly 0.0s
+  + popOut preserves panes and stays canonical; dockBack always re-docks them 0.021s
+[info] Passed: Total 70, Failed 0, Errors 0, Passed 70
+[success] Total time: 11 s, completed Oct 14, 2026, 10:51:06 p.m.
+[info] compiling 7 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/fx/target/scala-3.7.4/classes ...
+[info] done compiling
+[info] compiling 16 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/fx/target/scala-3.7.4/test-classes ...
+[info] done compiling
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by scala.runtime.LazyVals$ (file:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala3-library_3/3.7.4/scala3-library_3-3.7.4.jar)
+WARNING: Please consider reporting this to the maintainers of class scala.runtime.LazyVals$
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+scaladock.fx.DividerSuite:
+  + dragging a divider commits the new ratio, clamped to recursive minimums 0.508s
+scaladock.fx.TabMenuSuite:
+  + default items, and Close Others closes exactly the others 0.015s
+  + the hook sees the pane and its group, and returns the final list 0.004s
+  + tabs and header buttons carry accessible roles and names 0.048s
+scaladock.fx.ChromeSuite:
+  + pressing a tab that moves focus restyles it in place: the pressed node is never replaced 0.022s
+  + a strip whose tabs fit is not clipped short: tabs slid aside by a drop slot stay visible 0.009s
+  + the tab close glyph closes exactly that pane 0.01s
+  + middle-click closes a closable tab; non-closable panes show no close glyph 0.011s
+  + the maximize button toggles; the group close button closes closable tabs 0.015s
+  + a hidden header renders no header bar and geometry gives the content the full rect 0.011s
+  + overflow menu lists every tab and appears only when the strip is too tight 0.02s
+scaladock.fx.RenderSuite:
+  + a static layout renders each group exactly where core geometry says 0.014s
+  + switching tabs reparents the same node instance ? never recreates it 0.02s
+  + closing a pane collapses its group and removes the view 0.014s
+  + maximise fills the viewport and restore puts everything back 0.014s
+  + save pulls live snapshots and load round-trips 0.03s
+scaladock.fx.PerspectivesSuite:
+  + a retaining switch keeps leaving panes alive and gives the same view back 0.009s
+  + an ordinary update still disposes panes that leave (retention is opt-in) 0.003s
+  + releasing a retained pane goes through close admission and disposes it 0.005s
+  + load with retainPanes keeps views alive; save captures live state of retained panes 0.006s
+  + perspectives: shared panes are one live view; each remembers its last arrangement 0.007s
+  + perspectives: a floating window closes on leaving and returns at its bounds 0.099s
+  + perspectives: reset restores the default and releases views no perspective uses 0.041s
+  + perspectives: save and load round-trip every arrangement and the active one 0.008s
+  + releaseUnused also releases non-closable retained panes 0.003s
+  + perspectives: a malformed file is rejected, not half-applied 0.002s
+  + a retained view is rebuilt if the pane comes back as another type 0.004s
+scaladock.fx.ThemeSuite:
+  + the drop indicator resolves its colors from theme variables, not hardcoded values 0.009s
+  + the ghost popup carries the variable-bearing marker class 0.004s
+  + legacy Custom constructor, extractor, ordinals and unknown metadata remain intact 0.001s
+  + custom scheme metadata affects equality but preserves stylesheet order 0.003s
+  + main scene schemes are explicit host hooks with legacy no-op and platform fallback 0.002s
+  + known custom schemes reach existing, new and restored floats without changing main ownership or pane identity 0.064s
+scaladock.fx.PopoutSuite:
+  + popOut opens a Stage, moves the same pane node into it, and dockBack closes it 0.054s
+  + multi-window layouts save and load, restoring the floating Stage 0.079s
+  + closing a floating window docks its content back at the home anchor 0.065s
+scaladock.fx.MinimizeFxSuite:
+  + minimizing a bottom panel collapses it to a header strip; restore is exact 0.027s
+  + a group minimized inside a row shows the sideways strip; clicking it restores 0.011s
+  + focusing a pane in a minimized group restores it; drags of strip dividers are refused 0.008s
+scaladock.fx.CloseAdmissionSuite:
+  + default admission retains immediate close semantics 0.002s
+  + delayed duplicate close shares admission; veto and failure preserve the pane; retry disposes once 0.01s
+  + whole-dock admission is atomic and rejects a new pane arriving during preparation 0.003s
+  + tab, group and pane-context close paths honor admission 0.002s
+  + a non-closable pane is refused without preparation; a forced edit still removes it 0.002s
+scaladock.fx.MetricsSuite:
+  + 32 -> 28 -> 32 -> enlarged metrics preserve identity, selected IDs and application state 0.291s
+  + existing, newly created and restored floating renderers share current effective metrics 0.219s
+  + minimized horizontal and vertical strips use live metrics without changing stored sizes 0.056s
+  + CSS preferred text and control minima raise density globally and can shrink again 0.14s
+  + metrics update cancels both armed and active tab gestures; the next drop uses enlarged headers 0.07s
+  + metrics invalidate pending and active external drag sources 0.046s
+  + metrics cancel divider preview and cursor without commit; next drag honors enlarged minima 0.034s
+  + zero available FX space clips chrome and content without leaking child minima 0.032s
+  + metrics mutation requires JavaFX and null or invalid values do not change live settings 0.057s
+scaladock.fx.HeaderActionsSuite:
+  + header actions show on the focused group only 0.032s
+scaladock.fx.KeyboardSuite:
+  + F6 / Shift+F6 cycle focus between groups, wrapping 0.007s
+  + Ctrl+Tab / Ctrl+Shift+Tab cycle tabs within the focused group 0.004s
+  + actions are API: a host keymap can drive them with the dock's own keys switched off 0.006s
+  + keys the content handles never reach the dock 0.004s
+  + unrelated keys pass through untouched 0.003s
+  + focus cleanup never drags the model's focus; a user's move does 0.709s
+scaladock.fx.DragDropSuite:
+  + dragging a tab onto another group's bottom half splits it vertically 50/50 0.068s
+  + dropping on a header inserts as a tab; a hopeless miss returns the pane home 0.061s
+  + a window's lone tab dropped on that window's own edge changes nothing 0.059s
+  + reordering within a group lands at the index shown, accounting for the tab's own removal 0.058s
+  + a drag source fabricates a pane on drop and nothing on a miss 0.066s
+[info] Passed: Total 65, Failed 0, Errors 0, Passed 65
+[success] Total time: 10 s, completed Oct 14, 2026, 10:51:16 p.m.

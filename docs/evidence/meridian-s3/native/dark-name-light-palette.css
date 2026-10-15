@@ -1,0 +1,1 @@
+.dock { -dock-base:#ffffff; -dock-surface:#f2f3f5; -dock-surface-raised:#f5eee2; -dock-text:#1b293c; -dock-text-strong:#1b293c; } .dock-content > .label { -fx-text-fill:-dock-text; }

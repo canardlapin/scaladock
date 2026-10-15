@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "started_utc": "2026-10-15T01:38:11.508606+00:00",
+  "finished_utc": "2026-10-15T01:38:34.932971+00:00",
+  "duration_seconds": 23.423945,
+  "command": [
+    "python3",
+    "tools/meridian-s1/run_lane.py",
+    "current"
+  ],
+  "cwd": "/Users/bbuchsbaum/code/scala/scaladock",
+  "log": "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/current.log",
+  "exit_code": 0,
+  "child_returncode": 0,
+  "reason": "exited",
+  "detail": null,
+  "timeout_seconds": 300.0,
+  "log_bytes": 3692
+}

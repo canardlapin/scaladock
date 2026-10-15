@@ -6,7 +6,11 @@ final case class LayoutSettings(
     headerPx: Double = 32,
     edgeBandPx: Double = 50,
     defaultMinPanePx: Double = 40
-) derives CanEqual
+) derives CanEqual:
+  require(
+    Vector(dividerPx, headerPx, edgeBandPx, defaultMinPanePx).forall(v => v.isFinite && v >= 0),
+    "Layout metrics must be finite and non-negative"
+  )
 
 object LayoutSettings:
   val default: LayoutSettings = LayoutSettings()
@@ -93,8 +97,12 @@ object sizing:
   ): Vector[Double] =
     if mins.sum >= available then
       // infeasible: scale mins themselves to fit
-      val minSum = mins.sum
-      if minSum <= 0 then alloc else mins.map(_ * available / minSum)
+      val largest = mins.maxOption.getOrElse(0.0)
+      if largest <= 0 then alloc
+      else
+        val normalized = mins.map(_ / largest)
+        val total      = normalized.sum
+        normalized.map(_ / total * available)
     else
       val shortfall = alloc.indices.map(i => math.max(0.0, mins(i) - alloc(i))).sum
       if shortfall <= 0 then alloc
@@ -118,23 +126,51 @@ object sizing:
       span: Double,
       settings: LayoutSettings
   ): Vector[Cell] =
+    commitDividerUsing(cells, axis, index, fraction, span, settings, Set.empty, constrained = false)
+
+  private[scaladock] def commitDivider(
+      cells: Vector[Cell],
+      axis: Axis,
+      index: Int,
+      fraction: Double,
+      span: Double,
+      settings: LayoutSettings,
+      minimized: Set[NodeId]
+  ): Vector[Cell] =
+    commitDividerUsing(cells, axis, index, fraction, span, settings, minimized, constrained = true)
+
+  private def commitDividerUsing(
+      cells: Vector[Cell],
+      axis: Axis,
+      index: Int,
+      fraction: Double,
+      span: Double,
+      settings: LayoutSettings,
+      minimized: Set[NodeId],
+      constrained: Boolean
+  ): Vector[Cell] =
     require(index >= 0 && index < cells.length - 1, s"divider index $index out of range")
     val dividerPx = settings.dividerPx
     val available = math.max(0.0, span - (cells.length - 1) * dividerPx)
     if available <= 0 then cells
     else
-      val alloc    = allocate(cells, span, dividerPx)
+      val alloc = if constrained then allocateLayout(cells, span, axis, settings, minimized)
+      else allocate(cells, span, dividerPx)
       val combined = alloc(index) + alloc(index + 1)
       val minA     = cellMin(cells(index), axis, settings)
       val minB     = cellMin(cells(index + 1), axis, settings)
-      if minA + minB > combined then cells // both sides already below min: nothing sane to commit
+      if combined <= 0 || minA + minB > combined then
+        cells // both sides already below min: nothing sane to commit
       else
         commitAt(
           cells,
           index,
           (fraction * combined).max(minA).min(combined - minB),
           combined,
-          available
+          math.max(
+            0.0,
+            available - cells.indices.filter(i => minimized(cells(i).node.id)).map(alloc).sum
+          )
         )
 
   private def commitAt(
@@ -162,18 +198,43 @@ object sizing:
     * constrains it only along its split's axis.
     */
   def minSpan(node: Node, axis: Axis, settings: LayoutSettings): Double = node match
-    case _: Node.Group =>
+    case g: Node.Group =>
       axis match
-        case Axis.Vertical   => settings.headerPx + settings.defaultMinPanePx
+        case Axis.Vertical =>
+          ((if g.header == Header.Hidden then 0.0
+            else settings.headerPx) + settings.defaultMinPanePx).min(Double.MaxValue)
         case Axis.Horizontal => settings.defaultMinPanePx
     case Node.Split(_, splitAxis, cells) =>
       if splitAxis == axis then
-        cells.map(c => cellMin(c, axis, settings)).sum + (cells.length - 1) * settings.dividerPx
+        (cells.map(c => cellMin(c, axis, settings)).sum +
+          math.max(0, cells.length - 1) * settings.dividerPx).min(Double.MaxValue)
       else if cells.isEmpty then 0.0
       else cells.map(c => minSpan(c.node, axis, settings)).max
 
   /** The extent of a minimised group's strip along its parent split's axis. */
   def stripPx(settings: LayoutSettings): Double = settings.headerPx
+
+  /** Shared allocation for layout and divider commits, including minimized strips. In an infeasible
+    * viewport, strips share the remaining span and live content can reach zero.
+    */
+  private def allocateLayout(
+      cells: Vector[Cell],
+      span: Double,
+      axis: Axis,
+      settings: LayoutSettings,
+      minimized: Set[NodeId]
+  ): Vector[Double] =
+    val live       = cells.filterNot(c => minimized(c.node.id))
+    val stripCount = cells.length - live.length
+    val available  = math.max(0.0, span - math.max(0, cells.length - 1) * settings.dividerPx)
+    val strip = if stripCount == 0 then 0.0 else math.min(settings.headerPx, available / stripCount)
+    val liveAvailable = math.max(0.0, available - stripCount * strip)
+    val liveSizes = respectMinSizes(
+      firstPass(live, liveAvailable),
+      live.map(c => cellMin(c, axis, settings)),
+      liveAvailable
+    ).iterator
+    cells.map(c => if minimized(c.node.id) then strip else liveSizes.next())
 
   /** Realize one window's tree in pixels. Minimised groups are *presented* as header-thin strips —
     * their cells are overridden to `Px(stripPx)` at allocation time only, so the stored sizes stay
@@ -192,10 +253,6 @@ object sizing:
         val groups   = Map.newBuilder[NodeId, GroupGeometry]
         val splits   = Map.newBuilder[NodeId, Rect]
         val dividers = Vector.newBuilder[DividerGeometry]
-
-        def isMinimized(n: Node): Boolean = n match
-          case g: Node.Group => minimized(g.id)
-          case _             => false
 
         def place(n: Node, rect: Rect): Unit = n match
           case g: Node.Group if minimized(g.id) =>
@@ -224,18 +281,8 @@ object sizing:
             val span = axis match
               case Axis.Horizontal => rect.width
               case Axis.Vertical   => rect.height
-            // two-phase allocation: minimised cells take EXACTLY their strip (never scaled,
-            // whatever the sibling unit mix), and the live cells share what remains
-            val strip     = stripPx(settings)
-            val live      = cells.filterNot(c => isMinimized(c.node))
-            val stripSum  = (cells.length - live.length) * strip
-            val available = math.max(0.0, span - (cells.length - 1) * settings.dividerPx)
-            val liveSpan = math.max(0.0, available - stripSum) +
-              math.max(0, live.length - 1) * settings.dividerPx
-            val liveMins  = live.map(c => cellMin(c, axis, settings))
-            val liveSizes = allocateWithMins(live, liveSpan, settings.dividerPx, liveMins).iterator
-            val sizes     = cells.map(c => if isMinimized(c.node) then strip else liveSizes.next())
-            var offset    = 0.0
+            val sizes  = allocateLayout(cells, span, axis, settings, minimized)
+            var offset = 0.0
             // a rect too small for its divider strips (available clamped to 0) must not leak
             // children past its own edge: clamp every placement into [0, span]
             def clamped(at: Double, extent: Double): (Double, Double) =
@@ -264,7 +311,8 @@ object sizing:
         maximized.filter(base.groups.contains) match
           case None => base
           case Some(id) =>
-            val headerH = math.min(settings.headerPx, viewport.height)
+            val headerH = if node.findGroup(id).exists(_.header == Header.Hidden) then 0.0
+            else math.min(settings.headerPx, viewport.height)
             val full = GroupGeometry(
               viewport,
               Rect(viewport.x, viewport.y, viewport.width, headerH),
@@ -287,25 +335,26 @@ object sizing:
       case None =>
         Vector(DropArea(viewport, viewport, DropZone.EmptyWindow(window)))
       case Some(node) =>
-        val band = settings.edgeBandPx
+        val bandX = math.min(settings.edgeBandPx, viewport.width / 2)
+        val bandY = math.min(settings.edgeBandPx, viewport.height / 2)
         val windowEdges = Vector(
           DropArea(
-            Rect(viewport.x, viewport.y, band, viewport.height),
+            Rect(viewport.x, viewport.y, bandX, viewport.height),
             Rect(viewport.x, viewport.y, viewport.width / 2, viewport.height),
             DropZone.WindowEdge(window, Edge.Left)
           ),
           DropArea(
-            Rect(viewport.right - band, viewport.y, band, viewport.height),
+            Rect(viewport.right - bandX, viewport.y, bandX, viewport.height),
             Rect(viewport.x + viewport.width / 2, viewport.y, viewport.width / 2, viewport.height),
             DropZone.WindowEdge(window, Edge.Right)
           ),
           DropArea(
-            Rect(viewport.x, viewport.y, viewport.width, band),
+            Rect(viewport.x, viewport.y, viewport.width, bandY),
             Rect(viewport.x, viewport.y, viewport.width, viewport.height / 2),
             DropZone.WindowEdge(window, Edge.Top)
           ),
           DropArea(
-            Rect(viewport.x, viewport.bottom - band, viewport.width, band),
+            Rect(viewport.x, viewport.bottom - bandY, viewport.width, bandY),
             Rect(viewport.x, viewport.y + viewport.height / 2, viewport.width, viewport.height / 2),
             DropZone.WindowEdge(window, Edge.Bottom)
           )

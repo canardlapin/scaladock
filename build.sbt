@@ -1,32 +1,40 @@
-val scala3Version    = "3.7.0"
-val javafxVersion    = "24.0.1"
+val scala3Version = "3.7.4"
+val javafxVersion = "24.0.1"
 // the demo runs on a current JavaFX: 25+ lets a scene's colour scheme drive native window
 // decorations (dark title bars), which the fx module applies reflectively when available
 val demoJavafxVersion = "27"
-val scalafxVersion   = "24.0.0-R35"
-val upickleVersion   = "4.1.0"
-val munitVersion     = "1.1.1"
-val munitScVersion   = "1.1.0"
+val scalafxVersion    = "24.0.0-R35"
+val upickleVersion    = "4.1.0"
+val munitVersion      = "1.1.1"
+val munitScVersion    = "1.1.0"
 
-ThisBuild / organization       := "io.github.canardlapin"
-ThisBuild / scalaVersion       := scala3Version
-ThisBuild / versionScheme      := Some("early-semver")
-ThisBuild / version            := "0.1.0-SNAPSHOT"
-ThisBuild / licenses           := Seq(License.Apache2)
-ThisBuild / homepage           := Some(url("https://github.com/canardlapin/scaladock"))
-ThisBuild / semanticdbEnabled  := true
-ThisBuild / description        := "Docking windows for JavaFX in Scala 3: tabbed groups, splits, drag and drop, floating windows, saved layouts."
+ThisBuild / organization      := "io.github.canardlapin"
+ThisBuild / scalaVersion      := scala3Version
+ThisBuild / versionScheme     := Some("early-semver")
+ThisBuild / version           := "0.1.0-SNAPSHOT"
+ThisBuild / licenses          := Seq(License.Apache2)
+ThisBuild / homepage          := Some(url("https://github.com/canardlapin/scaladock"))
+ThisBuild / semanticdbEnabled := true
+ThisBuild / description := "Docking windows for JavaFX in Scala 3: tabbed groups, splits, drag and drop, floating windows, saved layouts."
 ThisBuild / scmInfo := Some(
-  ScmInfo(url("https://github.com/canardlapin/scaladock"), "scm:git:https://github.com/canardlapin/scaladock.git")
+  ScmInfo(
+    url("https://github.com/canardlapin/scaladock"),
+    "scm:git:https://github.com/canardlapin/scaladock.git"
+  )
 )
 ThisBuild / developers := List(
-  Developer("canardlapin", "Brad Buchsbaum", "brad@duckrabbit.ai", url("https://github.com/canardlapin"))
+  Developer(
+    "canardlapin",
+    "Brad Buchsbaum",
+    "brad@duckrabbit.ai",
+    url("https://github.com/canardlapin")
+  )
 )
 
 // Releases go to Maven Central through sbt's built-in Central Portal support: publishSigned
 // stages locally, sonaRelease uploads and releases. The version comes from the release tag (see
 // .github/workflows/release.yml and docs/releasing.md); everyday builds stay 0.1.0-SNAPSHOT.
-ThisBuild / publishTo           := localStaging.value
+ThisBuild / publishTo            := localStaging.value
 ThisBuild / pomIncludeRepository := (_ => false)
 // (sbt-pgp reads the signing key's passphrase from PGP_PASSPHRASE)
 
@@ -99,7 +107,8 @@ lazy val fx = project
       import scala.xml.transform.{RewriteRule, RuleTransformer}
       new RuleTransformer(new RewriteRule {
         override def transform(n: scala.xml.Node): Seq[scala.xml.Node] = n match {
-          case e: scala.xml.Elem if e.label == "dependency" && (e \ "groupId").text == "org.openjfx" =>
+          case e: scala.xml.Elem
+              if e.label == "dependency" && (e \ "groupId").text == "org.openjfx" =>
             e.copy(child = e.child.filterNot(_.label == "classifier"))
           case other => other
         }
@@ -127,7 +136,8 @@ lazy val demo = project
 
 // Headless JavaFX for CI: software pipeline; on Linux CI the workflow wraps sbt in xvfb-run.
 def headlessFxOptions: Seq[String] =
-  if (sys.env.contains("CI")) Seq("-Dprism.order=sw", "-Djava.awt.headless=true", "-Dtestfx.headless=false")
+  if (sys.env.contains("CI"))
+    Seq("-Dprism.order=sw", "-Djava.awt.headless=true", "-Dtestfx.headless=false")
   else Seq.empty
 
 lazy val root = project

@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "started_utc": "2026-10-15T02:46:27.268276+00:00",
+  "finished_utc": "2026-10-15T02:46:46.463834+00:00",
+  "duration_seconds": 19.195461,
+  "command": [
+    "python3",
+    "tools/meridian-s2/run_lane.py",
+    "floor",
+    "--output",
+    "docs/evidence/meridian-s2/floor-captures"
+  ],
+  "cwd": "/Users/bbuchsbaum/code/scala/scaladock",
+  "log": "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s2/floor-final.log",
+  "exit_code": 1,
+  "child_returncode": 1,
+  "reason": "exited",
+  "detail": null,
+  "timeout_seconds": 300.0,
+  "log_bytes": 15349
+}

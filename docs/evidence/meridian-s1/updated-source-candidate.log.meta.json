@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "started_utc": "2026-10-15T01:41:15.095118+00:00",
+  "finished_utc": "2026-10-15T01:41:20.810483+00:00",
+  "duration_seconds": 5.715132,
+  "command": [
+    "sbt",
+    "-batch",
+    "set Compile / unmanagedJars := Seq(Attributed.blank(file(\"/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/candidate-artifacts/scaladock-fx_3-0.1.0-SNAPSHOT.jar\")),Attributed.blank(file(\"/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/candidate-artifacts/scaladock-core_3-0.1.0-SNAPSHOT.jar\")))",
+    "set Compile / sources := Seq(file(\"/Users/bbuchsbaum/code/scala/scaladock/tools/meridian-s1/compat/UpdatedThemeClient.scala\"))",
+    "compile"
+  ],
+  "cwd": "/Users/bbuchsbaum/code/scala/scaladock/tools/meridian-s1/compat",
+  "log": "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/updated-source-candidate.log",
+  "exit_code": 0,
+  "child_returncode": 0,
+  "reason": "exited",
+  "detail": null,
+  "timeout_seconds": 180.0,
+  "log_bytes": 1185
+}

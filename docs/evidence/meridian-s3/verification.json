@@ -1,0 +1,231 @@
+{
+  "candidate_source_digest": "e7687fa49aa218e9b62207937763e0d60163c39d5d86702a2f78e6789e3208d3",
+  "base_git_head": "628c46fce92c4d31b0b08459ac0f18777b5ba527",
+  "platform": {
+    "os": "macOS",
+    "version": "14.3",
+    "arch": "aarch64"
+  },
+  "runs": {
+    "compile-01.log.meta.json": {
+      "schema_version": 1,
+      "started_utc": "2026-10-15T11:27:46.568320+00:00",
+      "finished_utc": "2026-10-15T11:28:00.680746+00:00",
+      "duration_seconds": 14.112242,
+      "command": [
+        "sbt",
+        "-batch",
+        "scalafmtAll",
+        "compile"
+      ],
+      "cwd": "/Users/bbuchsbaum/code/scala/scaladock",
+      "log": "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s3/compile-01.log",
+      "exit_code": 0,
+      "child_returncode": 0,
+      "reason": "exited",
+      "detail": null,
+      "timeout_seconds": 240.0,
+      "log_bytes": 7158
+    },
+    "current.log.meta.json": {
+      "schema_version": 1,
+      "started_utc": "2026-10-15T11:40:06.629376+00:00",
+      "finished_utc": "2026-10-15T11:40:32.144501+00:00",
+      "duration_seconds": 25.515037,
+      "command": [
+        "python3",
+        "/Users/bbuchsbaum/code/scala/scaladock/tools/meridian-s3/run_lane.py",
+        "current"
+      ],
+      "cwd": "/Users/bbuchsbaum/code/scala/scaladock",
+      "log": "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s3/current.log",
+      "exit_code": 0,
+      "child_returncode": 0,
+      "reason": "exited",
+      "detail": null,
+      "timeout_seconds": 300.0,
+      "log_bytes": 13755
+    },
+    "floor-01.log.meta.json": {
+      "schema_version": 1,
+      "started_utc": "2026-10-15T11:38:26.478987+00:00",
+      "finished_utc": "2026-10-15T11:38:49.888058+00:00",
+      "duration_seconds": 23.408945,
+      "command": [
+        "python3",
+        "tools/meridian-s3/run_lane.py",
+        "floor"
+      ],
+      "cwd": "/Users/bbuchsbaum/code/scala/scaladock",
+      "log": "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s3/floor-01.log",
+      "exit_code": 0,
+      "child_returncode": 0,
+      "reason": "exited",
+      "detail": null,
+      "timeout_seconds": 300.0,
+      "log_bytes": 13968
+    },
+    "focus-01.log.meta.json": {
+      "schema_version": 1,
+      "started_utc": "2026-10-15T11:32:21.389859+00:00",
+      "finished_utc": "2026-10-15T11:32:37.534444+00:00",
+      "duration_seconds": 16.144421,
+      "command": [
+        "python3",
+        "tools/meridian-s3/run_lane.py",
+        "floor",
+        "--focus"
+      ],
+      "cwd": "/Users/bbuchsbaum/code/scala/scaladock",
+      "log": "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s3/focus-01.log",
+      "exit_code": 1,
+      "child_returncode": 1,
+      "reason": "exited",
+      "detail": null,
+      "timeout_seconds": 240.0,
+      "log_bytes": 2636
+    },
+    "focus-02.log.meta.json": {
+      "schema_version": 1,
+      "started_utc": "2026-10-15T11:33:57.761508+00:00",
+      "finished_utc": "2026-10-15T11:34:15.288311+00:00",
+      "duration_seconds": 17.526695,
+      "command": [
+        "python3",
+        "tools/meridian-s3/run_lane.py",
+        "floor",
+        "--focus"
+      ],
+      "cwd": "/Users/bbuchsbaum/code/scala/scaladock",
+      "log": "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s3/focus-02.log",
+      "exit_code": 1,
+      "child_returncode": 1,
+      "reason": "exited",
+      "detail": null,
+      "timeout_seconds": 240.0,
+      "log_bytes": 6146
+    },
+    "focus-03.log.meta.json": {
+      "schema_version": 1,
+      "started_utc": "2026-10-15T11:35:24.334820+00:00",
+      "finished_utc": "2026-10-15T11:35:43.553007+00:00",
+      "duration_seconds": 19.218088,
+      "command": [
+        "python3",
+        "tools/meridian-s3/run_lane.py",
+        "floor",
+        "--focus"
+      ],
+      "cwd": "/Users/bbuchsbaum/code/scala/scaladock",
+      "log": "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s3/focus-03.log",
+      "exit_code": 0,
+      "child_returncode": 0,
+      "reason": "exited",
+      "detail": null,
+      "timeout_seconds": 240.0,
+      "log_bytes": 2426
+    },
+    "native.log.meta.json": {
+      "schema_version": 1,
+      "started_utc": "2026-10-15T11:40:32.221263+00:00",
+      "finished_utc": "2026-10-15T11:40:41.300595+00:00",
+      "duration_seconds": 9.079225,
+      "command": [
+        "python3",
+        "/Users/bbuchsbaum/code/scala/scaladock/tools/meridian-s3/run_lane.py",
+        "native",
+        "--output",
+        "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s3/native"
+      ],
+      "cwd": "/Users/bbuchsbaum/code/scala/scaladock",
+      "log": "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s3/native.log",
+      "exit_code": 0,
+      "child_returncode": 0,
+      "reason": "exited",
+      "detail": null,
+      "timeout_seconds": 300.0,
+      "log_bytes": 2376
+    }
+  },
+  "tests": {
+    "floor": {
+      "jdk": "22",
+      "javafx": "24.0.1",
+      "core": 70,
+      "fx": 72
+    },
+    "current": {
+      "jdk": "25.0.1",
+      "javafx": "27+30",
+      "core": 70,
+      "fx": 72
+    }
+  },
+  "artifacts": {
+    "scaladock-core_3-0.1.0-SNAPSHOT.jar": {
+      "sha256": "1b93dab8cc3c39a8eae686d72cf15b6bfab936f5a49f6c9ec1ededd63eb89924",
+      "class_count": 158,
+      "class_major_versions": [
+        66
+      ]
+    },
+    "scaladock-fx_3-0.1.0-SNAPSHOT.jar": {
+      "sha256": "298225350093f3b2089e33ef2d6f34ed7836681aa1a17e6d275e8d4937571c6a",
+      "class_count": 78,
+      "class_major_versions": [
+        66
+      ]
+    }
+  },
+  "native_outputs": {
+    "native/dark-comfortable-main.png": "0e76f88a29e1aec3cb5eef37acef4bba958cc422577da65d413a558715f5b432",
+    "native/dark-comfortable-menu.png": "ee2194d9b5f56cc9d59eef1675f4d71901da25bdeaecf633818dd164b6d8e355",
+    "native/dark-comfortable-tooltip.png": "fbc95f30dc279dbc26f1283d0386c5b4e4a03e09b95b5d8340eb7e319f903eb8",
+    "native/dark-comfortable.txt": "def3cf730eb93e7a12bbea2b7c51722e8f6e2f2bc776372043042dfcb382a6a4",
+    "native/dark-compact-floating-floating.png": "6e3bb61c1276b7710318b7f9e0a2e70f304be567059b699f3d028807f9e73fbe",
+    "native/dark-compact-floating-main.png": "ce45936367b95eb157c54b63603f5dc9dc1c6f980e722c5538ecfdfee61d1add",
+    "native/dark-compact-floating-menu.png": "ee2194d9b5f56cc9d59eef1675f4d71901da25bdeaecf633818dd164b6d8e355",
+    "native/dark-compact-floating-tooltip.png": "fbc95f30dc279dbc26f1283d0386c5b4e4a03e09b95b5d8340eb7e319f903eb8",
+    "native/dark-compact-floating.txt": "1a16a25fce7b587588f37af9f6c84076243fd2c6c9109177677136f2c47188a0",
+    "native/dark-name-light-palette.css": "1d7c108a4712d051536ca55e45e823fa31f52ecf9313027d41b897741ec05658",
+    "native/foreign.css": "4d6e26205016c42127007cdddbdf384d21534b7303bfd5657f7fc87dbc4a1b44",
+    "native/light-comfortable-restored-floating.png": "76bb3d6f43252dcbc4d5543185a336ef6ac12e5e3069cf3d59005ed2b0dd5495",
+    "native/light-comfortable-restored-main.png": "c7ed12a6fd4d364aed7b59cf047f84966294bd87363a036130c4ef16365b8a7a",
+    "native/light-comfortable-restored-menu.png": "79c678052957777cac2cd17322ee40351a7e30b5c52eef5042ceae4eefb4bbfe",
+    "native/light-comfortable-restored-tooltip.png": "d12e8126e913c5baab9c1fbfea28e0d5019a9ad66db8115957c7f5f023664035",
+    "native/light-comfortable-restored.txt": "5d28b1f624cdd8618c0819aeeb1c19cd1124f17ef6bab11bbb246a2d0c92e29a",
+    "native/light-compact-main.png": "ae52852be40f82e454132b0ef8cbdecec7ca97a044ae0fd4b9ac052b5fd3686e",
+    "native/light-compact-menu.png": "79c678052957777cac2cd17322ee40351a7e30b5c52eef5042ceae4eefb4bbfe",
+    "native/light-compact-tooltip.png": "d12e8126e913c5baab9c1fbfea28e0d5019a9ad66db8115957c7f5f023664035",
+    "native/light-compact.txt": "1d44b4c71153e90a8da32a8917337382d3168352171c43ae3337528fda4cf200",
+    "native/light-name-dark-palette.css": "bac5d701dad55ba1d8ccc7680ad41ae47729019a586da63ea6a8cc5b5c12c70f"
+  },
+  "receipt_files": {
+    "baseline.json": "7e96ff5a8e438cb631b3291387eae9bcd0b211f2555b7ea6b165576e1a02c199",
+    "before-s3.zip": "3e0cb482ad63d72cb6e1432a2482640e91d82b7d3bc61c58f0f0623a5188adf6",
+    "source-manifest.json": "565cad188008855fd264c8071c22e75d445c2a9e7193d7cf6b3fded87e60bb24",
+    "candidate-source.zip": "64aa2f4ea5431250a6e4a8a4eddd6b05ce605125d1e495d4847ecdd3c1395045",
+    "s3-only.patch": "bddf490aac4830e8f342b95ad4cc54b50428ea74d2dc369bf6648176e4c93b0d",
+    "api-shape.json": "e053b4cdcf2b086b1a8deac8e2562066c0ed9194e82b8503239e2b640ba4dec9",
+    "s2-dock-api.txt": "9fe0aabd993896c794cffb4ce33816ff4452d3e9f0e19a8d80eeb1872a99fc16",
+    "s3-dock-api.txt": "28821c085e2c2a18d2c015964ee0f4746d6ada6761abc6c1448649df328e7044",
+    "README.md": "06090cce91a4d1c0b1e73c03dfb0c43d9cc09fde57d190bcb29798d12576b53f"
+  },
+  "canonical_plan_sha256": "d35ae693fcab5ba544544a8d847ed898f1887aa318bb5b67e1d18ff7501d2eef",
+  "provider_pin": "628c46fce92c4d31b0b08459ac0f18777b5ba527",
+  "adverse_evidence": "compile-01 safe-initialization warnings and focus-01 fixture compilation failure; focus-02 baseline-class assertion and reproduced stale same-turn popup colors. Corrected before focus-03, floor-01, current and native passes. Raw logs retained.",
+  "limits": [
+    "Local uncommitted candidate; no hosted CI, commit, merge, push or publication",
+    "macOS arm64 only; no cross-platform, screen-reader, heap/GC, performance or scientific qualification",
+    "Owned binding counts measure logical scopes; no JVM listener census",
+    "Temporary owner hide retires transient/floating presentation, preserving panes and main lifecycle bindings; terminal close requires Dock.dispose()",
+    "Independent provider qualification remains S6; Meridian pin unchanged"
+  ],
+  "final_checks": {
+    "relative_document_links": "pass",
+    "all_source_capture_receipt_hashes": "pass",
+    "git_diff_check_exit_code": 0,
+    "provider_pin_unchanged": true,
+    "git_diff_check_scope": "27 candidate source paths; staged check passes. Raw retained compiler logs and unified patch context contain trailing whitespace and are preserved verbatim."
+  }
+}

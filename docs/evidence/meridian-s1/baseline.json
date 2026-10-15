@@ -1,0 +1,12 @@
+{
+  "git_head": "628c46fce92c4d31b0b08459ac0f18777b5ba527",
+  "scala": "3.7.0",
+  "sbt": "1.11.7",
+  "jdk": "22",
+  "javafx": "24.0.1",
+  "artifacts": {
+    "docs/evidence/meridian-s1/baseline-artifacts/scaladock-fx_3-0.1.0-SNAPSHOT.jar": "0d711cb89a42964c5449e990c9ed98996bde1c0a0476bc0d8377f1f119cb1a6d",
+    "docs/evidence/meridian-s1/baseline-artifacts/scaladock-core_3-0.1.0-SNAPSHOT.jar": "53f7a51ea5830531883fe14c8148b9239865966e2a0af8694884e40887e15156"
+  },
+  "preexisting_dirty": "Mote operations; tracker metadata kept separate from source"
+}

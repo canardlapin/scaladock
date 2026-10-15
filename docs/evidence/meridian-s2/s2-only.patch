@@ -1,0 +1,1428 @@
+--- before/modules/core/src/main/scala/scaladock/sizing.scala
++++ after/modules/core/src/main/scala/scaladock/sizing.scala
+@@ -6,7 +6,11 @@
+     headerPx: Double = 32,
+     edgeBandPx: Double = 50,
+     defaultMinPanePx: Double = 40
+-) derives CanEqual
++) derives CanEqual:
++  require(
++    Vector(dividerPx, headerPx, edgeBandPx, defaultMinPanePx).forall(v => v.isFinite && v >= 0),
++    "Layout metrics must be finite and non-negative"
++  )
+ 
+ object LayoutSettings:
+   val default: LayoutSettings = LayoutSettings()
+@@ -93,8 +97,12 @@
+   ): Vector[Double] =
+     if mins.sum >= available then
+       // infeasible: scale mins themselves to fit
+-      val minSum = mins.sum
+-      if minSum <= 0 then alloc else mins.map(_ * available / minSum)
++      val largest = mins.maxOption.getOrElse(0.0)
++      if largest <= 0 then alloc
++      else
++        val normalized = mins.map(_ / largest)
++        val total      = normalized.sum
++        normalized.map(_ / total * available)
+     else
+       val shortfall = alloc.indices.map(i => math.max(0.0, mins(i) - alloc(i))).sum
+       if shortfall <= 0 then alloc
+@@ -118,23 +126,51 @@
+       span: Double,
+       settings: LayoutSettings
+   ): Vector[Cell] =
++    commitDividerUsing(cells, axis, index, fraction, span, settings, Set.empty, constrained = false)
++
++  private[scaladock] def commitDivider(
++      cells: Vector[Cell],
++      axis: Axis,
++      index: Int,
++      fraction: Double,
++      span: Double,
++      settings: LayoutSettings,
++      minimized: Set[NodeId]
++  ): Vector[Cell] =
++    commitDividerUsing(cells, axis, index, fraction, span, settings, minimized, constrained = true)
++
++  private def commitDividerUsing(
++      cells: Vector[Cell],
++      axis: Axis,
++      index: Int,
++      fraction: Double,
++      span: Double,
++      settings: LayoutSettings,
++      minimized: Set[NodeId],
++      constrained: Boolean
++  ): Vector[Cell] =
+     require(index >= 0 && index < cells.length - 1, s"divider index $index out of range")
+     val dividerPx = settings.dividerPx
+     val available = math.max(0.0, span - (cells.length - 1) * dividerPx)
+     if available <= 0 then cells
+     else
+-      val alloc    = allocate(cells, span, dividerPx)
++      val alloc = if constrained then allocateLayout(cells, span, axis, settings, minimized)
++      else allocate(cells, span, dividerPx)
+       val combined = alloc(index) + alloc(index + 1)
+       val minA     = cellMin(cells(index), axis, settings)
+       val minB     = cellMin(cells(index + 1), axis, settings)
+-      if minA + minB > combined then cells // both sides already below min: nothing sane to commit
++      if combined <= 0 || minA + minB > combined then
++        cells // both sides already below min: nothing sane to commit
+       else
+         commitAt(
+           cells,
+           index,
+           (fraction * combined).max(minA).min(combined - minB),
+           combined,
+-          available
++          math.max(
++            0.0,
++            available - cells.indices.filter(i => minimized(cells(i).node.id)).map(alloc).sum
++          )
+         )
+ 
+   private def commitAt(
+@@ -162,18 +198,43 @@
+     * constrains it only along its split's axis.
+     */
+   def minSpan(node: Node, axis: Axis, settings: LayoutSettings): Double = node match
+-    case _: Node.Group =>
++    case g: Node.Group =>
+       axis match
+-        case Axis.Vertical   => settings.headerPx + settings.defaultMinPanePx
++        case Axis.Vertical =>
++          ((if g.header == Header.Hidden then 0.0
++            else settings.headerPx) + settings.defaultMinPanePx).min(Double.MaxValue)
+         case Axis.Horizontal => settings.defaultMinPanePx
+     case Node.Split(_, splitAxis, cells) =>
+       if splitAxis == axis then
+-        cells.map(c => cellMin(c, axis, settings)).sum + (cells.length - 1) * settings.dividerPx
++        (cells.map(c => cellMin(c, axis, settings)).sum +
++          math.max(0, cells.length - 1) * settings.dividerPx).min(Double.MaxValue)
+       else if cells.isEmpty then 0.0
+       else cells.map(c => minSpan(c.node, axis, settings)).max
+ 
+   /** The extent of a minimised group's strip along its parent split's axis. */
+   def stripPx(settings: LayoutSettings): Double = settings.headerPx
++
++  /** Shared allocation for layout and divider commits, including minimized strips. In an infeasible
++    * viewport, strips share the remaining span and live content can reach zero.
++    */
++  private def allocateLayout(
++      cells: Vector[Cell],
++      span: Double,
++      axis: Axis,
++      settings: LayoutSettings,
++      minimized: Set[NodeId]
++  ): Vector[Double] =
++    val live       = cells.filterNot(c => minimized(c.node.id))
++    val stripCount = cells.length - live.length
++    val available  = math.max(0.0, span - math.max(0, cells.length - 1) * settings.dividerPx)
++    val strip = if stripCount == 0 then 0.0 else math.min(settings.headerPx, available / stripCount)
++    val liveAvailable = math.max(0.0, available - stripCount * strip)
++    val liveSizes = respectMinSizes(
++      firstPass(live, liveAvailable),
++      live.map(c => cellMin(c, axis, settings)),
++      liveAvailable
++    ).iterator
++    cells.map(c => if minimized(c.node.id) then strip else liveSizes.next())
+ 
+   /** Realize one window's tree in pixels. Minimised groups are *presented* as header-thin strips —
+     * their cells are overridden to `Px(stripPx)` at allocation time only, so the stored sizes stay
+@@ -192,10 +253,6 @@
+         val groups   = Map.newBuilder[NodeId, GroupGeometry]
+         val splits   = Map.newBuilder[NodeId, Rect]
+         val dividers = Vector.newBuilder[DividerGeometry]
+-
+-        def isMinimized(n: Node): Boolean = n match
+-          case g: Node.Group => minimized(g.id)
+-          case _             => false
+ 
+         def place(n: Node, rect: Rect): Unit = n match
+           case g: Node.Group if minimized(g.id) =>
+@@ -224,18 +281,8 @@
+             val span = axis match
+               case Axis.Horizontal => rect.width
+               case Axis.Vertical   => rect.height
+-            // two-phase allocation: minimised cells take EXACTLY their strip (never scaled,
+-            // whatever the sibling unit mix), and the live cells share what remains
+-            val strip     = stripPx(settings)
+-            val live      = cells.filterNot(c => isMinimized(c.node))
+-            val stripSum  = (cells.length - live.length) * strip
+-            val available = math.max(0.0, span - (cells.length - 1) * settings.dividerPx)
+-            val liveSpan = math.max(0.0, available - stripSum) +
+-              math.max(0, live.length - 1) * settings.dividerPx
+-            val liveMins  = live.map(c => cellMin(c, axis, settings))
+-            val liveSizes = allocateWithMins(live, liveSpan, settings.dividerPx, liveMins).iterator
+-            val sizes     = cells.map(c => if isMinimized(c.node) then strip else liveSizes.next())
+-            var offset    = 0.0
++            val sizes  = allocateLayout(cells, span, axis, settings, minimized)
++            var offset = 0.0
+             // a rect too small for its divider strips (available clamped to 0) must not leak
+             // children past its own edge: clamp every placement into [0, span]
+             def clamped(at: Double, extent: Double): (Double, Double) =
+@@ -264,7 +311,8 @@
+         maximized.filter(base.groups.contains) match
+           case None => base
+           case Some(id) =>
+-            val headerH = math.min(settings.headerPx, viewport.height)
++            val headerH = if node.findGroup(id).exists(_.header == Header.Hidden) then 0.0
++            else math.min(settings.headerPx, viewport.height)
+             val full = GroupGeometry(
+               viewport,
+               Rect(viewport.x, viewport.y, viewport.width, headerH),
+@@ -287,25 +335,26 @@
+       case None =>
+         Vector(DropArea(viewport, viewport, DropZone.EmptyWindow(window)))
+       case Some(node) =>
+-        val band = settings.edgeBandPx
++        val bandX = math.min(settings.edgeBandPx, viewport.width / 2)
++        val bandY = math.min(settings.edgeBandPx, viewport.height / 2)
+         val windowEdges = Vector(
+           DropArea(
+-            Rect(viewport.x, viewport.y, band, viewport.height),
++            Rect(viewport.x, viewport.y, bandX, viewport.height),
+             Rect(viewport.x, viewport.y, viewport.width / 2, viewport.height),
+             DropZone.WindowEdge(window, Edge.Left)
+           ),
+           DropArea(
+-            Rect(viewport.right - band, viewport.y, band, viewport.height),
++            Rect(viewport.right - bandX, viewport.y, bandX, viewport.height),
+             Rect(viewport.x + viewport.width / 2, viewport.y, viewport.width / 2, viewport.height),
+             DropZone.WindowEdge(window, Edge.Right)
+           ),
+           DropArea(
+-            Rect(viewport.x, viewport.y, viewport.width, band),
++            Rect(viewport.x, viewport.y, viewport.width, bandY),
+             Rect(viewport.x, viewport.y, viewport.width, viewport.height / 2),
+             DropZone.WindowEdge(window, Edge.Top)
+           ),
+           DropArea(
+-            Rect(viewport.x, viewport.bottom - band, viewport.width, band),
++            Rect(viewport.x, viewport.bottom - bandY, viewport.width, bandY),
+             Rect(viewport.x, viewport.y + viewport.height / 2, viewport.width, viewport.height / 2),
+             DropZone.WindowEdge(window, Edge.Bottom)
+           )
+--- before/modules/core/src/main/scala/scaladock/edit.scala
++++ after/modules/core/src/main/scala/scaladock/edit.scala
+@@ -305,7 +305,11 @@
+   ): LayoutState =
+     rewriteNode(s, split):
+       case Node.Split(id, axis, cells) if index >= 0 && index < cells.length - 1 =>
+-        Node.Split(id, axis, sizing.commitDivider(cells, axis, index, fraction, span, settings))
++        Node.Split(
++          id,
++          axis,
++          sizing.commitDivider(cells, axis, index, fraction, span, settings, s.minimized)
++        )
+       case other => other
+ 
+   // ---------------------------------------------------------------------------------------
+--- before/modules/core/src/test/scala/scaladock/SizingSuite.scala
++++ after/modules/core/src/test/scala/scaladock/SizingSuite.scala
+@@ -161,4 +161,60 @@
+         case None => ()
+       true
+     }
++  test("layout metrics reject negative and non-finite fields but allow zero"):
++    for bad <- Vector(-0.01, Double.NaN, Double.PositiveInfinity, Double.NegativeInfinity) do
++      val _ = intercept[IllegalArgumentException](LayoutSettings(dividerPx = bad))
++      val _ = intercept[IllegalArgumentException](LayoutSettings(headerPx = bad))
++      val _ = intercept[IllegalArgumentException](LayoutSettings(edgeBandPx = bad))
++      val _ = intercept[IllegalArgumentException](LayoutSettings(defaultMinPanePx = bad))
++    assertEquals(LayoutSettings(0, 0, 0, 0).headerPx, 0.0)
++
++  test("zero and tiny viewports keep chrome, content and hit areas finite and inside bounds"):
++    val groups = Vector("a", "b", "c").map(t => Node.solo(doc(t)))
++    val root   = Node.Split(NodeId.fresh(), Axis.Horizontal, groups.map(g => Cell(g)))
++    for
++      metrics <- Vector(
++        LayoutSettings(),
++        LayoutSettings(0, 0, 0, 0),
++        LayoutSettings(headerPx = 80),
++        LayoutSettings(defaultMinPanePx = Double.MaxValue)
++      )
++      span <- Vector(0.0, 0.25, 1.0, 20.0)
++    do
++      val viewport = Rect(0, 0, span, span)
++      val geom =
++        sizing.geometry(Some(root), viewport, metrics, minimized = groups.take(2).map(_.id).toSet)
++      val areas = sizing.dropAreas(Some(root), geom, viewport, None, metrics)
++      val rects = geom.groups.values.toVector.flatMap(g => Vector(g.bounds, g.header, g.content)) ++
++        geom.dividers.map(_.bounds) ++ areas.flatMap(a => Vector(a.hover, a.highlight))
++      rects.foreach: r =>
++        assert(Vector(r.x, r.y, r.width, r.height).forall(_.isFinite), s"$metrics $span $r")
++        assert(r.width >= 0 && r.height >= 0)
++        assert(r.x >= 0 && r.y >= 0 && r.right <= span + eps && r.bottom <= span + eps)
++
++  test("a maximized hidden header remains absent from geometry and hit tests"):
++    val group = Node.solo(doc("hidden")).copy(header = Header.Hidden)
++    val geom = sizing.geometry(
++      Some(group),
++      Rect(0, 0, 200, 100),
++      LayoutSettings(headerPx = 64),
++      Some(group.id)
++    )
++    assertEquals(geom.groups(group.id).header.height, 0.0)
++    assertEquals(geom.groups(group.id).content, Rect(0, 0, 200, 100))
++
++  test("divider commit uses actual constrained live span beside a minimized sibling"):
++    val groups  = Vector("a", "b", "strip").map(t => Node.solo(doc(t)))
++    val cells   = Vector(Cell(groups(0)), Cell(groups(1)), Cell(groups(2), Size.Px(250)))
++    val root    = Node.Split(NodeId.fresh(), Axis.Vertical, cells)
++    val state   = edit.canonical(LayoutState.of(root)).copy(minimized = Set(groups(2).id))
++    val metrics = LayoutSettings(headerPx = 64)
++    val next    = edit.dragDivider(state, root.id, 0, 0.4, 600, metrics)
++    val geom = sizing.geometry(next.root, Rect(0, 0, 400, 600), metrics, minimized = next.minimized)
++    assertEqualsDouble(geom.groups(groups(0).id).bounds.height, 213.6, eps)
++    assertEqualsDouble(geom.groups(groups(1).id).bounds.height, 320.4, eps)
++    assertEqualsDouble(geom.groups(groups(2).id).bounds.height, 64.0, eps)
++    assertEquals(next.findSplit(root.id).get.cells(2), cells(2))
++    assertEquals(next.groups.map(_.id), state.groups.map(_.id))
++
+ end SizingSuite
+--- before/modules/fx/src/main/scala/scaladock/fx/Dock.scala
++++ after/modules/fx/src/main/scala/scaladock/fx/Dock.scala
+@@ -12,7 +12,7 @@
+ 
+ /** The JavaFX entry point: one dock, one immutable state value, one mutation door.
+   *
+-  * Every change flows through [[update]], which canonicalizes the next state, reconciles the
++  * Every model change flows through [[update]], which canonicalizes the next state, reconciles the
+   * long-lived JavaFX views (keyed by stable ids — pane nodes are reparented, never rebuilt, even
+   * across OS windows), and publishes the derived [[DockEvent]]s. Floating windows are plain data in
+   * [[LayoutState]]; their Stages are reconciled from it exactly like group views. Construct and use
+@@ -20,11 +20,14 @@
+   */
+ final class Dock private (
+     factories: PaneFactories,
+-    val settings: LayoutSettings,
++    initialSettings: LayoutSettings,
+     defaultHeader: HeaderButtons
+ ):
+-  private var current: LayoutState = LayoutState.empty
+-  private var updating             = false
++  private var requestedMetrics: LayoutSettings = initialSettings
++  private var currentMetrics: LayoutSettings   = initialSettings
++  private var refreshingMetrics                = false
++  private var current: LayoutState             = LayoutState.empty
++  private var updating                         = false
+ 
+   /** Pending transitions, each with whether panes leaving the layout are retained (not disposed).
+     */
+@@ -40,10 +43,10 @@
+   private val detached = mutable.LinkedHashMap.empty[PaneId, (BoundPane[?], Pane)]
+   private val closing  = mutable.Map.empty[(Set[PaneId], Boolean), Future[Boolean]]
+ 
+-  private val main   = WindowRenderer(this, settings, floating = false)
++  private val main   = WindowRenderer(this, floating = false)
+   private val floats = mutable.Map.empty[WindowId, FloatingStage]
+ 
+-  private val dragController = DragController(this, main.region, settings)
++  private val dragController = DragController(this, main.region)
+ 
+   // floating windows must not outlive the main window: when the scene's window hides
+   // (app closing), close every floating Stage — the state is untouched, so a save made
+@@ -59,6 +62,51 @@
+             )
+ 
+   // -- public surface --------------------------------------------------------------------------
++
++  /** Current effective metrics: requested density raised by CSS text/control preferred minima. Read
++    * and update presentation on the JavaFX application thread.
++    */
++  def settings: LayoutSettings = currentMetrics
++
++  /** The requested density before CSS preferred minima are applied. */
++  def requestedSettings: LayoutSettings = requestedMetrics
++
++  /** Atomically change presentation without rebuilding panes or modifying LayoutState. Validate
++    * first; cancel armed/active gestures before publishing new metrics. CSS minima may raise
++    * headerPx above the requested floor. New/restored windows read this same snapshot.
++    */
++  def setSettings(next: LayoutSettings): Unit =
++    require(javafx.application.Platform.isFxApplicationThread, "Metrics updates require JavaFX")
++    require(next != null, "Metrics must not be null")
++    if next != requestedMetrics then
++      cancelGestures()
++      requestedMetrics = next
++    refreshMetrics()
++    allRegions.foreach(_.layout())
++    floats.values.foreach(_.layoutMetrics())
++
++  private def allRenderers: Vector[WindowRenderer] =
++    main +: floats.values.toVector.map(_.renderer)
++
++  private def cancelGestures(): Unit =
++    dragController.cancel()
++    allRenderers.foreach(_.cancelGestures())
++
++  /** Recompute the shared snapshot before layout or interaction. No state mutation or pane bind. */
++  private[fx] def refreshMetrics(): Unit =
++    if !refreshingMetrics then
++      refreshingMetrics = true
++      try
++        allRegions.foreach(_.applyCss())
++        val floors = allRenderers.map(_.preferredHeaderPx) ++ floats.values.map(_.preferredHeaderPx)
++        val floor  = floors.maxOption.getOrElse(0.0)
++        val next   = requestedMetrics.copy(headerPx = math.max(requestedMetrics.headerPx, floor))
++        if next != currentMetrics then
++          cancelGestures()
++          currentMetrics = next
++          allRenderers.foreach(_.invalidateMetrics())
++        floats.values.foreach(_.refreshMetrics())
++      finally refreshingMetrics = false
+ 
+   /** Put this into your scene. */
+   def view: Parent = main.region
+@@ -347,7 +395,9 @@
+     Iterator.iterate(n)(_.getParent).takeWhile(_ != null).flatMap(byNode.get).nextOption()
+ 
+   /** Wiring that needs a fully constructed dock (called once by [[Dock.apply]]). */
+-  private[fx] def attach(): Unit = installKeyboard(main.region)
++  private[fx] def attach(): Unit =
++    main.attachMetrics()
++    installKeyboard(main.region)
+ 
+   /** Keys, and the model's focus following keyboard focus (Tab traversal into another pane). */
+   private[fx] def installKeyboard(region: DockRegion): Unit =
+@@ -417,7 +467,7 @@
+     * view. The dock must not be used afterwards.
+     */
+   def dispose(): Unit =
+-    dragController.cancel()
++    cancelGestures()
+     floats.values.foreach(_.dispose())
+     floats.clear()
+     panes.values.foreach(_.dispose())
+@@ -538,7 +588,15 @@
+       update(edit.dragDivider(_, dv.splitId, dv.index, fraction, ctx.span, settings))
+     dv.onPreview = (fraction, ctx) =>
+       current.findSplit(dv.splitId).foreach: sp =>
+-        val cells = sizing.commitDivider(sp.cells, sp.axis, dv.index, fraction, ctx.span, settings)
++        val cells = sizing.commitDivider(
++          sp.cells,
++          sp.axis,
++          dv.index,
++          fraction,
++          ctx.span,
++          settings,
++          current.minimized
++        )
+         region.previewSplit(Some(sp.id -> cells.map(_.size)))
+     dv.onPreviewEnd = () => region.previewSplit(None)
+ 
+@@ -562,7 +620,12 @@
+       val span = split.axis match
+         case Axis.Horizontal => rect.width
+         case Axis.Vertical   => rect.height
+-      val alloc = sizing.allocate(split.cells, span, settings.dividerPx)
++      // Read the exact constrained layout, including any other minimized siblings.
++      def extent(cell: Cell): Double =
++        val bounds = region.geometry.groups.get(cell.node.id).map(_.bounds)
++          .orElse(region.geometry.splits.get(cell.node.id)).get
++        if split.axis == Axis.Horizontal then bounds.width else bounds.height
++      val alloc = split.cells.map(extent)
+       DividerView.DragContext(
+         aPx = alloc(index),
+         bPx = alloc(index + 1),
+@@ -795,6 +858,7 @@
+       settings: LayoutSettings = LayoutSettings.default,
+       defaultHeader: HeaderButtons = HeaderButtons()
+   ): Dock =
++    require(settings != null, "Metrics must not be null")
+     val dock = new Dock(factories, settings, defaultHeader)
+     dock.attach()
+     dock.update(_ => initial)
+@@ -803,14 +867,32 @@
+ /** One window's rendering: a flat region plus keyed maps of group and divider views. The main
+   * window and every floating window each own one of these.
+   */
+-private[fx] final class WindowRenderer(dock: Dock, settings: LayoutSettings, floating: Boolean):
+-  private[fx] val region = DockRegion(settings)
++private[fx] final class WindowRenderer(dock: Dock, floating: Boolean):
++  private[fx] val region = new DockRegion
++
++  /** Wire only after Dock construction: callbacks must never escape an uninitialized Dock. */
++  def attachMetrics(): Unit =
++    region.settings = () => dock.settings
++    region.refreshMetrics = () => dock.refreshMetrics()
+ 
+   /** Set by a floating window whose title bar stands in for its lone single-tab group's header. */
+   private[fx] var barOwnsLoneHeader: Boolean = false
+ 
+   private val groupViews   = mutable.Map.empty[NodeId, GroupView]
+   private val dividerViews = mutable.Map.empty[(NodeId, Int), DividerView]
++
++  def preferredHeaderPx: Double =
++    groupViews.values.map(_.preferredHeaderPx).maxOption.getOrElse(0.0)
++
++  def invalidateMetrics(): Unit =
++    groupViews.values.foreach(_.requestLayout())
++    region.requestLayout()
++
++  def cancelGestures(): Unit =
++    dividerViews.values.foreach(_.cancel())
++    groupViews.values.foreach(_.resetInsertion())
++    region.previewSplit(None)
++    region.hideIndicator()
+ 
+   def groupViewFor(id: NodeId): Option[GroupView] = groupViews.get(id)
+ 
+@@ -820,7 +902,7 @@
+     groupsHere.foreach: g =>
+       val gv = groupViews.getOrElseUpdate(
+         g.id, {
+-          val created = GroupView(g.id, settings)
++          val created = GroupView(g.id, () => dock.settings)
+           dock.wireGroupView(created)
+           region.addView(created)
+           created
+@@ -876,7 +958,7 @@
+   */
+ private[fx] final class FloatingStage(dock: Dock, initial: Floating):
+   val window: WindowId         = initial.window
+-  val renderer: WindowRenderer = WindowRenderer(dock, dock.settings, floating = true)
++  val renderer: WindowRenderer = WindowRenderer(dock, floating = true)
+   private val stage: Stage     = new Stage
+   private var applyingBounds   = false
+ 
+@@ -885,6 +967,7 @@
+     */
+   private val bar: Option[WindowBar] = WindowBar.create(dock, window)
+   renderer.barOwnsLoneHeader = bar.isDefined
++  renderer.attachMetrics()
+ 
+   /** The scene root: the dock region, under the themed title bar when there is one. */
+   private val root: javafx.scene.Parent = bar match
+@@ -894,6 +977,12 @@
+       pane.getStyleClass.addAll("dock", "dock-window")
+       pane
+     case None => renderer.region
++
++  def preferredHeaderPx: Double = bar.fold(0.0)(_.preferredHeaderPx)
++
++  def refreshMetrics(): Unit = bar.foreach(_.refreshMetrics())
++
++  def layoutMetrics(): Unit = root.layout()
+ 
+   /** Theme the window's own chrome (the region themes itself). */
+   def applyTheme(theme: DockTheme): Unit =
+@@ -1016,6 +1105,18 @@
+     WindowBar.call(node, Seq("setLeft", "setLeading"), chip)
+     WindowBar.call(node, Seq("setRight", "setTrailing"), actions)
+ 
++  def preferredHeaderPx: Double =
++    Vector(
++      chip.minHeight(-1),
++      chip.prefHeight(-1),
++      actions.minHeight(-1),
++      actions.prefHeight(-1)
++    ).max
++
++  def refreshMetrics(): Unit =
++    // Native HeaderBar/CSS minima remain authoritative (34px in the built-in theme).
++    node.setPrefHeight(Vector(node.minHeight(-1), dock.settings.headerPx, preferredHeaderPx).max)
++
+   /** Mirror the window's tree: the chip names the first group's active pane. */
+   def sync(tree: Node): Unit =
+     val g      = tree.groups.headOption
+--- before/modules/fx/src/main/scala/scaladock/fx/DockRegion.scala
++++ after/modules/fx/src/main/scala/scaladock/fx/DockRegion.scala
+@@ -6,8 +6,10 @@
+ /** The root of one window's dock: a flat set of group views and divider strips positioned by core
+   * geometry. Splits have no scene-graph presence — they exist only as arithmetic.
+   */
+-private[fx] final class DockRegion(settings: LayoutSettings) extends Region:
+-  private var themeSheet: Option[String] = None
++private[fx] final class DockRegion extends Region:
++  private[fx] var settings: () => LayoutSettings = () => LayoutSettings.default
++  private[fx] var refreshMetrics: () => Unit     = () => ()
++  private var themeSheet: Option[String]         = None
+ 
+   // `:inactive` while this region's window lacks OS focus (only once it is in a focusable window)
+   private val onWindowFocus: javafx.beans.value.ChangeListener[java.lang.Boolean] =
+@@ -178,6 +180,8 @@
+     indicator.toFront()
+ 
+   override def layoutChildren(): Unit =
++    refreshMetrics()
++    val snapshot = settings()
+     val viewport = Rect(0, 0, getWidth, getHeight)
+     def withSizes(n: Node, id: NodeId, sizes: Vector[Size]): Node = n match
+       case sp: Node.Split if sp.id == id && sp.cells.length == sizes.length =>
+@@ -186,7 +190,14 @@
+         sp.copy(cells = sp.cells.map(c => c.copy(node = withSizes(c.node, id, sizes))))
+       case g => g
+     val laidOut = splitPreview.fold(root)((id, sizes) => root.map(withSizes(_, id, sizes)))
+-    geometry = sizing.geometry(laidOut, viewport, settings, maximized, minimized)
++    // A client title bar can replace a group header; hit tests must see the same zero height.
++    val hidden =
++      getChildren.toArray.collect { case g: GroupView if !g.usesHeader => g.nodeId }.toSet
++    def withHeaders(n: Node): Node = n match
++      case g: Node.Group if hidden(g.id) => g.copy(header = Header.Hidden)
++      case sp: Node.Split => sp.copy(cells = sp.cells.map(c => c.copy(node = withHeaders(c.node))))
++      case g              => g
++    geometry = sizing.geometry(laidOut.map(withHeaders), viewport, snapshot, maximized, minimized)
+     val dividerRects =
+       geometry.dividers.map(d => (d.split, d.index) -> d).toMap
+ 
+--- before/modules/fx/src/main/scala/scaladock/fx/views.scala
++++ after/modules/fx/src/main/scala/scaladock/fx/views.scala
+@@ -33,7 +33,8 @@
+   * buttons, overflow menu) is cheap and rebuilt freely; the hosted pane nodes are only ever
+   * reparented.
+   */
+-private[fx] final class GroupView(val nodeId: NodeId, settings: LayoutSettings) extends Region:
++private[fx] final class GroupView(val nodeId: NodeId, settings: () => LayoutSettings)
++    extends Region:
+   // gesture callbacks, wired once by Dock at creation
+   private[fx] var onTabActivated: PaneId => Unit                                 = _ => ()
+   private[fx] var onTabPressed: (PaneId, javafx.scene.input.MouseEvent) => Unit  = (_, _) => ()
+@@ -135,6 +136,12 @@
+   header.getStyleClass.add("dock-header")
+   header.add(tabsViewport, overflow, buttons)
+   getChildren.addAll(header, content, stripFace)
++  // Infeasible viewports can reach zero: children with larger minima must not spill into siblings.
++  for container <- Vector(header, content) do
++    val clip = new javafx.scene.shape.Rectangle
++    clip.widthProperty.bind(container.widthProperty)
++    clip.heightProperty.bind(container.heightProperty)
++    container.setClip(clip)
+ 
+   tabsViewport.setOnScroll: e =>
+     val delta = if math.abs(e.getDeltaX) > math.abs(e.getDeltaY) then e.getDeltaX else e.getDeltaY
+@@ -249,6 +256,27 @@
+       case None       => content.getChildren.clear()
+     header.requestLayout()
+   end update
++
++  def usesHeader: Boolean = headerVisible
++
++  /** Natural CSS chrome minima, never a previously allocated height or a density ceiling. */
++  def preferredHeaderPx: Double =
++    stripLabel.autosize()
++    val chrome = Vector(
++      tabsBox.minHeight(-1),
++      tabsBox.prefHeight(-1),
++      buttons.minHeight(-1),
++      buttons.prefHeight(-1),
++      overflow.minHeight(-1),
++      overflow.prefHeight(-1)
++    ).max + header.getInsets.getTop + header.getInsets.getBottom
++    Vector(
++      chrome,
++      math.max(0.0, header.getMinHeight),
++      math.max(0.0, header.getPrefHeight),
++      stripStack.minWidth(-1),
++      stripStack.prefWidth(-1)
++    ).max
+ 
+   /** While any drag is in flight, content ignores the pointer: no hover or crosshair reacts to a
+     * pointer that is carrying a pane.
+@@ -532,7 +560,7 @@
+       content.resizeRelocate(0, 0, 0, 0)
+     else
+       val w       = getWidth
+-      val headerH = if headerVisible then math.min(settings.headerPx, getHeight) else 0.0
++      val headerH = if headerVisible then math.min(settings().headerPx, getHeight) else 0.0
+       header.resizeRelocate(0, 0, w, headerH)
+       content.resizeRelocate(0, headerH, w, math.max(0, getHeight - headerH))
+ 
+@@ -605,6 +633,12 @@
+     borrowed.foreach((scene, cursor) => scene.setCursor(cursor))
+     borrowed = None
+     onPreviewEnd()
++
++  /** End transient resizing without committing a ratio; restore the borrowed scene cursor. */
++  def cancel(): Unit =
++    hoverDelay.stop()
++    pseudoClassStateChanged(pseudo.Hot, false)
++    endGesture()
+ 
+   // a divider removed mid-gesture (its split dissolved) never sees the release: clean up now
+   sceneProperty.addListener: (_, _, scene) =>
+--- before/modules/fx/src/main/scala/scaladock/fx/drag.scala
++++ after/modules/fx/src/main/scala/scaladock/fx/drag.scala
+@@ -18,7 +18,7 @@
+   * leaves everything as it was. Every path out of a drag runs through one idempotent cleanup door,
+   * so an exception can never leave a dimmed tab or a stray ghost behind.
+   */
+-private[fx] final class DragController(dock: Dock, region: DockRegion, settings: LayoutSettings):
++private[fx] final class DragController(dock: Dock, region: DockRegion):
+ 
+   private enum Phase:
+     case Idle
+@@ -37,6 +37,7 @@
+       val sourced: Boolean,          // fabricated by a drag source: not yet in the layout
+       val surfaces: Vector[Surface], // front-most first
+       val ghost: Option[GhostPopup],
++      val settings: LayoutSettings,
+       val filteredScenes: Vector[javafx.scene.Scene] // the scenes the ESC filter was added to
+   ):
+     var lastValid: Option[(Surface, DropArea)] = None
+@@ -45,7 +46,8 @@
+     var closed: Boolean                        = false
+     val previews: collection.mutable.Map[DropArea, Option[Rect]] = collection.mutable.Map.empty
+ 
+-  private var phase: Phase = Phase.Idle
++  private var phase: Phase     = Phase.Idle
++  private var generation: Long = 0L
+ 
+   private val escFilter: EventHandler[KeyEvent] = e =>
+     if e.getCode == KeyCode.ESCAPE then
+@@ -75,18 +77,20 @@
+ 
+   /** Abort any in-flight drag; the layout was never touched, so nothing needs restoring. */
+   def cancel(): Unit =
++    generation += 1
+     phase match
+       case Phase.Dragging(session) => endSession(session)
+       case _                       => phase = Phase.Idle
+ 
+   /** Arm an external node as a factory of new panes (golden-layout's DragSource). */
+   def installSource(handle: javafx.scene.Node)(make: () => PaneDef): Subscription =
+-    var pressed: Option[(Double, Double)] = None
+-    val onPress: EventHandler[MouseEvent] = e => pressed = Some((e.getScreenX, e.getScreenY))
++    var pressed: Option[(Double, Double, Long)] = None
++    val onPress: EventHandler[MouseEvent] =
++      e => pressed = Some((e.getScreenX, e.getScreenY, generation))
+     val onDrag: EventHandler[MouseEvent] = e =>
+       phase match
+         case Phase.Idle =>
+-          pressed.foreach: (sx, sy) =>
++          pressed.filter(_._3 == generation).foreach: (sx, sy, _) =>
+             if math.abs(e.getScreenX - sx) > DragController.ThresholdPx
+               || math.abs(e.getScreenY - sy) > DragController.ThresholdPx
+             then
+@@ -123,8 +127,11 @@
+             throw t
+ 
+   private def beginSession(pane: Pane, sourced: Boolean, e: MouseEvent): Unit =
+-    val surfaces = dock.dragSurfaces.map: (windowRef, surfaceRegion, root) =>
+-      surfaceRegion.layout()
++    dock.refreshMetrics()
++    val windows = dock.dragSurfaces
++    windows.foreach(_._2.layout())
++    val settings = dock.settings
++    val surfaces = windows.map: (windowRef, surfaceRegion, root) =>
+       val viewport = Rect(0, 0, surfaceRegion.getWidth, surfaceRegion.getHeight)
+       Surface(
+         surfaceRegion,
+@@ -139,7 +146,7 @@
+       val g = GhostPopup(pane.title, dock.iconOf(pane.id), dock.themeStylesheet)
+       g.showAt(owner, e.getScreenX, e.getScreenY)
+       g
+-    phase = Phase.Dragging(Session(pane, sourced, surfaces, ghost, scenes))
++    phase = Phase.Dragging(Session(pane, sourced, surfaces, ghost, settings, scenes))
+     dock.dragActive(true)
+     dock.publish(DockEvent.DragStarted(pane.id))
+ 
+@@ -235,7 +242,7 @@
+         case None    => next.root
+         case Some(w) => next.floating.find(_.window == w).map(_.root)
+       val viewport = Rect(0, 0, surface.region.getWidth, surface.region.getHeight)
+-      val geom     = sizing.geometry(root, viewport, settings, next.maximized, next.minimized)
++      val geom = sizing.geometry(root, viewport, session.settings, next.maximized, next.minimized)
+       next.groupOf(session.pane.id).flatMap(g => geom.groups.get(g.id)).map(_.bounds)
+ 
+   private def completeDrop(e: MouseEvent): Unit =
+@@ -262,7 +269,7 @@
+       session.closed = true
+       session.ghost.foreach(_.hide())
+       session.surfaces.foreach(_.region.hideIndicator())
+-      closeGap(session)
++      closeGap(session, immediate = true)
+       dock.dragActive(false)
+       session.filteredScenes.foreach(_.removeEventFilter(KeyEvent.KEY_PRESSED, escFilter))
+       dock.markDragging(None)
+--- before/modules/fx/src/main/resources/scaladock/dock.css
++++ after/modules/fx/src/main/resources/scaladock/dock.css
+@@ -160,7 +160,7 @@
+ .dock-tab-overflow {
+   -fx-border-color: transparent transparent transparent -dock-outline; /* separates it from tabs */
+   -fx-border-width: 0 0 0 1;
+-  -fx-border-insets: 8 0 8 0;
++  -fx-border-insets: 4 0 4 0; /* keep decoration from imposing a 32px control minimum */
+   -fx-background-color: transparent;
+   -fx-background-radius: 5px;
+   -fx-padding: 0 7 0 7;
+--- before/modules/fx/src/test/scala/scaladock/fx/MetricsSuite.scala
++++ after/modules/fx/src/test/scala/scaladock/fx/MetricsSuite.scala
+@@ -0,0 +1,392 @@
++package scaladock.fx
++
++import javafx.event.Event
++import javafx.scene.{Cursor, Scene}
++import javafx.scene.control.Label
++import javafx.scene.input.{MouseButton, MouseEvent}
++import javafx.scene.layout.Region
++import javafx.stage.{Stage, Window}
++import munit.FunSuite
++import scaladock.*
++import scaladock.dsl.*
++import upickle.default.ReadWriter
++import FxFixture.onFx
++
++final class MetricsSuite extends FunSuite:
++  final case class Text(value: String) derives ReadWriter
++  private val TextPane                     = PaneType[Text]("test.metrics.text")
++  private def pane(title: String): PaneDef = TextPane(Text(title)).titled(title)
++
++  private final class Counts:
++    var built    = 0
++    var disposed = 0
++
++  private def staged(counts: Counts, state: LayoutState): (Dock, Stage) =
++    val factories = PaneFactories.empty.register(TextPane): text =>
++      counts.built += 1
++      new PaneView[Text]:
++        private val label            = new Label(text.value)
++        def node                     = label
++        def snapshot(): Text         = Text(label.getText)
++        override def dispose(): Unit = counts.disposed += 1
++    val dock = Dock(factories, initial = state)
++    dock.setTheme(DockTheme.Light)
++    val stage = new Stage
++    stage.setScene(new Scene(dock.view, 1100, 700))
++    stage.show()
++    dock.view.applyCss()
++    dock.view.layout()
++    (dock, stage)
++
++  private def withDock(state: LayoutState)(body: (Dock, Stage, Counts) => Unit): Unit =
++    val counts        = new Counts
++    val (dock, stage) = staged(counts, state)
++    try body(dock, stage, counts)
++    finally
++      dock.dispose()
++      stage.close()
++
++  private def mouse(kind: javafx.event.EventType[MouseEvent], x: Double, y: Double): MouseEvent =
++    new MouseEvent(
++      kind,
++      0,
++      0,
++      x,
++      y,
++      MouseButton.PRIMARY,
++      1,
++      false,
++      false,
++      false,
++      false,
++      true,
++      false,
++      false,
++      true,
++      false,
++      false,
++      null
++    )
++
++  private def fire(
++      node: javafx.scene.Node,
++      kind: javafx.event.EventType[MouseEvent],
++      x: Double,
++      y: Double
++  ): Unit =
++    Event.fireEvent(node, mouse(kind, x, y))
++
++  private def tab(dock: Dock, group: NodeId): javafx.scene.Node =
++    dock.groupViewFor(group).get.lookup(".dock-tab")
++
++  private def ghosts: Int =
++    Window.getWindows.toArray.count:
++      case w: Window => w.getScene != null && w.getScene.lookup(".dock-ghost") != null
++      case _         => false
++
++  private def capture(dock: Dock, scene: Scene, name: String): Unit =
++    sys.props.get("scaladock.metrics.captureDir").foreach: directory =>
++      val output = java.nio.file.Path.of(directory)
++      java.nio.file.Files.createDirectories(output): Unit
++      val image = scene.snapshot(null)
++      val png = new java.awt.image.BufferedImage(
++        image.getWidth.toInt,
++        image.getHeight.toInt,
++        java.awt.image.BufferedImage.TYPE_INT_ARGB
++      )
++      for y <- 0 until png.getHeight; x <- 0 until png.getWidth do
++        png.setRGB(x, y, image.getPixelReader.getArgb(x, y))
++      assert(javax.imageio.ImageIO.write(png, "png", output.resolve(name + ".png").toFile))
++      val report = Vector(
++        "capture=JavaFX scene snapshot; OS decorations not captured",
++        "java=" + System.getProperty("java.version"),
++        "javafx=" + System.getProperty("javafx.runtime.version"),
++        "os=" + System.getProperty("os.name") + "/" + System.getProperty("os.arch"),
++        "requested=" + dock.requestedSettings,
++        "effective=" + dock.settings
++      ).mkString("\n") + "\n"
++      java.nio.file.Files.writeString(output.resolve(name + ".txt"), report): Unit
++
++  private def checkBounds(dock: Dock): Unit =
++    for (_, region, root) <- dock.dragSurfaces do
++      region.layout()
++      val areas = sizing.dropAreas(
++        root,
++        region.geometry,
++        Rect(0, 0, region.getWidth, region.getHeight),
++        None,
++        dock.settings
++      )
++      for group <- root.toVector.flatMap(_.groups) if !dock.state.minimized(group.id) do
++        val view = dock.groupViewFor(group.id).get
++        view.layout()
++        val geometry = region.geometry.groups(group.id)
++        val header   = view.lookup(".dock-header").asInstanceOf[Region]
++        val content  = view.lookup(".dock-content").asInstanceOf[Region]
++        assertEqualsDouble(header.getHeight, geometry.header.height, 0.6)
++        assertEqualsDouble(content.getLayoutY, geometry.header.height, 0.6)
++        assertEqualsDouble(content.getHeight, geometry.content.height, 0.6)
++        if geometry.header.height > 0 then
++          val p = Point(
++            geometry.header.x + geometry.header.width / 2,
++            geometry.header.bottom - 0.5
++          )
++          val headers = areas.filter(_.zone == DropZone.HeaderOf(group.id))
++          assertEquals(headers.map(_.hover), Vector(geometry.header))
++          assertEquals(sizing.hitTest(headers, p).map(_.zone), Some(DropZone.HeaderOf(group.id)))
++          // Tiny windows may give a smaller competing window-edge zone priority.
++          assert(sizing.hitTest(areas, p).exists(_.hover.contains(p)))
++
++  test("32 -> 28 -> 32 -> enlarged metrics preserve identity, selected IDs and application state"):
++    onFx:
++      withDock(LayoutState.of(row(group(pane("a"), pane("b")), pane("c")))):
++        (dock, stage, counts) =>
++          val identities = dock.state.panes.map(p => p.id -> dock.nodeOf(p.id).get).toMap
++          identities.values.head.asInstanceOf[Label].setText("unsaved application state")
++          val before = dock.state
++          val saved  = dock.save()
++          val events = collection.mutable.Buffer.empty[DockEvent]
++          val sub    = dock.events.subscribe(e => events += e)
++          try
++            for (height, index) <- Vector(32.0, 28.0, 32.0, 64.0).zipWithIndex do
++              dock.setSettings(LayoutSettings(headerPx = height))
++              assertEqualsDouble(dock.settings.headerPx, height, 0.01)
++              checkBounds(dock)
++              capture(dock, stage.getScene, "density-" + index + "-" + height.toInt)
++              assertEquals(dock.state, before)
++              assertEquals(
++                dock.save(),
++                saved,
++                "presentation must not alter persisted schema or values"
++              )
++              identities.foreach((id, n) => assert(dock.nodeOf(id).get eq n))
++              assertEquals(counts.built, 3)
++              assertEquals(counts.disposed, 0)
++            assert(events.forall(e => !e.isInstanceOf[DockEvent.LayoutChanged]))
++          finally sub.cancel()
++
++  test("existing, newly created and restored floating renderers share current effective metrics"):
++    onFx:
++      withDock(LayoutState.of(row(
++        group(pane("main"), pane("main2")),
++        group(pane("float"), pane("float2"))
++      ))): (dock, _, counts) =>
++        val ids      = dock.state.panes.map(p => p.id -> dock.nodeOf(p.id).get).toMap
++        val floating = dock.state.groupOf(dock.state.panes.find(_.title == "float").get.id).get.id
++        dock.setSettings(LayoutSettings(headerPx = 28))
++        dock.popOut(floating)
++        for height <- Vector(28.0, 32.0, 64.0) do
++          dock.setSettings(LayoutSettings(headerPx = height))
++          checkBounds(dock)
++          val scene = ids(dock.state.findGroup(floating).get.active).getScene
++          capture(dock, scene, "floating-" + height.toInt)
++          assertEquals(dock.state.floating.length, 1)
++        val saved = dock.save()
++        dock.dockAllBack()
++        dock.setSettings(LayoutSettings(headerPx = 28))
++        assertEquals(dock.load(saved), Right(()))
++        for (height, index) <- Vector(32.0, 28.0, 32.0, 64.0).zipWithIndex do
++          dock.setSettings(LayoutSettings(headerPx = height))
++          checkBounds(dock)
++          assertEqualsDouble(dock.settings.headerPx, height, 0.01)
++          val scene = ids(dock.state.findGroup(floating).get.active).getScene
++          capture(dock, scene, "floating-restored-" + index + "-" + height.toInt)
++        ids.foreach((id, n) => assert(dock.nodeOf(id).get eq n))
++        assertEquals(counts.built, 4)
++        assertEquals(counts.disposed, 0)
++
++  test("minimized horizontal and vertical strips use live metrics without changing stored sizes"):
++    onFx:
++      withDock(LayoutState.of(row(column(pane("main"), pane("bottom")), pane("side")))):
++        (dock, _, _) =>
++          val bottom = dock.state.groupOf(dock.state.panes.find(_.title == "bottom").get.id).get.id
++          val side   = dock.state.groupOf(dock.state.panes.find(_.title == "side").get.id).get.id
++          dock.minimize(bottom)
++          dock.minimize(side)
++          val before = dock.state
++          val region = dock.view.asInstanceOf[DockRegion]
++          for height <- Vector(32.0, 28.0, 64.0, 32.0) do
++            dock.setSettings(LayoutSettings(headerPx = height))
++            assertEqualsDouble(region.geometry.groups(bottom).bounds.height, height, 0.6)
++            assertEqualsDouble(region.geometry.groups(side).bounds.width, height, 0.6)
++            assertEquals(region.geometry.groups(bottom).content.height, 0.0)
++            assertEquals(region.geometry.groups(side).content.height, 0.0)
++            assertEquals(dock.state, before)
++
++  test("CSS preferred text and control minima raise density globally and can shrink again"):
++    onFx:
++      withDock(LayoutState.of(row(group(pane("a"), pane("b")), group(pane("c"), pane("d"))))):
++        (dock, _, counts) =>
++          val floating = dock.state.groups.last.id
++          dock.popOut(floating)
++          val first  = dock.groupViewFor(dock.state.groups.head.id).get
++          val title  = first.lookup(".dock-tab-title").asInstanceOf[Label]
++          val button = first.lookup(".dock-header-button").asInstanceOf[Region]
++          title.setStyle("-fx-font-size: 42px;")
++          dock.setSettings(LayoutSettings(headerPx = 28))
++          checkBounds(dock)
++          assertEquals(title.getFont.getSize, 42.0)
++          assert(dock.settings.headerPx > 28 && dock.settings.headerPx >= title.prefHeight(-1))
++          assert(title.getHeight + 0.5 >= title.prefHeight(-1))
++          capture(dock, dock.view.getScene, "css-font-42")
++          button.setStyle("-fx-min-height: 58px; -fx-pref-height: 58px; -fx-max-height: 58px;")
++          dock.setSettings(dock.requestedSettings)
++          assert(dock.settings.headerPx >= 58)
++          assert(dock.settings.headerPx >= title.prefHeight(-1))
++          assertEquals(dock.requestedSettings.headerPx, 28.0)
++          checkBounds(dock)
++          assert(button.getHeight >= 58)
++          capture(dock, dock.view.getScene, "css-control-58")
++          title.setStyle("")
++          button.setStyle("")
++          dock.view.applyCss()
++          dock.view.requestLayout()
++          dock.view.layout() // CSS enlargement also settles without an explicit metrics call.
++          assertEqualsDouble(dock.settings.headerPx, 28.0, 0.01)
++          dock.setSettings(dock.requestedSettings)
++          checkBounds(dock)
++          capture(dock, dock.view.getScene, "css-reset-28")
++          assertEquals(counts.built, 4)
++          assertEquals(counts.disposed, 0)
++
++  test(
++    "metrics update cancels both armed and active tab gestures; the next drop uses enlarged headers"
++  ):
++    onFx:
++      withDock(LayoutState.of(row(group(pane("a"), pane("b")), pane("target")))): (dock, _, _) =>
++        val source = dock.state.groups.head.id
++        val target = dock.state.groups.last.id
++        val handle = tab(dock, source)
++        val paneId = dock.state.findGroup(source).get.tabs.head.id
++        val p      = handle.localToScreen(5, 5)
++        fire(handle, MouseEvent.MOUSE_PRESSED, p.getX, p.getY)
++        val pressedState = dock.state
++        dock.setSettings(LayoutSettings(headerPx = 28))
++        fire(handle, MouseEvent.MOUSE_DRAGGED, p.getX + 20, p.getY + 20)
++        fire(handle, MouseEvent.MOUSE_RELEASED, p.getX + 20, p.getY + 20)
++        assertEquals(dock.state, pressedState)
++        assertEquals(ghosts, 0)
++        fire(handle, MouseEvent.MOUSE_PRESSED, p.getX, p.getY)
++        fire(handle, MouseEvent.MOUSE_DRAGGED, p.getX + 20, p.getY + 20)
++        val targetView = dock.groupViewFor(target).get
++        val point      = targetView.localToScreen(targetView.getWidth / 2, 12)
++        fire(handle, MouseEvent.MOUSE_DRAGGED, point.getX, point.getY)
++        assertEquals(ghosts, 1)
++        assert(dock.view.lookup(".dock-drop-indicator").isVisible)
++        val activeState = dock.state
++        dock.setSettings(LayoutSettings(headerPx = 64))
++        assertEquals(ghosts, 0)
++        assert(!dock.view.lookup(".dock-drop-indicator").isVisible)
++        assert(!handle.getPseudoClassStates.contains(pseudo.Dragging))
++        assert(!dock.view.getPseudoClassStates.contains(pseudo.Dragging))
++        dock.state.groups.foreach(g =>
++          assert(!dock.groupViewFor(g.id).get.lookup(".dock-content").isMouseTransparent)
++        )
++        dock.groupViewFor(source).get.lookupAll(".dock-tab").forEach(n =>
++          assertEquals(n.getTranslateX, 0.0)
++        )
++        fire(handle, MouseEvent.MOUSE_RELEASED, point.getX, point.getY)
++        assertEquals(dock.state, activeState)
++        val next =
++          targetView.localToScreen(targetView.getWidth / 2, 48) // content at 28px; header at 64px
++        fire(handle, MouseEvent.MOUSE_PRESSED, p.getX, p.getY)
++        fire(handle, MouseEvent.MOUSE_DRAGGED, p.getX + 20, p.getY + 20)
++        fire(handle, MouseEvent.MOUSE_DRAGGED, next.getX, next.getY)
++        fire(handle, MouseEvent.MOUSE_RELEASED, next.getX, next.getY)
++        assertEquals(dock.state.groupOf(paneId).map(_.id), Some(target))
++        assertEquals(ghosts, 0)
++
++  test("metrics invalidate pending and active external drag sources"):
++    onFx:
++      withDock(LayoutState.of(group(pane("home")))): (dock, _, _) =>
++        val handle = new Label("synthetic source")
++        var minted = 0
++        val sub = dock.dragSource(handle): () =>
++          minted += 1
++          pane(s"minted-$minted")
++        try
++          fire(handle, MouseEvent.MOUSE_PRESSED, 2000, 2000)
++          dock.setSettings(LayoutSettings(headerPx = 28))
++          fire(handle, MouseEvent.MOUSE_DRAGGED, 2020, 2020)
++          fire(handle, MouseEvent.MOUSE_RELEASED, 2020, 2020)
++          assertEquals(minted, 0)
++          fire(handle, MouseEvent.MOUSE_PRESSED, 2000, 2000)
++          fire(handle, MouseEvent.MOUSE_DRAGGED, 2020, 2020)
++          assertEquals(minted, 1)
++          dock.setSettings(LayoutSettings(headerPx = 32))
++          val target = dock.view.localToScreen(500, 300)
++          fire(handle, MouseEvent.MOUSE_RELEASED, target.getX, target.getY)
++          assertEquals(dock.state.panes.length, 1)
++          assertEquals(ghosts, 0)
++          fire(handle, MouseEvent.MOUSE_PRESSED, 2000, 2000)
++          fire(handle, MouseEvent.MOUSE_DRAGGED, 2020, 2020)
++          fire(handle, MouseEvent.MOUSE_DRAGGED, target.getX, target.getY)
++          fire(handle, MouseEvent.MOUSE_RELEASED, target.getX, target.getY)
++          assertEquals(minted, 2)
++          assertEquals(dock.state.panes.length, 2)
++        finally sub.cancel()
++
++  test(
++    "metrics cancel divider preview and cursor without commit; next drag honors enlarged minima"
++  ):
++    onFx:
++      withDock(LayoutState.of(column(pane("top"), pane("bottom")))): (dock, stage, _) =>
++        val region = dock.view.asInstanceOf[DockRegion]
++        val divider = region.getChildrenUnmodifiable.toArray.collectFirst { case d: DividerView =>
++          d
++        }.get
++        stage.getScene.setCursor(Cursor.CROSSHAIR)
++        val before = dock.state
++        fire(divider, MouseEvent.MOUSE_PRESSED, 200, 300)
++        fire(divider, MouseEvent.MOUSE_DRAGGED, 200, 200)
++        assertEquals(stage.getScene.getCursor, Cursor.V_RESIZE)
++        dock.setSettings(LayoutSettings(headerPx = 64))
++        assertEquals(stage.getScene.getCursor, Cursor.CROSSHAIR)
++        assert(!divider.getPseudoClassStates.contains(pseudo.Dragging))
++        fire(divider, MouseEvent.MOUSE_RELEASED, 200, 100)
++        assertEquals(dock.state, before)
++        fire(divider, MouseEvent.MOUSE_PRESSED, 200, 300)
++        fire(divider, MouseEvent.MOUSE_DRAGGED, 200, -10000)
++        fire(divider, MouseEvent.MOUSE_RELEASED, 200, -10000)
++        region.layout()
++        val top = dock.state.groups.head.id
++        assertEqualsDouble(
++          region.geometry.groups(top).bounds.height,
++          dock.settings.headerPx + dock.settings.defaultMinPanePx,
++          0.6
++        )
++
++  test("zero available FX space clips chrome and content without leaking child minima"):
++    onFx:
++      withDock(LayoutState.of(row(pane("a"), pane("b")))): (dock, _, _) =>
++        dock.setSettings(LayoutSettings(0, 0, 0, 0))
++        dock.view.resize(0, 0)
++        dock.view.layout()
++        dock.state.groups.foreach: g =>
++          val view = dock.groupViewFor(g.id).get
++          view.layout()
++          val geometry = dock.view.asInstanceOf[DockRegion].geometry.groups(g.id)
++          assertEquals(geometry.bounds, Rect.zero)
++          for selector <- Vector(".dock-header", ".dock-content") do
++            val region = view.lookup(selector).asInstanceOf[Region]
++            val clip   = region.getClip.asInstanceOf[javafx.scene.shape.Rectangle]
++            assertEquals(clip.getWidth, 0.0)
++            assertEquals(clip.getHeight, 0.0)
++
++  test("metrics mutation requires JavaFX and null or invalid values do not change live settings"):
++    val counts        = new Counts
++    val (dock, stage) = onFx(staged(counts, LayoutState.of(group(pane("one")))))
++    try
++      val _ = intercept[IllegalArgumentException](dock.setSettings(LayoutSettings(headerPx = 28)))
++      onFx:
++        val before = dock.settings
++        val _      = intercept[IllegalArgumentException](dock.setSettings(null))
++        val _ = intercept[IllegalArgumentException](dock.setSettings(LayoutSettings(headerPx =
++          Double.NaN
++        )))
++        assertEquals(dock.settings, before)
++    finally
++      onFx:
++        dock.dispose()
++        stage.close()
++end MetricsSuite
+--- before/modules/fx/src/test/scala/scaladock/fx/MetricsNativeProbe.scala
++++ after/modules/fx/src/test/scala/scaladock/fx/MetricsNativeProbe.scala
+@@ -0,0 +1,169 @@
++package scaladock.fx
++
++import java.nio.file.{Files, Path}
++import javafx.animation.PauseTransition
++import javafx.application.{Application, Platform}
++import javafx.scene.Scene
++import javafx.scene.control.Label
++import javafx.scene.layout.Region
++import javafx.stage.Stage
++import javafx.util.Duration
++import scaladock.*
++import scaladock.dsl.*
++import upickle.default.ReadWriter
++
++object MetricsNativeProbe:
++  @volatile private[fx] var failure: Option[Throwable] = None
++  final case class Text(value: String) derives ReadWriter
++  val TextPane: PaneType[Text] = PaneType[Text]("metrics.native.synthetic")
++  def main(args: Array[String]): Unit =
++    Application.launch(classOf[MetricsProbeApp], args*)
++    failure.foreach(e => throw IllegalStateException("S2 native probe failed", e))
++
++final class MetricsProbeApp extends Application:
++  import MetricsNativeProbe.*
++  private var dock: Option[Dock]   = None
++  private var owner: Option[Stage] = None
++  private var output: Path         = Path.of(".")
++  private var phase                = 0
++  private var built                = 0
++  private var disposed             = 0
++  private var identities           = Map.empty[PaneId, javafx.scene.Node]
++  private var modelRoots           = Vector.empty[Node]
++  private val heights              = Vector(32.0, 28.0, 32.0, 64.0, 28.0, 28.0)
++
++  override def start(stage: Stage): Unit =
++    owner = Some(stage)
++    try
++      require(getParameters.getRaw.size == 1, "Pass a new evidence directory")
++      output = Path.of(getParameters.getRaw.get(0)).toAbsolutePath
++      require(!Files.exists(output), "Evidence directory must be new")
++      Files.createDirectories(output): Unit
++      val factories = PaneFactories.empty.register(TextPane): text =>
++        built += 1
++        new PaneView[Text]:
++          val node                     = new Label(text.value)
++          def snapshot(): Text         = text
++          override def dispose(): Unit = disposed += 1
++      def pane(title: String): PaneDef = TextPane(Text(title)).titled(title)
++      val value = Dock(
++        factories,
++        initial = LayoutState.of(row(
++          group(pane("Dataset"), pane("Analysis")),
++          group(pane("Inspector"), pane("Metadata"))
++        ))
++      )
++      dock = Some(value)
++      value.setTheme(DockTheme.Light)
++      stage.setScene(new Scene(value.view, 1000, 650))
++      stage.setTitle("S2 synthetic presentation fixture")
++      stage.show()
++      identities = value.state.panes.map(p => p.id -> value.nodeOf(p.id).get).toMap
++      value.popOut(value.state.groups.last.id)
++      modelRoots = value.state.roots
++      schedule()
++    catch case error: Throwable => fail(error)
++
++  private def schedule(): Unit =
++    val value = dock.get
++    if phase == 2 then
++      val saved = value.save()
++      value.dockAllBack()
++      require(value.load(saved).isRight, "Failed to restore floating layout")
++    if phase == 4 || phase == 5 then
++      val style = if phase == 4 then "-fx-font-size: 42px;" else ""
++      value.view.lookupAll(".dock-tab-title").forEach(_.setStyle(style))
++    value.setSettings(LayoutSettings(headerPx = heights(phase)))
++    val pause = new PauseTransition(Duration.millis(400))
++    pause.setOnFinished: _ =>
++      try captureAndAdvance()
++      catch case error: Throwable => fail(error)
++    pause.play()
++
++  private def captureAndAdvance(): Unit =
++    val value = dock.get
++    value.setSettings(value.requestedSettings)
++    require(
++      value.state.roots == modelRoots,
++      "Metrics changed model roots, selection or application state"
++    )
++    require(built == 4 && disposed == 0, "Metrics rebuilt or disposed pane views")
++    identities.foreach((id, node) => require(value.nodeOf(id).get eq node, "Pane identity changed"))
++    val label = Vector(
++      "comfortable-32",
++      "compact-28",
++      "restored-comfortable-32",
++      "enlarged-64",
++      "css-font-42",
++      "css-reset-28"
++    )(phase)
++    if phase == 4 then require(value.settings.headerPx > 42, "Text preference was clipped")
++    else
++      require(
++        math.abs(value.settings.headerPx - heights(phase)) < 0.01,
++        s"Wrong effective metrics: $label / " + value.settings
++      )
++    val rows = Vector.newBuilder[String]
++    for (window, region, root) <- value.dragSurfaces do
++      region.layout()
++      for g <- root.toVector.flatMap(_.groups) do
++        val view = value.groupViewFor(g.id).get
++        view.layout()
++        val geometry = region.geometry.groups(g.id)
++        val header   = view.lookup(".dock-header").asInstanceOf[Region]
++        val content  = view.lookup(".dock-content").asInstanceOf[Region]
++        require(math.abs(header.getHeight - geometry.header.height) < 0.6, "Header/model mismatch")
++        require(
++          math.abs(content.getLayoutY - geometry.header.height) < 0.6,
++          "Content/model mismatch"
++        )
++        require(
++          math.abs(content.getHeight - geometry.content.height) < 0.6,
++          "Content height mismatch"
++        )
++        require(header.getHeight + 0.6 >= value.settings.headerPx, "Viewport did not settle")
++        rows += s"$label\t$window\theader=" + header.getHeight + "\tcontent=" + content.getHeight
++      val name = label + (if window.isEmpty then "-main" else "-floating")
++      writeImage(region.getScene, output.resolve(name + ".png"))
++    val report = Vector(
++      "capture=JavaFX scene snapshots after native pulses; no OS window capture",
++      "java=" + System.getProperty("java.version"),
++      "javafx=" + System.getProperty("javafx.runtime.version"),
++      "os=" + System.getProperty("os.name") + "/" + System.getProperty("os.arch"),
++      "requested=" + value.requestedSettings,
++      "effective=" + value.settings,
++      "built=" + built,
++      "disposedBeforeCleanup=" + disposed
++    ) ++ rows.result()
++    Files.writeString(output.resolve(label + ".txt"), report.mkString("\n") + "\n"): Unit
++    println(
++      s"S2_NATIVE_FRAME_OK phase=$label built=$built disposed=$disposed metrics=" + value.settings
++    )
++    phase += 1
++    if phase < heights.length then schedule()
++    else
++      cleanup()
++      require(disposed == 4, "Cleanup did not dispose exactly four owned panes")
++      println("S2_NATIVE_PROBE_OK phases=6 captures=12 paneRebuilds=0 ownedWindowsClosed=true")
++  end captureAndAdvance
++
++  private def writeImage(scene: Scene, file: Path): Unit =
++    val image = scene.snapshot(null)
++    val png = new java.awt.image.BufferedImage(
++      image.getWidth.toInt,
++      image.getHeight.toInt,
++      java.awt.image.BufferedImage.TYPE_INT_ARGB
++    )
++    for y <- 0 until png.getHeight; x <- 0 until png.getWidth do
++      png.setRGB(x, y, image.getPixelReader.getArgb(x, y))
++    require(javax.imageio.ImageIO.write(png, "png", file.toFile))
++
++  private def cleanup(): Unit =
++    dock.foreach(_.dispose())
++    owner.foreach(_.close())
++    Platform.exit()
++
++  private def fail(error: Throwable): Unit =
++    MetricsNativeProbe.failure = Some(error)
++    cleanup()
++end MetricsProbeApp
+--- before/docs/styling.md
++++ after/docs/styling.md
+@@ -59,6 +59,61 @@
+ claim. See [S1 evidence](evidence/meridian-s1/README.md) for the unchanged compiled
+ client, retained expected compiler failure and updated-source check.
+ 
++## Live density and effective metrics
++
++Construct a dock with `Dock(..., settings = LayoutSettings(...))`. On the JavaFX
++application thread, update presentation in place:
++
++```scala
++dock.setSettings(dock.requestedSettings.copy(headerPx = 28))
++dock.setSettings(dock.requestedSettings.copy(headerPx = 32))
++```
++
++`requestedSettings` holds the requested density; `settings` is the current effective,
++immutable snapshot shared by all renderers, minimized strips, recursive geometry,
++divider contexts and pane-drag hit tests. Header height is a floor: natural CSS text,
++icon, overflow and control minimum/preferred dimensions can raise it globally.
++After editing CSS, call `dock.setSettings(dock.requestedSettings)` to settle all
++windows immediately. Normal CSS/layout pulses also recompute effective minima.
++The existing `Dock.settings` getter remains available; it now reflects live metrics.
++
++`LayoutSettings` keeps its original four fields and constructor/extractor shape.
++All fields are logical pixels and must be finite and non-negative; NaN, either
++infinity and negative values throw `IllegalArgumentException` during construction
++or copy. Zero is allowed. Null settings and off-thread mutation are rejected before
++gesture cancellation or presentation changes.
++
++An update cancels armed/active pane, title-chip, external-source and divider
++gestures before publishing new metrics. Ghosts, drop previews, insertion slides,
++resize previews and borrowed cursors are cleared without committing the old
++gesture. A stale release cannot move a pane or commit a ratio. A new press captures
++the new geometry. Use normal gesture completion before changing presentation if a
++drop is intended to commit.
++
++Existing, new and restored floating windows use the current snapshot. A native
++client title bar retains platform/CSS minima (34px in the built-in theme); it can
++be taller than a 28px dock tab header. Its text/control preferred minima are
++respected. Where that bar replaces a lone group's header, geometry and drop areas
++both give the group header zero height.
++
++When space cannot meet the requested minima, available extents remain finite and
++non-negative. Dividers are clipped to the viewport; minimized strips share the
++space left after dividers, live content may reach zero, and headers are capped by
++their allocated group height. Chrome/content clips prevent child minima from
++painting into neighbors. Restoring space restores presentation without changing
++stored sizes. Window-edge hover bands remain inside even tiny viewports; the
++established smallest-containing-area rule still resolves overlapping targets.
++
++Metrics changes preserve pane Nodes, selected IDs, split ownership and application
++state. They do not emit LayoutChanged or alter the saved-layout schema. Content
++resize signals still describe actual view size changes. The existing public
++`sizing.commitDivider` signature and allocation contract remain; UI edits use the
++constrained layout allocation, including minimized siblings.
++
++See [S2 acceptance evidence](evidence/meridian-s2/README.md) for actual bounds,
++enlargement/shrinkage, identity counters and cancellation checks on both runtimes.
++Meridian integration and independent provider qualification remain separate gates.
++
+ ## Variables (define these in a custom theme)
+ 
+ Define them on the `.dock` selector — the marker class carried by every dock window's root
+--- before/tools/meridian-s2/run_lane.py
++++ after/tools/meridian-s2/run_lane.py
+@@ -0,0 +1,44 @@
++#!/usr/bin/env python3
++"""Reproduce S2's named-module runtime lanes on the recorded macOS/aarch64 host."""
++import argparse,json,os,subprocess
++from pathlib import Path
++ROOT=Path(__file__).resolve().parents[2]
++p=argparse.ArgumentParser(description=__doc__)
++p.add_argument("lane",choices=("floor","current","native"))
++p.add_argument("--output",type=Path)
++p.add_argument("--focus",action="store_true",help="Run MetricsSuite only while diagnosing")
++args=p.parse_args()
++version="24.0.1" if args.lane=="floor" else "27"
++jdk=Path("/Users/bbuchsbaum/Library/Java/JavaVirtualMachines/openjdk-22/Contents/Home" if args.lane=="floor" else "/opt/homebrew/opt/openjdk@25")
++cache=Path("/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx")
++fx=[cache/f"javafx-{m}"/version/f"javafx-{m}-{version}-mac-aarch64.jar" for m in ("base","graphics","controls")]
++assert all(f.is_file() for f in fx),fx
++module_options=["--module-path",os.pathsep.join(map(str,fx)),"--add-modules","javafx.controls","--enable-native-access=javafx.graphics"]
++literal=lambda value:json.dumps(str(value))
++options="Seq("+",".join(literal(x) for x in module_options)+")"
++jars="Seq("+",".join("Attributed.blank(file("+literal(x)+"))" for x in fx)+")"
++commands=[
++    "set fx / Test / javaOptions ++= "+options,
++    'set fx / Test / fullClasspath := (fx / Test / fullClasspath).value.filterNot(_.data.getName.startsWith("javafx-")) ++ '+jars,
++]
++if args.output is not None and args.lane != "native":
++    out=args.output.resolve()
++    assert not out.exists(),out
++    commands += ["set fx / Test / javaOptions += "+literal("-Dscaladock.metrics.captureDir="+str(out))]
++if args.lane=="native":
++    if args.output is None: p.error("native lane requires a new output directory")
++    out=args.output.resolve()
++    assert not out.exists(),out
++    commands += ["set fx / Test / run / fork := true",
++                 "fx/Test/runMain scaladock.fx.MetricsNativeProbe "+str(out)]
++elif args.focus:
++    commands += ["scalafmtAll","fx/testOnly scaladock.fx.MetricsSuite"]
++elif args.lane=="floor":
++    commands += ["scalafmtAll","scalafmtSbtCheck","scalafmtCheckAll","compile","core/test","fx/test",
++                 "fx/packageBin","core/packageBin"]
++else:
++    commands += ["core/test","fx/test"]
++command=["sbt","-batch",*commands]
++env=dict(os.environ,JAVA_HOME=str(jdk))
++result=subprocess.run(command,cwd=ROOT,env=env)
++raise SystemExit(result.returncode)

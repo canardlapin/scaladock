@@ -305,7 +305,11 @@ object edit:
   ): LayoutState =
     rewriteNode(s, split):
       case Node.Split(id, axis, cells) if index >= 0 && index < cells.length - 1 =>
-        Node.Split(id, axis, sizing.commitDivider(cells, axis, index, fraction, span, settings))
+        Node.Split(
+          id,
+          axis,
+          sizing.commitDivider(cells, axis, index, fraction, span, settings, s.minimized)
+        )
       case other => other
 
   // ---------------------------------------------------------------------------------------

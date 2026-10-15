@@ -1,0 +1,9 @@
+[info] welcome to sbt 1.12.14 (Oracle Corporation Java 22)
+[info] loading project definition from /Users/bbuchsbaum/code/scala/scaladock/tools/meridian-s1/compat/project
+[info] loading settings for project compat from build.sbt...
+[info] set current project to compat (in build file:/Users/bbuchsbaum/code/scala/scaladock/tools/meridian-s1/compat/)
+[info] Executing in batch mode. For better performance use sbt's shell
+[info] compiling 1 Scala source to /Users/bbuchsbaum/code/scala/scaladock/tools/meridian-s1/compat/target/scala-3.7.4/classes ...
+[info] done compiling
+[success] Total time: 2 s, completed Oct 14, 2026, 9:43:47 p.m.
+/Users/bbuchsbaum/code/scala/scaladock/tools/meridian-s1/compat/target/scala-3.7.4/classes:/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/baseline-artifacts/scaladock-fx_3-0.1.0-SNAPSHOT.jar:/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/baseline-artifacts/scaladock-core_3-0.1.0-SNAPSHOT.jar:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala3-library_3/3.7.4/scala3-library_3-3.7.4.jar:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-base/24.0.1/javafx-base-24.0.1-mac-aarch64.jar:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-graphics/24.0.1/javafx-graphics-24.0.1-mac-aarch64.jar:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-controls/24.0.1/javafx-controls-24.0.1-mac-aarch64.jar:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.16/scala-library-2.13.16.jar:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-base/24.0.1/javafx-base-24.0.1.jar:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-graphics/24.0.1/javafx-graphics-24.0.1.jar

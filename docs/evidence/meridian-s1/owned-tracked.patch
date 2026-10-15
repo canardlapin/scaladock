@@ -1,0 +1,441 @@
+diff --git a/build.sbt b/build.sbt
+index a08e273..527c0ba 100644
+--- a/build.sbt
++++ b/build.sbt
+@@ -1,32 +1,40 @@
+-val scala3Version    = "3.7.0"
+-val javafxVersion    = "24.0.1"
++val scala3Version = "3.7.4"
++val javafxVersion = "24.0.1"
+ // the demo runs on a current JavaFX: 25+ lets a scene's colour scheme drive native window
+ // decorations (dark title bars), which the fx module applies reflectively when available
+ val demoJavafxVersion = "27"
+-val scalafxVersion   = "24.0.0-R35"
+-val upickleVersion   = "4.1.0"
+-val munitVersion     = "1.1.1"
+-val munitScVersion   = "1.1.0"
++val scalafxVersion    = "24.0.0-R35"
++val upickleVersion    = "4.1.0"
++val munitVersion      = "1.1.1"
++val munitScVersion    = "1.1.0"
+ 
+-ThisBuild / organization       := "io.github.canardlapin"
+-ThisBuild / scalaVersion       := scala3Version
+-ThisBuild / versionScheme      := Some("early-semver")
+-ThisBuild / version            := "0.1.0-SNAPSHOT"
+-ThisBuild / licenses           := Seq(License.Apache2)
+-ThisBuild / homepage           := Some(url("https://github.com/canardlapin/scaladock"))
+-ThisBuild / semanticdbEnabled  := true
+-ThisBuild / description        := "Docking windows for JavaFX in Scala 3: tabbed groups, splits, drag and drop, floating windows, saved layouts."
++ThisBuild / organization      := "io.github.canardlapin"
++ThisBuild / scalaVersion      := scala3Version
++ThisBuild / versionScheme     := Some("early-semver")
++ThisBuild / version           := "0.1.0-SNAPSHOT"
++ThisBuild / licenses          := Seq(License.Apache2)
++ThisBuild / homepage          := Some(url("https://github.com/canardlapin/scaladock"))
++ThisBuild / semanticdbEnabled := true
++ThisBuild / description := "Docking windows for JavaFX in Scala 3: tabbed groups, splits, drag and drop, floating windows, saved layouts."
+ ThisBuild / scmInfo := Some(
+-  ScmInfo(url("https://github.com/canardlapin/scaladock"), "scm:git:https://github.com/canardlapin/scaladock.git")
++  ScmInfo(
++    url("https://github.com/canardlapin/scaladock"),
++    "scm:git:https://github.com/canardlapin/scaladock.git"
++  )
+ )
+ ThisBuild / developers := List(
+-  Developer("canardlapin", "Brad Buchsbaum", "brad@duckrabbit.ai", url("https://github.com/canardlapin"))
++  Developer(
++    "canardlapin",
++    "Brad Buchsbaum",
++    "brad@duckrabbit.ai",
++    url("https://github.com/canardlapin")
++  )
+ )
+ 
+ // Releases go to Maven Central through sbt's built-in Central Portal support: publishSigned
+ // stages locally, sonaRelease uploads and releases. The version comes from the release tag (see
+ // .github/workflows/release.yml and docs/releasing.md); everyday builds stay 0.1.0-SNAPSHOT.
+-ThisBuild / publishTo           := localStaging.value
++ThisBuild / publishTo            := localStaging.value
+ ThisBuild / pomIncludeRepository := (_ => false)
+ // (sbt-pgp reads the signing key's passphrase from PGP_PASSPHRASE)
+ 
+@@ -99,7 +107,8 @@ lazy val fx = project
+       import scala.xml.transform.{RewriteRule, RuleTransformer}
+       new RuleTransformer(new RewriteRule {
+         override def transform(n: scala.xml.Node): Seq[scala.xml.Node] = n match {
+-          case e: scala.xml.Elem if e.label == "dependency" && (e \ "groupId").text == "org.openjfx" =>
++          case e: scala.xml.Elem
++              if e.label == "dependency" && (e \ "groupId").text == "org.openjfx" =>
+             e.copy(child = e.child.filterNot(_.label == "classifier"))
+           case other => other
+         }
+@@ -127,7 +136,8 @@ lazy val demo = project
+ 
+ // Headless JavaFX for CI: software pipeline; on Linux CI the workflow wraps sbt in xvfb-run.
+ def headlessFxOptions: Seq[String] =
+-  if (sys.env.contains("CI")) Seq("-Dprism.order=sw", "-Djava.awt.headless=true", "-Dtestfx.headless=false")
++  if (sys.env.contains("CI"))
++    Seq("-Dprism.order=sw", "-Djava.awt.headless=true", "-Dtestfx.headless=false")
+   else Seq.empty
+ 
+ lazy val root = project
+diff --git a/docs/styling.md b/docs/styling.md
+index 11ecb45..d129a18 100644
+--- a/docs/styling.md
++++ b/docs/styling.md
+@@ -11,6 +11,54 @@ the chrome) is not.
+   (the base defaults) and `DockTheme.Light`; supply your own with `DockTheme.Custom(url)` and
+   `dock.setTheme(...)`, which restyles every window including popouts.
+ 
++## Appearance metadata and native windows
++
++A stylesheet URL does not establish whether a theme is dark. Use
++`DockTheme.CustomWithScheme(url, dark = true)` or
++`DockTheme.CustomWithScheme(url, dark = false)` when that information is known.
++`theme.isDark` returns `Some(true)`, `Some(false)`, or `None` for legacy
++`Custom(url)`. Names, URL contents and comparisons with built-in values are never
++used to infer appearance. Both custom variants load the same base-then-custom
++stylesheet sequence.
++
++Dock-owned floating scenes receive the current scheme and CSS before their first
++show, including windows restored from a saved layout. Live changes update existing
++floating scenes. A legacy custom theme clears a previous scene scheme override and
++follows the platform preference. This fallback concerns native decorations; CSS
++still comes from the supplied URL. Appearance is presentation state and is not
++written into the saved layout or pane model.
++
++The host owns the main scene. After creating that scene, and again when changing
++themes, explicitly call:
++
++```scala
++dock.setTheme(theme)
++val supported = theme.applyWindowSchemeOrPlatform(mainScene)
++```
++
++This hook applies known metadata or clears the override for unknown metadata.
++The older `applyWindowScheme(mainScene)` method keeps its existing behavior:
++unknown metadata is a no-op and returns false. Both methods return false when the
++runtime cannot apply the public scene preference API. JavaFX 24 remains supported;
++per-scene native scheme overrides require JavaFX 25 or later and the platform's
++decoration support. JavaFX 27 EXTENDED floating windows use the same public hook.
++No application-wide user-agent stylesheet is installed by Dock.
++
++### Source and binary compatibility
++
++`Dark`, `Light`, and the one-argument `Custom(url)` constructor/extractor retain
++their original shape and ordinals 0, 1 and 2. `CustomWithScheme` is appended at
++ordinal 3. A retained client compiled against the previous JAR runs against the
++candidate for those original values, including the old constructor and extractor.
++
++Adding an enum case changes exhaustive-match source obligations. An old three-case
++match fails recompilation under `-Werror`; add
++`case DockTheme.CustomWithScheme(url, dark) => ...` before using the new variant.
++An old binary's exhaustive match must not receive the new case without migration.
++This is a bounded compatibility result, not a blanket source/binary compatibility
++claim. See [S1 evidence](evidence/meridian-s1/README.md) for the unchanged compiled
++client, retained expected compiler failure and updated-source check.
++
+ ## Variables (define these in a custom theme)
+ 
+ Define them on the `.dock` selector — the marker class carried by every dock window's root
+diff --git a/modules/demo/src/main/scala/scaladock/demo/shell.scala b/modules/demo/src/main/scala/scaladock/demo/shell.scala
+index 970ad96..6595eef 100644
+--- a/modules/demo/src/main/scala/scaladock/demo/shell.scala
++++ b/modules/demo/src/main/scala/scaladock/demo/shell.scala
+@@ -65,15 +65,20 @@ private[demo] object Shell:
+ 
+     def syncTheme(): Unit =
+       shell.getStylesheets.setAll((dock.theme.stylesheets ++ DemoStyle.sheets)*)
+-      val dark = dock.theme != DockTheme.Light
++      val dark = dock.theme.isDark.getOrElse(
++        javafx.application.Platform.getPreferences.getColorScheme == javafx.application.ColorScheme.DARK
++      )
+       // the label names the action: the theme you switch *to*
+       theme.setText(if dark then "Light" else "Dark")
+       theme.setGraphic(if dark then Icons.sun() else Icons.moon())
+       // the native title bar follows the theme too (JavaFX 25+)
+-      Option(shell.getScene).foreach(dock.theme.applyWindowScheme(_): Unit)
++      Option(shell.getScene).foreach(dock.theme.applyWindowSchemeOrPlatform(_): Unit)
+ 
+     theme.setOnAction: _ =>
+-      dock.setTheme(if dock.theme == DockTheme.Light then DockTheme.Dark else DockTheme.Light)
++      val dark = dock.theme.isDark.getOrElse(
++        javafx.application.Platform.getPreferences.getColorScheme == javafx.application.ColorScheme.DARK
++      )
++      dock.setTheme(if dark then DockTheme.Light else DockTheme.Dark)
+       syncTheme()
+ 
+     val divider = Region()
+@@ -158,7 +163,7 @@ private[demo] object Shell:
+       case _                          => ()
+     dock.events.subscribe(onEvent): Unit
+     shell.sceneProperty.addListener((_, _, scene) =>
+-      if scene != null then dock.theme.applyWindowScheme(scene): Unit
++      if scene != null then dock.theme.applyWindowSchemeOrPlatform(scene): Unit
+     )
+     // follow every theme change, whether from this button or from any other host code
+     val _ = dock.themeChanges.subscribe(_ => syncTheme())
+diff --git a/modules/fx/src/main/scala/scaladock/fx/Dock.scala b/modules/fx/src/main/scala/scaladock/fx/Dock.scala
+index 91cf05b..cac99b7 100644
+--- a/modules/fx/src/main/scala/scaladock/fx/Dock.scala
++++ b/modules/fx/src/main/scala/scaladock/fx/Dock.scala
+@@ -663,8 +663,6 @@ final class Dock private (
+         fl.window, {
+           val created = FloatingStage(this, fl)
+           installKeyboard(created.renderer.region)
+-          created.renderer.region.setThemeSheet(currentTheme.stylesheet)
+-          created.applyTheme(currentTheme)
+           created
+         }
+       )
+@@ -740,32 +738,42 @@ enum DockTheme:
+   case Light
+   case Custom(url: String)
+ 
++  /** Explicit scheme metadata; the original Custom(url) constructor/extractor stays unchanged. */
++  case CustomWithScheme(url: String, dark: Boolean)
++
+   /** Whether this theme is dark, light, or unknown (a custom sheet). */
+   def isDark: Option[Boolean] = this match
+-    case Dark      => Some(true)
+-    case Light     => Some(false)
+-    case Custom(_) => None
++    case Dark                      => Some(true)
++    case Light                     => Some(false)
++    case Custom(_)                 => None
++    case CustomWithScheme(_, dark) => Some(dark)
+ 
+   /** Ask the platform to draw a window's native decorations (title bar, window controls) in this
+-    * theme's colour scheme. Needs JavaFX 25+ at runtime (`Scene.getPreferences`); on older
+-    * runtimes, or for a custom theme, it does nothing and returns false.
++    * theme's colour scheme. Needs JavaFX 25+ at runtime (`Scene.getPreferences`); on older runtimes
++    * it returns false. A legacy Custom(url) without metadata is a no-op and returns false; hosts
++    * can explicitly choose applyWindowSchemeOrPlatform instead.
+     */
+   def applyWindowScheme(scene: javafx.scene.Scene): Boolean =
+-    isDark.exists: dark =>
+-      try
+-        // resolve on the public API types: the implementation class lives in a package JavaFX
+-        // does not export, so invoking through it fails for apps on the module path
+-        val prefs     = classOf[javafx.scene.Scene].getMethod("getPreferences").invoke(scene)
+-        val prefsType = Class.forName("javafx.scene.Scene$Preferences")
+-        val scheme    = Class.forName("javafx.application.ColorScheme")
+-        val value =
+-          scheme.getMethod(
+-            "valueOf",
+-            classOf[String]
+-          ).invoke(null, if dark then "DARK" else "LIGHT")
+-        prefsType.getMethod("setColorScheme", scheme).invoke(prefs, value)
+-        true
+-      catch case scala.util.control.NonFatal(_) | _: LinkageError => false
++    isDark.exists(dark => applyScheme(scene, Some(dark)))
++
++  /** Apply known metadata, or clear the scene override to follow the platform for an unknown custom
++    * theme. Hosts opt into this fallback; dock-owned floating windows always use it. Returns false
++    * when the runtime has no public scene preference API (JavaFX 24).
++    */
++  def applyWindowSchemeOrPlatform(scene: javafx.scene.Scene): Boolean = applyScheme(scene, isDark)
++
++  private def applyScheme(scene: javafx.scene.Scene, dark: Option[Boolean]): Boolean =
++    try
++      // Invoke through exported public API types, never the non-exported implementation class.
++      // String-based resolution keeps JavaFX 25+ symbols out of the JavaFX 24 linkage path.
++      val prefs     = classOf[javafx.scene.Scene].getMethod("getPreferences").invoke(scene)
++      val prefsType = Class.forName("javafx.scene.Scene$Preferences")
++      val scheme    = Class.forName("javafx.application.ColorScheme")
++      val value = dark.map: value =>
++        scheme.getMethod("valueOf", classOf[String]).invoke(null, if value then "DARK" else "LIGHT")
++      prefsType.getMethod("setColorScheme", scheme).invoke(prefs, value.orNull)
++      true
++    catch case scala.util.control.NonFatal(_) | _: LinkageError => false
+ 
+   /** Every stylesheet this theme needs, base first: hosts add these to their own chrome (a toolbar,
+     * a status bar) and mark it with the `dock` style class to share the `-dock-*` variables.
+@@ -776,7 +784,8 @@ enum DockTheme:
+   private[fx] def stylesheet: Option[String] = this match
+     case Dark  => None // the base sheet's defaults are the dark theme
+     case Light => Option(getClass.getResource("/scaladock/dock-light.css")).map(_.toExternalForm)
+-    case Custom(url) => Some(url)
++    case Custom(url)              => Some(url)
++    case CustomWithScheme(url, _) => Some(url)
+ end DockTheme
+ 
+ object Dock:
+@@ -889,7 +898,7 @@ private[fx] final class FloatingStage(dock: Dock, initial: Floating):
+   /** Theme the window's own chrome (the region themes itself). */
+   def applyTheme(theme: DockTheme): Unit =
+     if !(root eq renderer.region) then root.getStylesheets.setAll(theme.stylesheets*): Unit
+-    Option(root.getScene).foreach(theme.applyWindowScheme(_): Unit)
++    Option(root.getScene).foreach(theme.applyWindowSchemeOrPlatform(_): Unit)
+ 
+   /** Ordering stamp for hit-testing: bumped whenever this window gains OS focus. */
+   private[fx] var focusStamp: Long = 0
+@@ -905,6 +914,9 @@ private[fx] final class FloatingStage(dock: Dock, initial: Floating):
+       val b = FloatingStage.clampToScreens(initial.bounds)
+       if bar.isDefined then stage.initStyle(javafx.stage.StageStyle.valueOf("EXTENDED"))
+       stage.setScene(new Scene(root))
++      // Apply CSS and native scheme before the first show, including restored windows.
++      renderer.region.setThemeSheet(dock.theme.stylesheet)
++      applyTheme(dock.theme)
+       stage.setX(b.x)
+       stage.setY(b.y)
+       stage.setWidth(b.width)
+diff --git a/modules/fx/src/test/scala/scaladock/fx/ThemeSuite.scala b/modules/fx/src/test/scala/scaladock/fx/ThemeSuite.scala
+index 0665310..875154e 100644
+--- a/modules/fx/src/test/scala/scaladock/fx/ThemeSuite.scala
++++ b/modules/fx/src/test/scala/scaladock/fx/ThemeSuite.scala
+@@ -50,4 +50,138 @@ final class ThemeSuite extends FunSuite:
+       val box   = ghost.getContent.get(0).asInstanceOf[Region]
+       assert(box.getStyleClass.contains("dock"), "ghost must resolve theme variables itself")
+       assert(box.getStyleClass.contains("dock-ghost"))
++
++  private def scheme(scene: Scene): Option[String] =
++    try
++      val prefs = classOf[Scene].getMethod("getPreferences").invoke(scene)
++      Some(Class.forName(
++        "javafx.scene.Scene$Preferences"
++      ).getMethod("getColorScheme").invoke(prefs).toString)
++    catch case scala.util.control.NonFatal(_) | _: LinkageError => None
++
++  private def withCustomSheets(body: (String, String) => Unit): Unit =
++    val dark  = java.nio.file.Files.createTempFile("light-name-dark-palette", ".css")
++    val light = java.nio.file.Files.createTempFile("dark-name-light-palette", ".css")
++    try
++      java.nio.file.Files.writeString(
++        dark,
++        ".dock { -dock-base: #151923; -dock-surface: #252c3a; -dock-text: #edf0f5; -dock-text-strong: #edf0f5; }"
++      ): Unit
++      java.nio.file.Files.writeString(
++        light,
++        ".dock { -dock-base: #ffffff; -dock-surface: #f1f3f7; -dock-text: #202530; -dock-text-strong: #202530; }"
++      ): Unit
++      body(dark.toUri.toString, light.toUri.toString)
++    finally
++      val _ = java.nio.file.Files.deleteIfExists(dark)
++      val _ = java.nio.file.Files.deleteIfExists(light)
++
++  test("legacy Custom constructor, extractor, ordinals and unknown metadata remain intact"):
++    val old: DockTheme.Custom = DockTheme.Custom("dark-looking-name.css")
++    val DockTheme.Custom(url) = old
++    assertEquals(url, "dark-looking-name.css")
++    assertEquals(old.isDark, None)
++    assertEquals(DockTheme.Dark.ordinal, 0)
++    assertEquals(DockTheme.Light.ordinal, 1)
++    assertEquals(old.ordinal, 2)
++    assertEquals(DockTheme.Dark.isDark, Some(true))
++    assertEquals(DockTheme.Light.isDark, Some(false))
++    assertEquals(DockTheme.CustomWithScheme("light-name.css", dark = true).isDark, Some(true))
++    assertEquals(DockTheme.CustomWithScheme("dark-name.css", dark = false).isDark, Some(false))
++
++  test("custom scheme metadata affects equality but preserves stylesheet order"):
++    withCustomSheets: (dark, _) =>
++      val knownDark  = DockTheme.CustomWithScheme(dark, dark = true)
++      val knownLight = DockTheme.CustomWithScheme(dark, dark = false)
++      assertNotEquals(knownDark, knownLight)
++      assertEquals(knownDark.stylesheets.last, dark)
++      assertEquals(knownLight.stylesheets, knownDark.stylesheets)
++      assertEquals(DockTheme.Custom(dark).stylesheets, knownDark.stylesheets)
++
++  test("main scene schemes are explicit host hooks with legacy no-op and platform fallback"):
++    onFx:
++      val scene    = new Scene(new Label("synthetic host"))
++      val supports = classOf[Scene].getMethods.exists(_.getName == "getPreferences")
++      assertEquals(
++        DockTheme.CustomWithScheme("not-loaded.css", dark = true).applyWindowScheme(scene),
++        supports
++      )
++      assertEquals(scheme(scene), Option.when(supports)("DARK"))
++      assertEquals(DockTheme.Custom("light-looking-name.css").applyWindowScheme(scene), false)
++      assertEquals(
++        scheme(scene),
++        Option.when(supports)("DARK"),
++        "legacy unknown helper remains a no-op"
++      )
++      assertEquals(
++        DockTheme.CustomWithScheme("not-loaded.css", dark = false).applyWindowScheme(scene),
++        supports
++      )
++      assertEquals(scheme(scene), Option.when(supports)("LIGHT"))
++      assertEquals(DockTheme.Dark.applyWindowScheme(scene), supports)
++      assertEquals(DockTheme.Custom("unknown.css").applyWindowSchemeOrPlatform(scene), supports)
++      if supports then
++        assertEquals(
++          scheme(scene),
++          Some(javafx.application.Platform.getPreferences.getColorScheme.toString)
++        )
++
++  test(
++    "known custom schemes reach existing, new and restored floats without changing main ownership or pane identity"
++  ):
++    onFx:
++      withCustomSheets: (dark, light) =>
++        val initial = LayoutState.of(row(
++          TxtPane(Txt("main")).titled("main"),
++          TxtPane(Txt("float")).titled("float")
++        ))
++        val dock      = Dock(factories, initial = initial)
++        val stage     = new javafx.stage.Stage
++        val mainScene = new Scene(dock.view, 800, 600)
++        stage.setScene(mainScene)
++        stage.show()
++        try
++          val supported  = classOf[Scene].getMethods.exists(_.getName == "getPreferences")
++          val mainBefore = scheme(mainScene)
++          val target     = dock.state.panes.find(_.title == "float").get
++          val node       = dock.nodeOf(target.id).get
++          dock.popOut(dock.state.groupOf(target.id).get.id)
++          val floating = node.getScene
++          dock.setTheme(DockTheme.CustomWithScheme(dark, dark = true))
++          assertEquals(scheme(floating), Option.when(supported)("DARK"))
++          assertEquals(scheme(mainScene), mainBefore, "dock does not own the host's main scheme")
++          val stateBefore = dock.state
++          dock.setTheme(DockTheme.CustomWithScheme(light, dark = false))
++          assertEquals(scheme(floating), Option.when(supported)("LIGHT"))
++          assertEquals(dock.state, stateBefore, "appearance does not mutate layout/pane state")
++          assert(dock.nodeOf(target.id).get eq node)
++          dock.dockBack(dock.state.floating.head.window)
++          dock.setTheme(DockTheme.CustomWithScheme(dark, dark = true))
++          dock.popOut(dock.state.groupOf(target.id).get.id)
++          assertEquals(
++            scheme(node.getScene),
++            Option.when(supported)("DARK"),
++            "new float inherits current metadata"
++          )
++          val saved = dock.save()
++          dock.dockAllBack()
++          assertEquals(dock.load(saved), Right(()))
++          assertEquals(
++            scheme(node.getScene),
++            Option.when(supported)("DARK"),
++            "restored float inherits metadata"
++          )
++          dock.setTheme(DockTheme.Custom(light))
++          if supported then
++            assertEquals(
++              scheme(node.getScene),
++              Some(javafx.application.Platform.getPreferences.getColorScheme.toString),
++              "unknown owned window follows platform"
++            )
++          assert(dock.nodeOf(target.id).get eq node)
++        finally
++          dock.dispose()
++          stage.close()
++        end try
++
+ end ThemeSuite
+diff --git a/project/build.properties b/project/build.properties
+index 01a16ed..e544c4d 100644
+--- a/project/build.properties
++++ b/project/build.properties
+@@ -1 +1 @@
+-sbt.version=1.11.7
++sbt.version=1.12.14
+diff --git a/project/plugins.sbt b/project/plugins.sbt
+index 574c5d8..a1e6ac6 100644
+--- a/project/plugins.sbt
++++ b/project/plugins.sbt
+@@ -1,2 +1,2 @@
+-addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.5.4")
++addSbtPlugin("org.scalameta"  % "sbt-scalafmt" % "2.5.4")
+ addSbtPlugin("com.github.sbt" % "sbt-pgp"      % "2.3.2") // signed releases

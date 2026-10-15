@@ -1,0 +1,113 @@
+[info] welcome to sbt 1.12.14 (Oracle Corporation Java 22)
+[info] loading settings for project scaladock-build from plugins.sbt...
+[info] loading project definition from /Users/bbuchsbaum/code/scala/scaladock/project
+[info] loading settings for project root from build.sbt...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] Executing in batch mode. For better performance use sbt's shell
+[info] scalafmt: Formatting 2 Scala sources (/Users/bbuchsbaum/code/scala/scaladock/modules/core)...
+[info] scalafmt: Formatting 1 Scala sources (/Users/bbuchsbaum/code/scala/scaladock/modules/core)...
+[info] scalafmt: Formatting 4 Scala sources (/Users/bbuchsbaum/code/scala/scaladock/modules/fx)...
+[info] scalafmt: Reformatted 1 Scala sources
+[info] scalafmt: Reformatted 2 Scala sources
+[info] scalafmt: Reformatted 4 Scala sources
+[success] Total time: 3 s, completed Oct 14, 2026, 10:38:38 p.m.
+[info] compiling 9 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/core/target/scala-3.7.4/classes ...
+[warn] -- [E198] Unused Symbol Warning: /Users/bbuchsbaum/code/scala/scaladock/modules/core/src/main/scala/scaladock/sizing.scala:244:12 
+[warn] 244 |        def isMinimized(n: Node): Boolean = n match
+[warn]     |            ^^^^^^^^^^^
+[warn]     |            unused local definition
+[warn] one warning found
+[info] done compiling
+[info] compiling 7 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/fx/target/scala-3.7.4/classes ...
+[warn] -- Warning: /Users/bbuchsbaum/code/scala/scaladock/modules/fx/src/main/scala/scaladock/fx/Dock.scala:46:37 
+[warn] 46 |  private val main   = WindowRenderer(this, floating = false)
+[warn]    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[warn]    |Problematic object instantiation: arg 1 is not transitively initialized (Hot). Calling trace:
+[warn]    |??? final class Dock private (	[ Dock.scala:21 ]
+[warn]    |?   ^
+[warn]    |??? private val main   = WindowRenderer(this, floating = false)	[ Dock.scala:46 ]
+[warn]    |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[warn]    |
+[warn]    |It leads to the following error during object initialization:
+[warn]    |Problematic object instantiation: arg 1 and arg 2 are not transitively initialized (Hot). Calling trace:
+[warn]    |??? private[fx] final class WindowRenderer(dock: Dock, floating: Boolean):	[ Dock.scala:867 ]
+[warn]    |?   ^
+[warn]    |??? private[fx] val region = DockRegion(() => dock.settings, () => dock.refreshMetrics())	[ Dock.scala:868 ]
+[warn]    |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[warn]    |
+[warn]    |It leads to the following error during object initialization:
+[warn]    |Calling the external method method getStyleClass may cause initialization errors. Calling trace:
+[warn]    |??? private[fx] final class DockRegion(settings: () => LayoutSettings, refreshMetrics: () => Unit)	[ DockRegion.scala:9 ]
+[warn]    |?   ^
+[warn]    |??? getStyleClass.addAll("dock", "dock-layout") // .dock carries the theme variables	[ DockRegion.scala:97 ]
+[warn]    |    ^^^^^^^^^^^^^
+[warn] one warning found
+[info] done compiling
+[success] Total time: 19 s, completed Oct 14, 2026, 10:38:57 p.m.
+[info] compiling 11 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/core/target/scala-3.7.4/test-classes ...
+[warn] -- [E176] Potential Issue Warning: /Users/bbuchsbaum/code/scala/scaladock/modules/core/src/test/scala/scaladock/SizingSuite.scala:166:6 
+[warn] 166 |      intercept[IllegalArgumentException](LayoutSettings(dividerPx = bad))
+[warn]     |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[warn]     |      unused value of type IllegalArgumentException
+[warn] -- [E176] Potential Issue Warning: /Users/bbuchsbaum/code/scala/scaladock/modules/core/src/test/scala/scaladock/SizingSuite.scala:167:6 
+[warn] 167 |      intercept[IllegalArgumentException](LayoutSettings(headerPx = bad))
+[warn]     |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[warn]     |      unused value of type IllegalArgumentException
+[warn] -- [E176] Potential Issue Warning: /Users/bbuchsbaum/code/scala/scaladock/modules/core/src/test/scala/scaladock/SizingSuite.scala:168:6 
+[warn] 168 |      intercept[IllegalArgumentException](LayoutSettings(edgeBandPx = bad))
+[warn]     |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[warn]     |      unused value of type IllegalArgumentException
+[warn] three warnings found
+[info] done compiling
+scaladock.SizingSuite:
+  + allocation sums exactly to the available span 0.095s
+  + min sizes are honoured whenever they are jointly feasible 0.018s
+  + fr cells share the remainder by weight 0.0s
+  + px cells take their pixels when fr capacity absorbs the rest 0.0s
+  + pct cells take their share of the available span 0.001s
+  + commitDivider changes only the two adjacent cells 0.04s
+==> X scaladock.SizingSuite.commitDivider preserves the neighbours' combined pixels in the normalized regime  0.048s munit.ComparisonFailException: modules/core/src/test/scala/scaladock/SizingSuite.scala:97 values are not the same expected: 821.2545787274163 but was: 827.8061141022977
+96:        )
+97:        assertEqualsDouble(after(0) + after(1), before(0) + before(1), 1e-3)
+98:        true
+
+Failing seed: gKVewcARl_2r8nOLFtgpr3cJFpI1Cvt9hU9MP2rKHsI=
+You can reproduce this failure by adding the following override to your suite:
+
+  override def scalaCheckInitialSeed = "gKVewcARl_2r8nOLFtgpr3cJFpI1Cvt9hU9MP2rKHsI="
+
+Falsified after 36 passed tests.
+> ARG_0: Vector(Cell(Group(eda78189-3784-4e1f-b81f-86a6616272da,Vector(Pane(f7036a24-027e-4fd2-952e-1717b8270776,PaneContent(test.counter),n256,true)),f7036a24-027e-4fd2-952e-1717b8270776,Inherit),Pct(70.63139552334611),0.0), Cell(Group(636a7b92-051d-470a-8168-e929114f7df5,Vector(Pane(25d15672-bd9f-435e-86a6-3ab79d0b5419,PaneContent(test.text),mHequ3Vo,true), Pane(9c5defc7-46d4-424b-8f4a-1760aa51ca01,PaneContent(test.counter),n58,true), Pane(d206138d-e7ab-40e3-ac6d-7093e38e458d,PaneContent(test.counter),n827,true)),9c5defc7-46d4-424b-8f4a-1760aa51ca01,Inherit),Fr(0.6501080094100496),0.0), Cell(Group(0f887a4b-d365-4ba8-9fcb-9b134668012b,Vector(),915a773f-4183-4d42-98e5-67444ec38174,Inherit),Fr(3.6045252925846785),0.0), Cell(Group(b7516a98-5668-4605-bb06-74856237cb6c,Vector(Pane(e7882441-06ef-4d9d-acf8-4aa8ec1cdd45,PaneContent(test.text),s9D1YP6v,true)),e7882441-06ef-4d9d-acf8-4aa8ec1cdd45,Inherit),Fr(3.9856113684563175),0.0), Cell(Group(987ee56e-c0ff-4ffe-8c70-5350eb0ffe88,Vector(Pane(cb337d59-6f5d-49db-8d19-ccb021625000,PaneContent(test.counter),n353,true), Pane(4ae289bc-05ad-465c-be62-e952e9c0f7e4,PaneContent(test.counter),n224,true), Pane(a8f750f0-74a3-4838-bdeb-c002e2bd727e,PaneContent(test.text),ceBl2ad4,true)),cb337d59-6f5d-49db-8d19-ccb021625000,Inherit),Px(221.23388860473017),0.0))
+> ARG_1: 1153.7285059828707
+> ARG_2: 0.0
+> ARG_0_ORIGINAL: Vector(Cell(Group(eda78189-3784-4e1f-b81f-86a6616272da,Vector(Pane(f7036a24-027e-4fd2-952e-1717b8270776,PaneContent(test.counter),n256,true)),f7036a24-027e-4fd2-952e-1717b8270776,Inherit),Pct(70.63139552334611),0.0), Cell(Group(ded3e90f-66ed-4726-ba89-686ea936af4f,Vector(Pane(cc969f27-ca00-4b89-9984-d058a36f37c8,PaneContent(test.text),bs2tNQEt,true)),cc969f27-ca00-4b89-9984-d058a36f37c8,Inherit),Fr(1.0382237981325326),0.0), Cell(Group(636a7b92-051d-470a-8168-e929114f7df5,Vector(Pane(25d15672-bd9f-435e-86a6-3ab79d0b5419,PaneContent(test.text),mHequ3Vo,true), Pane(9c5defc7-46d4-424b-8f4a-1760aa51ca01,PaneContent(test.counter),n58,true), Pane(d206138d-e7ab-40e3-ac6d-7093e38e458d,PaneContent(test.counter),n827,true)),9c5defc7-46d4-424b-8f4a-1760aa51ca01,Inherit),Fr(0.6501080094100496),0.0), Cell(Group(0f887a4b-d365-4ba8-9fcb-9b134668012b,Vector(),915a773f-4183-4d42-98e5-67444ec38174,Inherit),Fr(3.6045252925846785),0.0), Cell(Group(b7516a98-5668-4605-bb06-74856237cb6c,Vector(Pane(e7882441-06ef-4d9d-acf8-4aa8ec1cdd45,PaneContent(test.text),s9D1YP6v,true)),e7882441-06ef-4d9d-acf8-4aa8ec1cdd45,Inherit),Fr(3.9856113684563175),0.0), Cell(Group(987ee56e-c0ff-4ffe-8c70-5350eb0ffe88,Vector(Pane(cb337d59-6f5d-49db-8d19-ccb021625000,PaneContent(test.counter),n353,true), Pane(4ae289bc-05ad-465c-be62-e952e9c0f7e4,PaneContent(test.counter),n224,true), Pane(a8f750f0-74a3-4838-bdeb-c002e2bd727e,PaneContent(test.text),ceBl2ad4,true)),cb337d59-6f5d-49db-8d19-ccb021625000,Inherit),Px(221.23388860473017),0.0))
+> ARG_1_ORIGINAL: 2307.4570119657415
+> ARG_2_ORIGINAL: 0.9951672984196825
+    at munit.ComparisonFailException.withMessage(ComparisonFailException.scala:55)
+    at munit.ComparisonFailException.withMessage(ComparisonFailException.scala:47)
+    at munit.ScalaCheckSuite.propToTry(ScalaCheckSuite.scala:91)
+    at munit.ScalaCheckSuite.$init$$$anonfun$1$$anonfun$1$$anonfun$1(ScalaCheckSuite.scala:45)
+    at scala.concurrent.impl.Promise$Transformation.run(Promise.scala:475)
+    at munit.Suite$$anon$1.execute(Suite.scala:29)
+    at scala.concurrent.impl.Promise$Transformation.submitWithValue(Promise.scala:429)
+    at scala.concurrent.impl.Promise$DefaultPromise.submitWithValue(Promise.scala:338)
+    at scala.concurrent.impl.Promise$DefaultPromise.dispatchOrAddCallbacks(Promise.scala:312)
+    at scala.concurrent.impl.Promise$DefaultPromise.transform(Promise.scala:128)
+    at munit.internal.FutureCompat$ExtensionFuture.transformCompat(FutureCompat.scala:14)
+    at munit.ScalaCheckSuite.$init$$$anonfun$1$$anonfun$1(ScalaCheckSuite.scala:47)
+    at munit.Test.withBodyMap$$anonfun$1(Test.scala:30)
+    at munit.MUnitRunner.$anonfun$6$$anonfun$1(MUnitRunner.scala:294)
+  + commitDivider lands the divider at the requested fraction 0.0s
+  + commitDivider clamps to the neighbours' min sizes 0.001s
+  + geometry tiles the viewport: no group escapes it 0.055s
+  + default metrics: a hairline 1px divider and a 32px header 0.001s
+  + hitTest picks the smallest containing hover area 0.025s
+  + layout metrics reject negative and non-finite fields but allow zero 0.0s
+  + zero and tiny viewports keep chrome, content and hit areas finite and inside bounds 0.007s
+  + a maximized hidden header remains absent from geometry and hit tests 0.001s
+  + divider commit uses actual constrained live span beside a minimized sibling 0.003s
+[error] Failed: Total 16, Failed 1, Errors 0, Passed 15
+[error] Failed tests:
+[error] 	scaladock.SizingSuite
+[error] (core / Test / testOnly) sbt.TestsFailedException: Tests unsuccessful
+[error] Total time: 5 s, completed Oct 14, 2026, 10:39:02 p.m.

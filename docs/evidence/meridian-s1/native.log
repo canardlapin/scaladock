@@ -1,0 +1,53 @@
+[info] welcome to sbt 1.12.14 (Homebrew Java 25.0.1)
+[info] loading settings for project scaladock-build from plugins.sbt...
+[info] loading project definition from /Users/bbuchsbaum/code/scala/scaladock/project
+[info] loading settings for project root from build.sbt...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] Defining fx / Test / javaOptions
+[info] The new value will be used by fx / Test / bspBuildTargetJvmEnvironmentItem, fx / Test / bspBuildTargetRun and 6 others.
+[info] 	Run `last` for details.
+[info] Reapplying settings...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] Defining fx / Test / fullClasspath
+[info] The new value will be used by fx / Test / bspBuildTargetJvmEnvironmentItem, fx / Test / console and 6 others.
+[info] 	Run `last` for details.
+[info] Reapplying settings...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] Defining fx / Test / run / fork
+[info] The new value will be used by fx / Test / run / runner, fx / Test / run / testGrouping
+[info] Reapplying settings...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] running (fork) scaladock.fx.ThemeNativeProbe /Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/native-01
+[error] WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+[error] WARNING: sun.misc.Unsafe::objectFieldOffset has been called by scala.runtime.LazyVals$ (file:/Users/bbuchsbaum/code/scala/scaladock/target/bg-jobs/sbt_743d3c31/target/16f4dc48/adca020a/scala3-library_3-3.7.4.jar)
+[error] WARNING: Please consider reporting this to the maintainers of class scala.runtime.LazyVals$
+[error] WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+[error] 2026-10-14 21:40:58.789 java[23415:7746192] CVDisplayLinkCreateWithActiveCGDisplays error: -6661
+[error] 2026-10-14 21:40:58.789 java[23415:7746192] CVDisplayLinkSetCurrentCGDisplay error: -6661
+[error] 2026-10-14 21:40:58.789 java[23415:7746192] CVDisplayLinkSetOutputCallback error: -6661
+[error] 2026-10-14 21:40:58.789 java[23415:7746192] CVDisplayLinkStart error: -6661
+[error] Exception in thread "main" java.lang.IllegalStateException: Native scheme probe failed
+[error] 	at scaladock.fx.ThemeNativeProbe$.main$$anonfun$1(ThemeNativeProbe.scala:26)
+[error] 	at scala.Option.foreach(Option.scala:437)
+[error] 	at scaladock.fx.ThemeNativeProbe$.main(ThemeNativeProbe.scala:26)
+[error] 	at scaladock.fx.ThemeNativeProbe.main(ThemeNativeProbe.scala)
+[error] Caused by: java.lang.IllegalArgumentException: requirement failed: Owned stage must be visible/focused before screen capture
+[error] 	at scala.Predef$.require(Predef.scala:337)
+[error] 	at scaladock.fx.ThemeProbeApp.captureAndAdvance(ThemeNativeProbe.scala:98)
+[error] 	at scaladock.fx.ThemeProbeApp.schedule$$anonfun$1(ThemeNativeProbe.scala:90)
+[error] 	at javafx.graphics@27/javafx.animation.Animation.runHandler(Animation.java:1147)
+[error] 	at javafx.graphics@27/javafx.animation.Animation.finished(Animation.java:1141)
+[error] 	at javafx.graphics@27/javafx.animation.AnimationAccessorImpl.finished(AnimationAccessorImpl.java:49)
+[error] 	at javafx.graphics@27/com.sun.scenario.animation.shared.SingleLoopClipEnvelope.timePulse(SingleLoopClipEnvelope.java:107)
+[error] 	at javafx.graphics@27/javafx.animation.Animation.doTimePulse(Animation.java:1234)
+[error] 	at javafx.graphics@27/javafx.animation.Animation$1.timePulse(Animation.java:190)
+[error] 	at javafx.graphics@27/com.sun.scenario.animation.AbstractPrimaryTimer.timePulseImpl(AbstractPrimaryTimer.java:326)
+[error] 	at javafx.graphics@27/com.sun.scenario.animation.AbstractPrimaryTimer$MainLoop.run(AbstractPrimaryTimer.java:247)
+[error] 	at javafx.graphics@27/com.sun.javafx.tk.quantum.QuantumToolkit.pulse(QuantumToolkit.java:593)
+[error] 	at javafx.graphics@27/com.sun.javafx.tk.quantum.QuantumToolkit.pulse(QuantumToolkit.java:577)
+[error] 	at javafx.graphics@27/com.sun.javafx.tk.quantum.QuantumToolkit.pulseFromQueue(QuantumToolkit.java:570)
+[error] 	at javafx.graphics@27/com.sun.javafx.tk.quantum.QuantumToolkit.lambda$runToolkit$0(QuantumToolkit.java:351)
+[error] 	at javafx.graphics@27/com.sun.glass.ui.InvokeLaterDispatcher$Future.run(InvokeLaterDispatcher.java:95)
+[error] nonzero exit code returned from runner: 1
+[error] (fx / Test / runMain) nonzero exit code returned from runner: 1
+[error] Total time: 2 s, completed Oct 14, 2026, 9:41:00 p.m.

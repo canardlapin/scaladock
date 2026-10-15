@@ -1,0 +1,6 @@
+capture=JavaFX scene snapshot; OS decorations not captured
+java=25.0.1
+javafx=27+30
+os=Mac OS X/aarch64
+requested=LayoutSettings(1.0,64.0,50.0,40.0)
+effective=LayoutSettings(1.0,64.0,50.0,40.0)

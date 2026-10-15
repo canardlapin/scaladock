@@ -1,0 +1,1471 @@
+--- a/modules/fx/src/main/scala/scaladock/fx/Dock.scala
++++ b/modules/fx/src/main/scala/scaladock/fx/Dock.scala
+@@ -28,6 +28,11 @@
+   private var refreshingMetrics                = false
+   private var current: LayoutState             = LayoutState.empty
+   private var updating                         = false
++  private var disposed                         = false
++  private val lifetime                         = new PresentationScope
++  private final class StyledRoot(val styles: RootStyles):
++    var users = 0
++  private val styledRoots = mutable.Map.empty[Parent, StyledRoot]
+ 
+   /** Pending transitions, each with whether panes leaving the layout are retained (not disposed).
+     */
+@@ -48,19 +53,6 @@
+ 
+   private val dragController = DragController(this, main.region)
+ 
+-  // floating windows must not outlive the main window: when the scene's window hides
+-  // (app closing), close every floating Stage — the state is untouched, so a save made
+-  // before exit still restores them
+-  locally:
+-    main.region.sceneProperty.addListener: (_, _, scene) =>
+-      if scene != null then
+-        scene.windowProperty.addListener: (_, _, window) =>
+-          if window != null then
+-            window.addEventHandler(
+-              javafx.stage.WindowEvent.WINDOW_HIDDEN,
+-              _ => floats.values.foreach(_.dispose())
+-            )
+-
+   // -- public surface --------------------------------------------------------------------------
+ 
+   /** Current effective metrics: requested density raised by CSS text/control preferred minima. Read
+@@ -78,8 +70,9 @@
+   def setSettings(next: LayoutSettings): Unit =
+     require(javafx.application.Platform.isFxApplicationThread, "Metrics updates require JavaFX")
+     require(next != null, "Metrics must not be null")
++    require(!disposed, "Dock is disposed")
+     if next != requestedMetrics then
+-      cancelGestures()
++      dismissPresentation()
+       requestedMetrics = next
+     refreshMetrics()
+     allRegions.foreach(_.layout())
+@@ -91,6 +84,32 @@
+   private def cancelGestures(): Unit =
+     dragController.cancel()
+     allRenderers.foreach(_.cancelGestures())
++
++  private def dismissPresentation(): Unit =
++    cancelGestures()
++    allRenderers.foreach(_.dismissOverlays())
++    floats.values.foreach(_.dismissOverlays())
++
++  /** Bind this dock's CSS resources to a host-owned root. The host retains scene/native-scheme
++    * ownership and cancels the lease on root/dialog disposal. Repeated leases share one binding.
++    * Theme changes update hidden or visible roots; unrelated classes and stylesheets are preserved.
++    */
++  def bindStylesheets(root: Parent): Subscription =
++    require(javafx.application.Platform.isFxApplicationThread, "Style bindings require JavaFX")
++    require(!disposed && root != null, "A live dock and non-null root are required")
++    val entry = styledRoots.getOrElseUpdate(root, new StyledRoot(new RootStyles(root)))
++    entry.users += 1
++    entry.styles.update(currentTheme.stylesheets)
++    lifetime.own: () =>
++      entry.users -= 1
++      if entry.users == 0 then
++        entry.styles.cancel()
++        styledRoots.remove(root): Unit
++
++  private[fx] def styleBindingCount: Int = styledRoots.size
++  private[fx] def ownedBindingCount: Int =
++    lifetime.size + main.bindingCount + floats.values.map(_.bindingCount).sum
++  private[fx] def isDisposed: Boolean = disposed
+ 
+   /** Recompute the shared snapshot before layout or interaction. No state mutation or pane bind. */
+   private[fx] def refreshMetrics(): Unit =
+@@ -102,7 +121,7 @@
+         val floor  = floors.maxOption.getOrElse(0.0)
+         val next   = requestedMetrics.copy(headerPx = math.max(requestedMetrics.headerPx, floor))
+         if next != currentMetrics then
+-          cancelGestures()
++          dismissPresentation()
+           currentMetrics = next
+           allRenderers.foreach(_.invalidateMetrics())
+         floats.values.foreach(_.refreshMetrics())
+@@ -113,7 +132,13 @@
+ 
+   def state: LayoutState = current
+ 
+-  def events: Events[DockEvent] = topic
++  def events: Events[DockEvent] = new Events[DockEvent]:
++    def subscribe(f: DockEvent => Unit): Subscription =
++      val sub = topic.subscribe(f)
++      if disposed then
++        sub.cancel()
++        () => ()
++      else lifetime.own(() => sub.cancel())
+ 
+   /** The single mutation door: canonicalize, reconcile views, publish events. Reentrant calls (a
+     * pane closing itself from an event handler, say) are queued and applied in order.
+@@ -397,14 +422,25 @@
+   /** Wiring that needs a fully constructed dock (called once by [[Dock.apply]]). */
+   private[fx] def attach(): Unit =
+     main.attachMetrics()
+-    installKeyboard(main.region)
++    val owner = PresentationBindings.window(main.region): window =>
++      val hidden: javafx.event.EventHandler[javafx.stage.WindowEvent] = _ =>
++        dismissPresentation()
++        floats.values.foreach(_.dispose())
++        floats.clear()
++      val shown: javafx.event.EventHandler[javafx.stage.WindowEvent] = _ =>
++        if !disposed && current.floating.nonEmpty && floats.isEmpty then
++          reconcile(current, current, retain = false): Unit
++      window.addEventHandler(javafx.stage.WindowEvent.WINDOW_HIDDEN, hidden)
++      window.addEventHandler(javafx.stage.WindowEvent.WINDOW_SHOWN, shown)
++      () =>
++        window.removeEventHandler(javafx.stage.WindowEvent.WINDOW_HIDDEN, hidden)
++        window.removeEventHandler(javafx.stage.WindowEvent.WINDOW_SHOWN, shown)
++    val _ = lifetime.own(() => owner.cancel())
+ 
+   /** Keys, and the model's focus following keyboard focus (Tab traversal into another pane). */
+   private[fx] def installKeyboard(region: DockRegion): Unit =
+-    region.addEventHandler(
+-      javafx.scene.input.KeyEvent.KEY_PRESSED,
+-      (e: javafx.scene.input.KeyEvent) => handleKey(e)
+-    )
++    val key: javafx.event.EventHandler[javafx.scene.input.KeyEvent] = e => handleKey(e)
++    region.addEventHandler(javafx.scene.input.KeyEvent.KEY_PRESSED, key)
+     // Follow only a USER's move of keyboard focus (Tab traversal, a press): the previous owner
+     // is still in the scene. When the owner left the scene instead (a tab switch, pop-out, or
+     // perspective change removed it), JavaFX's focus cleanup hands focus to an arbitrary node;
+@@ -422,10 +458,12 @@
+           )
+           .filterNot(id => paneContaining(owner).contains(id))
+           .foreach(focusContent)
+-    Option(region.getScene).foreach(_.focusOwnerProperty.addListener(follow))
+-    region.sceneProperty.addListener: (_, old, scene) =>
+-      Option(old).foreach(_.focusOwnerProperty.removeListener(follow))
+-      Option(scene).foreach(_.focusOwnerProperty.addListener(follow))
++    val binding = PresentationBindings.scene(region): scene =>
++      scene.focusOwnerProperty.addListener(follow)
++      () => scene.focusOwnerProperty.removeListener(follow)
++    val _ = region.own: () =>
++      region.removeEventHandler(javafx.scene.input.KeyEvent.KEY_PRESSED, key)
++      binding.cancel()
+   def maximize(group: NodeId): Unit       = update(edit.maximize(_, group))
+   def restore(): Unit                     = update(edit.unmaximized)
+   def toggleMaximize(group: NodeId): Unit = update(edit.toggleMaximize(_, group))
+@@ -467,22 +505,34 @@
+     * view. The dock must not be used afterwards.
+     */
+   def dispose(): Unit =
+-    cancelGestures()
+-    floats.values.foreach(_.dispose())
+-    floats.clear()
+-    panes.values.foreach(_.dispose())
+-    panes.clear()
+-    detached.values.foreach(_._1.dispose())
+-    detached.clear()
+-    contexts.clear()
++    if !disposed then
++      dismissPresentation()
++      disposed = true
++      lifetime.cancel()
++      dragController.dispose()
++      floats.values.foreach(_.dispose())
++      floats.clear()
++      main.dispose()
++      panes.values.foreach(_.dispose())
++      panes.clear()
++      detached.values.foreach(_._1.dispose())
++      detached.clear()
++      contexts.clear()
+ 
+   /** Restyle every dock window. Themes redefine only CSS variables; see docs/styling.md. */
+   def setTheme(theme: DockTheme): Unit =
++    require(javafx.application.Platform.isFxApplicationThread, "Theme changes require JavaFX")
++    require(!disposed && theme != null, "A live dock and non-null theme are required")
+     val changed = theme != currentTheme
++    if changed then dismissPresentation()
+     currentTheme = theme
+     allRegions.foreach(_.setThemeSheet(theme.stylesheet))
+     // floating windows are the dock's own: their title bars follow the theme too
+     floats.values.foreach(_.applyTheme(theme))
++    styledRoots.values.foreach(_.styles.update(theme.stylesheets))
++    // Popups can reopen in this same FX turn: resolve owner lookups before their skins inherit.
++    floats.values.foreach(_.applyCss())
++    allRegions.foreach(_.applyCss())
+     if changed then themeTopic.publish(theme)
+ 
+   /** What the main window shows when the layout is empty. A custom placeholder is laid out to fill
+@@ -492,7 +542,13 @@
+   def setPlaceholder(node: Option[javafx.scene.Node]): Unit = main.region.setPlaceholder(node)
+ 
+   /** Fires after every theme change, so host chrome styled with the dock's variables can follow. */
+-  def themeChanges: Events[DockTheme] = themeTopic
++  def themeChanges: Events[DockTheme] = new Events[DockTheme]:
++    def subscribe(f: DockTheme => Unit): Subscription =
++      val sub = themeTopic.subscribe(f)
++      if disposed then
++        sub.cancel()
++        () => ()
++      else lifetime.own(() => sub.cancel())
+ 
+   private val themeTopic = Events.Topic[DockTheme]()
+ 
+@@ -555,6 +611,8 @@
+ 
+   private[fx] def wireGroupView(gv: GroupView): Unit =
+     val groupId = gv.nodeId
++    gv.stylePopup = root => bindStylesheets(root)
++    gv.attachPresentation()
+     gv.onTabActivated = id => update(edit.focus(_, id))
+     gv.onTabPressed = (id, e) =>
+       // arm the drag BEFORE the focus update: focusing reconciles and rebuilds the tab strip,
+@@ -725,7 +783,6 @@
+       val f = floats.getOrElseUpdate(
+         fl.window, {
+           val created = FloatingStage(this, fl)
+-          installKeyboard(created.renderer.region)
+           created
+         }
+       )
+@@ -869,17 +926,33 @@
+   */
+ private[fx] final class WindowRenderer(dock: Dock, floating: Boolean):
+   private[fx] val region = new DockRegion
++  private var attached   = false
+ 
+   /** Wire only after Dock construction: callbacks must never escape an uninitialized Dock. */
+   def attachMetrics(): Unit =
+-    region.settings = () => dock.settings
+-    region.refreshMetrics = () => dock.refreshMetrics()
++    if !attached then
++      attached = true
++      region.settings = () => dock.settings
++      region.refreshMetrics = () => dock.refreshMetrics()
++      region.attach()
++      region.setThemeSheet(dock.themeStylesheet)
++      dock.installKeyboard(region)
+ 
+   /** Set by a floating window whose title bar stands in for its lone single-tab group's header. */
+   private[fx] var barOwnsLoneHeader: Boolean = false
+ 
+   private val groupViews   = mutable.Map.empty[NodeId, GroupView]
+   private val dividerViews = mutable.Map.empty[(NodeId, Int), DividerView]
++
++  def bindingCount: Int       = region.bindingCount + groupViews.values.map(_.bindingCount).sum
++  def dismissOverlays(): Unit = groupViews.values.foreach(_.dismissOverlays())
++
++  def dispose(): Unit =
++    groupViews.values.foreach(_.dispose())
++    groupViews.clear()
++    dividerViews.values.foreach(_.dispose())
++    dividerViews.clear()
++    region.dispose()
+ 
+   def preferredHeaderPx: Double =
+     groupViews.values.map(_.preferredHeaderPx).maxOption.getOrElse(0.0)
+@@ -925,7 +998,10 @@
+       gv.setActiveStyle(state.focused.exists(f => g.tabs.exists(_.id == f)))
+     val liveGroups = groupsHere.map(_.id).toSet
+     groupViews.keys.toVector.filterNot(liveGroups).foreach: id =>
+-      groupViews.remove(id).foreach(region.removeView)
++      groupViews.remove(id).foreach(g =>
++        g.dispose()
++        region.removeView(g)
++      )
+ 
+     def splitsOf(n: Node): Vector[Node.Split] = n match
+       case _: Node.Group                => Vector.empty
+@@ -940,7 +1016,10 @@
+       dividerViews(key) = dv
+       region.addView(dv)
+     dividerViews.keys.toVector.filterNot(neededDividers).foreach: key =>
+-      dividerViews.remove(key).foreach(region.removeView)
++      dividerViews.remove(key).foreach(d =>
++        d.dispose()
++        region.removeView(d)
++      )
+ 
+     // dividers above groups (their invisible grab reach extends over neighbours), then the
+     // drop indicator above everything — addView keeps the indicator frontmost
+@@ -961,12 +1040,15 @@
+   val renderer: WindowRenderer = WindowRenderer(dock, floating = true)
+   private val stage: Stage     = new Stage
+   private var applyingBounds   = false
++  private val lifetime         = new PresentationScope
++  private lazy val rootStyles  = new RootStyles(root)
+ 
+   /** On JavaFX 25+ the window draws its own title bar in the dock's theme; a single-tab window's
+     * bar then carries the pane's identity and actions, so there is one row of chrome, not two.
+     */
+   private val bar: Option[WindowBar] = WindowBar.create(dock, window)
+   renderer.barOwnsLoneHeader = bar.isDefined
++  bar.foreach(_.attachPresentation())
+   renderer.attachMetrics()
+ 
+   /** The scene root: the dock region, under the themed title bar when there is one. */
+@@ -978,15 +1060,21 @@
+       pane
+     case None => renderer.region
+ 
++  def bindingCount: Int = lifetime.size + renderer.bindingCount + bar.fold(0)(_.bindingCount)
++
++  def dismissOverlays(): Unit = bar.foreach(_.dismissOverlays())
++
+   def preferredHeaderPx: Double = bar.fold(0.0)(_.preferredHeaderPx)
+ 
+   def refreshMetrics(): Unit = bar.foreach(_.refreshMetrics())
+ 
+   def layoutMetrics(): Unit = root.layout()
++
++  def applyCss(): Unit = root.applyCss()
+ 
+   /** Theme the window's own chrome (the region themes itself). */
+   def applyTheme(theme: DockTheme): Unit =
+-    if !(root eq renderer.region) then root.getStylesheets.setAll(theme.stylesheets*): Unit
++    if !(root eq renderer.region) then rootStyles.update(theme.stylesheets)
+     Option(root.getScene).foreach(theme.applyWindowSchemeOrPlatform(_): Unit)
+ 
+   /** Ordering stamp for hit-testing: bumped whenever this window gains OS focus. */
+@@ -1026,8 +1114,16 @@
+     stage.yProperty.addListener(onMoved)
+     stage.widthProperty.addListener(onMoved)
+     stage.heightProperty.addListener(onMoved)
+-    stage.focusedProperty.addListener: (_, _, focused) =>
++    val focus: javafx.beans.value.ChangeListener[java.lang.Boolean] = (_, _, focused) =>
+       if focused then focusStamp = dock.nextFocusStamp()
++    stage.focusedProperty.addListener(focus)
++    val _ = lifetime.own: () =>
++      stage.xProperty.removeListener(onMoved)
++      stage.yProperty.removeListener(onMoved)
++      stage.widthProperty.removeListener(onMoved)
++      stage.heightProperty.removeListener(onMoved)
++      stage.focusedProperty.removeListener(focus)
++      stage.setOnCloseRequest(null)
+ 
+   def setBoundsIfChanged(b: Rect): Unit =
+     val differs =
+@@ -1045,7 +1141,12 @@
+     if stage.getTitle != title then stage.setTitle(title)
+     bar.foreach(_.sync(tree))
+ 
+-  def dispose(): Unit = stage.close()
++  def dispose(): Unit =
++    lifetime.cancel()
++    bar.foreach(_.dispose())
++    renderer.dispose()
++    if !(root eq renderer.region) then rootStyles.cancel()
++    stage.close()
+ end FloatingStage
+ 
+ /** A floating window's own title bar: a JavaFX `HeaderBar` styled by the dock theme. It needs
+@@ -1059,7 +1160,9 @@
+     window: WindowId,
+     val node: javafx.scene.layout.Region
+ ):
+-  private val iconBox = new javafx.scene.layout.StackPane
++  private val overlays = new PresentationScope
++  private val tips     = mutable.Map.empty[javafx.scene.Node, javafx.scene.control.Tooltip]
++  private val iconBox  = new javafx.scene.layout.StackPane
+   iconBox.getStyleClass.add("dock-tab-icon")
+   private val title = new Label
+   title.getStyleClass.add("dock-window-title")
+@@ -1085,7 +1188,9 @@
+   private def button(kind: String, icon: String, tip: String)(action: => Unit): javafx.scene.Node =
+     val b = new javafx.scene.layout.StackPane(dockIcon(icon))
+     b.getStyleClass.addAll("dock-header-button", kind)
+-    javafx.scene.control.Tooltip.install(b, new javafx.scene.control.Tooltip(tip))
++    val tooltip = new javafx.scene.control.Tooltip(tip)
++    javafx.scene.control.Tooltip.install(b, tooltip)
++    tips(b) = tooltip
+     b.setOnMouseClicked(_ => action)
+     b
+ 
+@@ -1104,6 +1209,29 @@
+     // JavaFX 27 names the slots left/right; the 25/26 previews called them leading/trailing
+     WindowBar.call(node, Seq("setLeft", "setLeading"), chip)
+     WindowBar.call(node, Seq("setRight", "setTrailing"), actions)
++
++  def bindingCount: Int = overlays.size
++
++  def attachPresentation(): Unit =
++    tips.values.foreach: tooltip =>
++      val binding = PresentationBindings.popup(tooltip)(root => dock.bindStylesheets(root))
++      val _       = overlays.own(() => binding.cancel())
++
++  def dismissOverlays(): Unit = tips.values.foreach(_.hide())
++
++  def dispose(): Unit =
++    overlays.cancel()
++    tips.foreach((n, t) =>
++      t.hide()
++      javafx.scene.control.Tooltip.uninstall(n, t)
++    )
++    tips.clear()
++    chip.setOnMousePressed(null)
++    chip.setOnMouseDragged(null)
++    chip.setOnMouseReleased(null)
++    actions.getChildren.clear()
++    WindowBar.call(node, Seq("setLeft", "setLeading"), null)
++    WindowBar.call(node, Seq("setRight", "setTrailing"), null)
+ 
+   def preferredHeaderPx: Double =
+     Vector(
+--- a/modules/fx/src/main/scala/scaladock/fx/DockRegion.scala
++++ b/modules/fx/src/main/scala/scaladock/fx/DockRegion.scala
+@@ -9,7 +9,8 @@
+ private[fx] final class DockRegion extends Region:
+   private[fx] var settings: () => LayoutSettings = () => LayoutSettings.default
+   private[fx] var refreshMetrics: () => Unit     = () => ()
+-  private var themeSheet: Option[String]         = None
++  private val lifetime                           = new PresentationScope
++  private lazy val styles                        = new RootStyles(this)
+ 
+   // `:inactive` while this region's window lacks OS focus (only once it is in a focusable window)
+   private val onWindowFocus: javafx.beans.value.ChangeListener[java.lang.Boolean] =
+@@ -17,9 +18,27 @@
+ 
+   /** Swap the theme stylesheet (appended after the base sheet, so its variables win). */
+   private[fx] def setThemeSheet(url: Option[String]): Unit =
+-    themeSheet.foreach(s => getStylesheets.remove(s): Unit)
+-    themeSheet = url
+-    url.foreach(s => getStylesheets.add(s): Unit)
++    styles.update(DockTheme.Dark.stylesheets ++ url)
++
++  private[fx] def own(action: () => Unit): Subscription = lifetime.own(action)
++  private[fx] def bindingCount: Int                     = lifetime.size
++
++  private[fx] def attach(): Unit =
++    val binding = PresentationBindings.window(this): window =>
++      window.focusedProperty.addListener(onWindowFocus)
++      pseudoClassStateChanged(pseudo.Inactive, !window.isFocused)
++      () => window.focusedProperty.removeListener(onWindowFocus)
++    val _ = lifetime.own(() => binding.cancel())
++
++  private[fx] def dispose(): Unit =
++    hideIndicator()
++    indicatorFade.foreach(_.stop())
++    indicatorFade = None
++    lifetime.cancel()
++    styles.cancel()
++    settings = () => LayoutSettings.default
++    refreshMetrics = () => ()
++    getChildren.clear()
+ 
+   private var root: Option[Node]           = None
+   private var maximized: Option[NodeId]    = None
+@@ -60,7 +79,9 @@
+       requestLayout()
+ 
+   private var indicatorRect: Option[Rect] = None // where the highlight is heading
+-  private var shownRect: Option[Rect]     = None // where it is drawn this frame
++  private var shownRect: Option[Rect]     = None
++  private var indicatorFade: Option[javafx.animation.FadeTransition] =
++    None // where it is drawn this frame
+ 
+   /** Eases the highlight between zones instead of teleporting (exponential approach, ~60 ms). */
+   private val glide = new javafx.animation.AnimationTimer:
+@@ -101,18 +122,6 @@
+     val css = classOf[DockRegion].getResource("/scaladock/dock.css")
+     if css != null then getStylesheets.add(css.toExternalForm): Unit
+ 
+-  locally:
+-    sceneProperty.addListener: (_, oldScene, scene) =>
+-      Option(
+-        oldScene
+-      ).flatMap(sc => Option(sc.getWindow)).foreach(_.focusedProperty.removeListener(onWindowFocus))
+-      Option(scene).foreach: sc =>
+-        sc.windowProperty.addListener: (_, oldW, w) =>
+-          Option(oldW).foreach(_.focusedProperty.removeListener(onWindowFocus))
+-          Option(w).foreach: win =>
+-            win.focusedProperty.addListener(onWindowFocus)
+-            pseudoClassStateChanged(pseudo.Inactive, !win.isFocused)
+-
+   getChildren.addAll(placeholder, indicator)
+ 
+   private[fx] def previewSplit(p: Option[(NodeId, Vector[Size])]): Unit =
+@@ -149,6 +158,8 @@
+       indicator.setOpacity(0)
+       val fade = new javafx.animation.FadeTransition(javafx.util.Duration.millis(90), indicator)
+       fade.setToValue(1)
++      indicatorFade.foreach(_.stop())
++      indicatorFade = Some(fade)
+       fade.play()
+     indicatorRect = Some(target)
+     indicator.setVisible(true)
+@@ -159,6 +170,8 @@
+     indicatorRect = None
+     shownRect = None
+     glide.stop()
++    indicatorFade.foreach(_.stop())
++    indicatorFade = None
+     indicator.setVisible(false)
+ 
+   /** Where the drop preview is heading, in screen coordinates (the drag chip keeps clear of it). */
+--- a/modules/fx/src/main/scala/scaladock/fx/views.scala
++++ b/modules/fx/src/main/scala/scaladock/fx/views.scala
+@@ -33,8 +33,15 @@
+   * buttons, overflow menu) is cheap and rebuilt freely; the hosted pane nodes are only ever
+   * reparented.
+   */
+-private[fx] final class GroupView(val nodeId: NodeId, settings: () => LayoutSettings)
++private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => LayoutSettings)
+     extends Region:
++  private var settings    = initialSettings
++  private val overlayLife = new PresentationScope
++  private val menus    = collection.mutable.Map.empty[javafx.scene.control.ContextMenu, () => Unit]
++  private var disposed = false
++  private var presentationAttached                                = false
++  private[fx] var stylePopup: javafx.scene.Parent => Subscription = _ => () => ()
++
+   // gesture callbacks, wired once by Dock at creation
+   private[fx] var onTabActivated: PaneId => Unit                                 = _ => ()
+   private[fx] var onTabPressed: (PaneId, javafx.scene.input.MouseEvent) => Unit  = (_, _) => ()
+@@ -47,6 +54,10 @@
+   private[fx] var onMinimizeToggled: () => Unit                                  = () => ()
+   private[fx] var onPopOut: () => Unit                                           = () => ()
+   private[fx] var onContentResized: (PaneId, Double, Double) => Unit             = (_, _, _) => ()
++
++  private def bindPopup(popup: javafx.scene.control.PopupControl): Unit =
++    val sub = PresentationBindings.popup(popup)(root => stylePopup(root))
++    val _   = overlayLife.own(() => sub.cancel())
+ 
+   /** Tooltips are installed once and only retitled on update. */
+   private val tips = collection.mutable.Map.empty[FxNode, Tooltip]
+@@ -257,6 +268,52 @@
+     header.requestLayout()
+   end update
+ 
++  def attachPresentation(): Unit =
++    if !presentationAttached then
++      presentationAttached = true
++      tips.values.foreach(bindPopup)
++
++  def dismissOverlays(): Unit =
++    overflow.hide()
++    menus.toVector.foreach((menu, release) =>
++      menu.hide()
++      release()
++    )
++    tips.values.foreach(_.hide())
++
++  def dispose(): Unit =
++    if !disposed then
++      disposed = true
++      dismissOverlays()
++      overlayLife.cancel()
++      tips.foreach((n, t) => Tooltip.uninstall(n, t))
++      tips.clear()
++      overflow.getItems.clear()
++      overflow.setSkin(null)
++      resetInsertion()
++      content.getChildren.clear()
++      tabViews.values.foreach(_.dispose())
++      tabsBox.getChildren.clear()
++      buttons.getChildren.clear()
++      tabViews.clear()
++      getChildren.clear()
++      tabNodes = Vector.empty
++      settings = () => LayoutSettings.default
++      stylePopup = _ => () => ()
++      onTabActivated = _ => ()
++      onTabPressed = (_, _) => ()
++      onTabDragged = (_, _) => ()
++      onTabReleased = (_, _) => ()
++      onTabClosed = _ => ()
++      onTabMenu = _ => Seq.empty
++      onGroupClosed = () => ()
++      onMaximizeToggled = () => ()
++      onMinimizeToggled = () => ()
++      onPopOut = () => ()
++      onContentResized = (_, _, _) => ()
++
++  def bindingCount: Int = overlayLife.size
++
+   def usesHeader: Boolean = headerVisible
+ 
+   /** Natural CSS chrome minima, never a previously allocated height or a density ceiling. */
+@@ -340,8 +397,23 @@
+     setOnContextMenuRequested: e =>
+       val items = onTabMenu(id)
+       if items.nonEmpty then
+-        val menu = new javafx.scene.control.ContextMenu(items*)
+-        menu.show(this, e.getScreenX, e.getScreenY)
++        val menu     = new javafx.scene.control.ContextMenu(items*)
++        val lease    = stylePopup(menu.getScene.getRoot)
++        var released = false
++        def release(): Unit =
++          if !released then
++            released = true
++            lease.cancel()
++            menus.remove(menu): Unit
++            menu.getItems.clear()
++            menu.setOnHidden(null)
++        menus(menu) = () => release()
++        menu.setOnHidden(_ => release())
++        try menu.show(this, e.getScreenX, e.getScreenY)
++        catch
++          case scala.util.control.NonFatal(error) =>
++            release()
++            throw error
+       e.consume()
+ 
+     setOnMousePressed: e =>
+@@ -353,6 +425,14 @@
+       // double-click a tab: maximise its group (or restore), as in VS Code and JetBrains
+       else if e.getButton == MouseButton.PRIMARY && e.getClickCount == 2 && chromeAllowed.maximize
+       then onMaximizeToggled()
++
++    def dispose(): Unit =
++      setOnContextMenuRequested(null)
++      setOnMousePressed(null)
++      setOnMouseDragged(null)
++      setOnMouseReleased(null)
++      setOnMouseClicked(null)
++      getChildren.clear()
+ 
+     def sync(pane: Pane, selected: Boolean): Unit =
+       if title.getText != pane.title then title.setText(pane.title)
+@@ -442,7 +522,7 @@
+     Tooltip.install(n, t)
+     tips(n) = t
+ 
+-  private def tipOf(n: FxNode): Option[Tooltip] = tips.get(n)
++  private[fx] def tipOf(n: FxNode): Option[Tooltip] = tips.get(n)
+ 
+   def setActiveStyle(focused: Boolean): Unit =
+     pseudoClassStateChanged(pseudo.Active, focused)
+@@ -640,6 +720,17 @@
+     pseudoClassStateChanged(pseudo.Hot, false)
+     endGesture()
+ 
++  def dispose(): Unit =
++    cancel()
++    dragContext = () => None
++    onCommit = (_, _) => ()
++    onPreview = (_, _) => ()
++    onPreviewEnd = () => ()
++    hoverDelay.setOnFinished(null)
++    setOnMousePressed(null)
++    setOnMouseDragged(null)
++    setOnMouseReleased(null)
++
+   // a divider removed mid-gesture (its split dissolved) never sees the release: clean up now
+   sceneProperty.addListener: (_, _, scene) =>
+     if scene == null && active.isDefined then endGesture()
+--- a/modules/fx/src/main/scala/scaladock/fx/drag.scala
++++ b/modules/fx/src/main/scala/scaladock/fx/drag.scala
+@@ -48,6 +48,7 @@
+ 
+   private var phase: Phase     = Phase.Idle
+   private var generation: Long = 0L
++  private val sources          = new PresentationScope
+ 
+   private val escFilter: EventHandler[KeyEvent] = e =>
+     if e.getCode == KeyCode.ESCAPE then
+@@ -107,10 +108,15 @@
+     handle.addEventHandler(MouseEvent.MOUSE_PRESSED, onPress)
+     handle.addEventHandler(MouseEvent.MOUSE_DRAGGED, onDrag)
+     handle.addEventHandler(MouseEvent.MOUSE_RELEASED, onRelease)
+-    () =>
++    sources.own: () =>
++      pressed = None
+       handle.removeEventHandler(MouseEvent.MOUSE_PRESSED, onPress)
+       handle.removeEventHandler(MouseEvent.MOUSE_DRAGGED, onDrag)
+       handle.removeEventHandler(MouseEvent.MOUSE_RELEASED, onRelease)
++
++  def dispose(): Unit =
++    cancel()
++    sources.cancel()
+ 
+   // -- the drag itself -------------------------------------------------------------------------
+ 
+@@ -267,7 +273,7 @@
+   private def endSession(session: Session): Unit =
+     if !session.closed then
+       session.closed = true
+-      session.ghost.foreach(_.hide())
++      session.ghost.foreach(_.dispose())
+       session.surfaces.foreach(_.region.hideIndicator())
+       closeGap(session, immediate = true)
+       dock.dragActive(false)
+@@ -346,6 +352,10 @@
+   setAutoFix(false) // follow the pointer honestly, even near screen edges
+   setAutoHide(false)
+   getContent.add(box): Unit
++
++  def dispose(): Unit =
++    hide()
++    getContent.clear()
+ 
+   def showAt(owner: javafx.stage.Window, screenX: Double, screenY: Double): Unit =
+     show(owner, screenX + GhostPopup.OffsetPx, screenY + GhostPopup.OffsetPx)
+--- /dev/null
++++ b/modules/fx/src/main/scala/scaladock/fx/presentation.scala
+@@ -0,0 +1,96 @@
++package scaladock.fx
++
++import javafx.beans.value.ChangeListener
++import javafx.scene.{Node, Parent, Scene}
++import javafx.stage.Window
++import scaladock.Subscription
++
++/** Small owned-resource scope. Cancellation drops callbacks as well as unregistering them. */
++private[fx] final class PresentationScope extends Subscription:
++  private val resources = collection.mutable.Set.empty[Subscription]
++  private var closed    = false
++  def size: Int         = resources.size
++
++  def own(action: () => Unit): Subscription =
++    require(!closed, "Presentation scope is closed")
++    val resource = new Subscription:
++      private var cleanup = Option(action)
++      def cancel(): Unit =
++        val run = cleanup
++        cleanup = None
++        resources.remove(this): Unit
++        run.foreach(_())
++    resources.add(resource): Unit
++    resource
++
++  def cancel(): Unit =
++    if !closed then
++      closed = true
++      resources.toVector.foreach(_.cancel())
++
++private[fx] object PresentationBindings:
++  def scene(node: Node)(attach: Scene => Subscription): Subscription =
++    var child: Subscription = Option(node.getScene).fold[Subscription](() => ())(attach)
++    val listener: ChangeListener[Scene] = (_, _, next) =>
++      child.cancel()
++      child = Option(next).fold[Subscription](() => ())(attach)
++    node.sceneProperty.addListener(listener)
++    var active = true
++    () =>
++      if active then
++        active = false
++        node.sceneProperty.removeListener(listener)
++        child.cancel()
++
++  def popup(popup: javafx.scene.control.PopupControl)(style: Parent => Subscription): Subscription =
++    var binding: Option[Subscription] = None
++    val showing: javafx.event.EventHandler[javafx.stage.WindowEvent] = _ =>
++      binding.foreach(_.cancel())
++      binding = Some(style(popup.getScene.getRoot))
++    val hidden: javafx.event.EventHandler[javafx.stage.WindowEvent] = _ =>
++      binding.foreach(_.cancel())
++      binding = None
++    popup.addEventHandler(javafx.stage.WindowEvent.WINDOW_SHOWING, showing)
++    popup.addEventHandler(javafx.stage.WindowEvent.WINDOW_HIDDEN, hidden)
++    () =>
++      popup.hide()
++      binding.foreach(_.cancel())
++      binding = None
++      popup.removeEventHandler(javafx.stage.WindowEvent.WINDOW_SHOWING, showing)
++      popup.removeEventHandler(javafx.stage.WindowEvent.WINDOW_HIDDEN, hidden)
++
++  def window(node: Node)(attach: Window => Subscription): Subscription =
++    scene(node): sc =>
++      var child: Subscription = Option(sc.getWindow).fold[Subscription](() => ())(attach)
++      val listener: ChangeListener[Window] = (_, _, next) =>
++        child.cancel()
++        child = Option(next).fold[Subscription](() => ())(attach)
++      sc.windowProperty.addListener(listener)
++      () =>
++        sc.windowProperty.removeListener(listener)
++        child.cancel()
++end PresentationBindings
++
++/** Own only additions. Never replace a caller's list or remove pre-existing resources. */
++private[fx] final class RootStyles(root: Parent) extends Subscription:
++  private var owned       = Vector.empty[String]
++  private val markerAdded = !root.getStyleClass.contains("dock")
++  private var active      = true
++  if markerAdded then root.getStyleClass.add("dock"): Unit
++
++  def update(sheets: Vector[String]): Unit =
++    require(active, "Style binding is closed")
++    val next = sheets.distinct
++    owned.filterNot(next.contains).foreach(s => root.getStylesheets.remove(s): Unit)
++    owned = owned.filter(next.contains)
++    next.foreach: sheet =>
++      if !root.getStylesheets.contains(sheet) then
++        root.getStylesheets.add(sheet): Unit
++        owned = owned :+ sheet
++
++  def cancel(): Unit =
++    if active then
++      active = false
++      owned.foreach(s => root.getStylesheets.remove(s): Unit)
++      owned = Vector.empty
++      if markerAdded then root.getStyleClass.remove("dock"): Unit
+--- /dev/null
++++ b/modules/fx/src/test/scala/scaladock/fx/PresentationSuite.scala
+@@ -0,0 +1,333 @@
++package scaladock.fx
++
++import javafx.event.Event
++import javafx.scene.{Parent, Scene}
++import javafx.scene.control.{ContextMenu, Label, MenuButton}
++import javafx.scene.input.{ContextMenuEvent, KeyCode, KeyEvent, MouseButton, MouseEvent, PickResult}
++import javafx.scene.layout.{Region, StackPane}
++import javafx.scene.paint.Color
++import javafx.stage.{Stage, Window}
++import munit.FunSuite
++import scaladock.*
++import scaladock.dsl.*
++import upickle.default.ReadWriter
++import FxFixture.onFx
++
++final class PresentationSuite extends FunSuite:
++  final case class Text(value: String) derives ReadWriter
++  private val TextPane = PaneType[Text]("test.presentation.text")
++  private final class Counts:
++    var built    = 0
++    var disposed = 0
++  private def pane(s: String): PaneDef = TextPane(Text(s)).titled(s)
++
++  private def fixture(body: (Dock, Stage, Counts) => Unit): Unit =
++    val count = new Counts
++    val factories = PaneFactories.empty.register(TextPane): text =>
++      count.built += 1
++      new PaneView[Text]:
++        val node                     = new Label(text.value)
++        def snapshot(): Text         = text
++        override def dispose(): Unit = count.disposed += 1
++    val dock = Dock(
++      factories,
++      initial = LayoutState.of(row(
++        group(pane("a"), pane("b")),
++        group(pane("c"), pane("d"))
++      ))
++    )
++    val owner = new Stage
++    owner.setScene(new Scene(dock.view, 600, 450))
++    owner.show()
++    dock.view.applyCss()
++    dock.view.layout()
++    try body(dock, owner, count)
++    finally
++      dock.dispose()
++      owner.close()
++
++  private def sheets(body: (DockTheme, DockTheme, String) => Unit): Unit =
++    val dir     = java.nio.file.Files.createTempDirectory("scaladock-s3-synthetic")
++    val dark    = dir.resolve("light-name.css")
++    val light   = dir.resolve("dark-name.css")
++    val foreign = dir.resolve("foreign.css")
++    try
++      java.nio.file.Files.writeString(
++        dark,
++        ".dock { -dock-base: #18202f; -dock-surface: #26344a; -dock-surface-raised: #30405a; -dock-text: #edf1f7; -dock-text-strong: #edf1f7; }"
++      ): Unit
++      java.nio.file.Files.writeString(
++        light,
++        ".dock { -dock-base: #ffffff; -dock-surface: #f2f3f5; -dock-surface-raised: #f5eee2; -dock-text: #1b293c; -dock-text-strong: #1b293c; }"
++      ): Unit
++      java.nio.file.Files.writeString(foreign, ".host-marker { -fx-opacity: 0.91; }"): Unit
++      body(
++        DockTheme.CustomWithScheme(dark.toUri.toString, true),
++        DockTheme.CustomWithScheme(light.toUri.toString, false),
++        foreign.toUri.toString
++      )
++    finally
++      for path <- Vector(dark, light, foreign, dir) do
++        java.nio.file.Files.deleteIfExists(path): Unit
++
++  private def context(dock: Dock): ContextMenu =
++    val tab = dock.view.lookup(".dock-tab")
++    val p   = tab.localToScreen(5, 5)
++    Event.fireEvent(
++      tab,
++      new ContextMenuEvent(
++        ContextMenuEvent.CONTEXT_MENU_REQUESTED,
++        5,
++        5,
++        p.getX,
++        p.getY,
++        false,
++        new PickResult(tab, 5, 5)
++      )
++    )
++    Window.getWindows.toArray.collectFirst:
++      case menu: ContextMenu if menu.getOwnerNode eq tab => menu
++    .getOrElse(fail("No owned tab menu"))
++
++  private def assertPaint(root: Parent, selector: String, expected: String): Unit =
++    root.applyCss()
++    root.layout()
++    val colors = root.lookupAll(selector).toArray.toVector.collect:
++      case r: Region if r.getBackground != null =>
++        import scala.jdk.CollectionConverters.*
++        r.getBackground.getFills.asScala.toVector.map(_.getFill)
++    .flatten
++    assert(colors.contains(Color.web(expected)), s"$selector expected $expected; paints=$colors")
++
++  private def mouse(kind: javafx.event.EventType[MouseEvent], x: Double, y: Double): MouseEvent =
++    new MouseEvent(
++      kind,
++      0,
++      0,
++      x,
++      y,
++      MouseButton.PRIMARY,
++      1,
++      false,
++      false,
++      false,
++      false,
++      true,
++      false,
++      false,
++      true,
++      false,
++      false,
++      null
++    )
++
++  private def startDrag(dock: Dock): javafx.stage.Popup =
++    val tab = dock.view.lookup(".dock-tab")
++    val p   = tab.localToScreen(5, 5)
++    Event.fireEvent(tab, mouse(MouseEvent.MOUSE_PRESSED, p.getX, p.getY))
++    Event.fireEvent(tab, mouse(MouseEvent.MOUSE_DRAGGED, p.getX + 20, p.getY + 20))
++    Window.getWindows.toArray.toVector.collect { case popup: javafx.stage.Popup => popup }
++      .find(popup =>
++        popup.getContent.toArray.exists {
++          case r: Parent => r.getStyleClass.contains("dock-ghost")
++          case _         => false
++        }
++      ).getOrElse(fail("No owned drag ghost"))
++
++  test("repeated host root leases preserve foreign styles/classes and share one live binding"):
++    onFx:
++      sheets: (dark, light, foreign) =>
++        fixture: (dock, _, _) =>
++          val root = new StackPane(new Label("synthetic host"))
++          root.getStyleClass.add("host-marker")
++          root.getStylesheets.addAll(foreign, dark.stylesheets.head)
++          val initial = root.getStylesheets.toArray.toVector
++          val scene   = new Scene(root, 100, 100)
++          assert(scene != null)
++          val originalClasses = root.getStyleClass.toArray.toVector
++          dock.setTheme(dark)
++          val a = dock.bindStylesheets(root)
++          val b = dock.bindStylesheets(root)
++          assertEquals(dock.styleBindingCount, 1)
++          for _ <- 0 until 10 do
++            dock.setTheme(light)
++            dock.setTheme(dark)
++            assertEquals(root.getStylesheets.size, 3)
++            assertEquals(root.getStylesheets.toArray.distinct.length, 3)
++            assert(root.getStylesheets.contains(foreign))
++          a.cancel()
++          assert(root.getStylesheets.contains(dark.stylesheets.last))
++          b.cancel()
++          b.cancel()
++          assertEquals(dock.styleBindingCount, 0)
++          assertEquals(root.getStylesheets.toArray.toVector, initial)
++          assertEquals(root.getStyleClass.toArray.toVector, originalClasses)
++
++  test("open tab menus dismiss on theme/density changes and reopen with current computed colors"):
++    onFx:
++      sheets: (dark, light, _) =>
++        fixture: (dock, _, _) =>
++          dock.setTheme(dark)
++          val before = dock.ownedBindingCount
++          val first  = context(dock)
++          assertPaint(first.getScene.getRoot, ".context-menu", "#30405a")
++          assertEquals(dock.styleBindingCount, 1)
++          dock.setTheme(light)
++          assert(!first.isShowing)
++          assertEquals(first.getItems.size, 0)
++          assertEquals(dock.styleBindingCount, 0)
++          val second = context(dock)
++          assertPaint(second.getScene.getRoot, ".context-menu", "#f5eee2")
++          dock.setSettings(LayoutSettings(headerPx = 28))
++          assert(!second.isShowing)
++          val third = context(dock)
++          assertPaint(third.getScene.getRoot, ".context-menu", "#f5eee2")
++          third.hide()
++          assertEquals(dock.ownedBindingCount, before)
++
++  test("overflow menus and tooltips dismiss and reopen using current custom styles"):
++    onFx:
++      sheets: (dark, light, _) =>
++        fixture: (dock, _, _) =>
++          dock.setTheme(dark)
++          val group    = dock.groupViewFor(dock.state.groups.head.id).get
++          val overflow = group.lookup(".dock-tab-overflow").asInstanceOf[MenuButton]
++          overflow.show()
++          val menu = Window.getWindows.toArray.collectFirst:
++            case m: ContextMenu if m.getOwnerNode eq overflow => m
++          .getOrElse(fail("No overflow popup"))
++          assertPaint(menu.getScene.getRoot, ".context-menu", "#30405a")
++          dock.setTheme(light)
++          assert(!overflow.isShowing && !menu.isShowing)
++          overflow.show()
++          assertPaint(menu.getScene.getRoot, ".context-menu", "#f5eee2")
++          dock.setSettings(LayoutSettings(headerPx = 28))
++          assert(!overflow.isShowing)
++          val button = group.lookup(".dock-header-button.close")
++          val tip    = group.tipOf(button).get
++          val p      = button.localToScreen(0, 0)
++          tip.show(button, p.getX, p.getY)
++          assertPaint(tip.getScene.getRoot, ".tooltip", "#f5eee2")
++          dock.setTheme(dark)
++          assert(!tip.isShowing)
++          tip.show(button, p.getX, p.getY)
++          assertPaint(tip.getScene.getRoot, ".tooltip", "#30405a")
++          dock.setSettings(LayoutSettings(headerPx = 32))
++          assert(!tip.isShowing)
++          assertEquals(dock.styleBindingCount, 0)
++
++  test("theme and metric changes cancel ghosts; next ghost owns the current independent root"):
++    onFx:
++      sheets: (dark, light, _) =>
++        fixture: (dock, _, _) =>
++          dock.setTheme(dark)
++          val first = startDrag(dock)
++          val root  = first.getContent.get(0).asInstanceOf[Parent]
++          assert(root.getStyleClass.contains("dock"))
++          assertPaint(root, ".dock-ghost-chip", "#30405a")
++          val state = dock.state
++          dock.setTheme(light)
++          assert(!first.isShowing)
++          assertEquals(first.getContent.size, 0)
++          assertEquals(dock.state, state)
++          val second = startDrag(dock)
++          assertPaint(second.getContent.get(0).asInstanceOf[Parent], ".dock-ghost-chip", "#f5eee2")
++          dock.setSettings(LayoutSettings(headerPx = 28))
++          assert(!second.isShowing)
++          assertEquals(second.getContent.size, 0)
++
++  test("repeated bindings/subscriptions and source handles are released by Dock.dispose"):
++    onFx:
++      sheets: (_, light, foreign) =>
++        fixture: (dock, _, counts) =>
++          val baseline = dock.ownedBindingCount
++          val root     = new StackPane
++          root.getStylesheets.add(foreign)
++          var notifications = 0
++          for _ <- 0 until 20 do
++            val styles = dock.bindStylesheets(root)
++            val sub    = dock.themeChanges.subscribe(_ => notifications += 1)
++            styles.cancel()
++            sub.cancel()
++            assertEquals(dock.ownedBindingCount, baseline)
++          val styles = dock.bindStylesheets(root)
++          val sub    = dock.themeChanges.subscribe(_ => notifications += 1)
++          val source = new Label("synthetic source")
++          var minted = 0
++          val drag = dock.dragSource(source): () =>
++            minted += 1
++            pane("new")
++          dock.setTheme(light)
++          assertEquals(notifications, 1)
++          val menu = context(dock)
++          dock.dispose()
++          assert(!menu.isShowing)
++          assertEquals(dock.styleBindingCount, 0)
++          assertEquals(dock.ownedBindingCount, 0)
++          assertEquals(root.getStylesheets.toArray.toVector, Vector(foreign))
++          assertEquals(counts.disposed, counts.built)
++          Event.fireEvent(source, mouse(MouseEvent.MOUSE_PRESSED, 0, 0))
++          Event.fireEvent(source, mouse(MouseEvent.MOUSE_DRAGGED, 20, 20))
++          assertEquals(minted, 0)
++          styles.cancel(); sub.cancel(); drag.cancel()
++          dock.dispose()
++          assertEquals(counts.disposed, 4)
++
++  test(
++    "scene/window transfer detaches old owners; hide/show recreates float presentation without rebuilding panes"
++  ):
++    onFx:
++      fixture: (dock, first, counts) =>
++        val ids = dock.state.panes.map(p => p.id -> dock.nodeOf(p.id).get).toMap
++        dock.popOut(dock.state.groups.last.id)
++        val originalScene = first.getScene
++        originalScene.setRoot(new StackPane)
++        val second = new Stage
++        second.setScene(new Scene(dock.view, 600, 450))
++        second.show()
++        try
++          val bindings = dock.ownedBindingCount
++          val roots    = dock.state.roots
++          first.hide()
++          assert(
++            dock.dragSurfaces.exists(_._1.isDefined),
++            "Old owner's hide must not close new owner's floats"
++          )
++          for _ <- 0 until 3 do
++            val menu = context(dock)
++            second.hide()
++            assert(!menu.isShowing)
++            assertEquals(dock.dragSurfaces.count(_._1.isDefined), 0)
++            assertEquals(dock.state.roots, roots)
++            second.show()
++            assertEquals(dock.dragSurfaces.count(_._1.isDefined), 1)
++            assertEquals(dock.ownedBindingCount, bindings)
++            ids.foreach((id, node) => assert(dock.nodeOf(id).get eq node))
++            assertEquals(counts.disposed, 0)
++            assertEquals(counts.built, 4)
++        finally second.close()
++
++  test("retired floating regions have no input bindings and preserve unrelated styles"):
++    onFx:
++      sheets: (dark, light, foreign) =>
++        fixture: (dock, _, _) =>
++          dock.setTheme(dark)
++          dock.popOut(dock.state.groups.last.id)
++          val (_, floating, _) = dock.dragSurfaces.find(_._1.isDefined).get
++          floating.getStylesheets.add(foreign)
++          val outer = floating.getScene.getRoot
++          outer.getStylesheets.add(foreign)
++          dock.setTheme(light)
++          assert(floating.getStylesheets.contains(foreign))
++          assert(outer.getStylesheets.contains(foreign))
++          dock.dockAllBack()
++          assertEquals(floating.bindingCount, 0)
++          assert(floating.getStylesheets.contains(foreign))
++          assert(outer.getStylesheets.contains(foreign))
++          val before = dock.state
++          Event.fireEvent(
++            floating,
++            new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.F6, false, false, false, false)
++          )
++          assertEquals(dock.state, before)
++end PresentationSuite
+--- /dev/null
++++ b/modules/fx/src/test/scala/scaladock/fx/PresentationNativeProbe.scala
+@@ -0,0 +1,222 @@
++package scaladock.fx
++
++import java.nio.file.{Files, Path}
++import javafx.animation.PauseTransition
++import javafx.application.{Application, Platform}
++import javafx.event.Event
++import javafx.scene.{Parent, Scene}
++import javafx.scene.control.{ContextMenu, Label, Tooltip}
++import javafx.scene.input.{ContextMenuEvent, PickResult}
++import javafx.scene.layout.Region
++import javafx.scene.paint.Color
++import javafx.stage.{Stage, Window}
++import javafx.util.Duration
++import scaladock.*
++import scaladock.dsl.*
++import upickle.default.ReadWriter
++
++object PresentationNativeProbe:
++  @volatile private[fx] var failure: Option[Throwable] = None
++  final case class Text(value: String) derives ReadWriter
++  val TextPane: PaneType[Text] = PaneType[Text]("s3.native.synthetic")
++  def main(args: Array[String]): Unit =
++    Application.launch(classOf[PresentationProbeApp], args*)
++    failure.foreach(e => throw IllegalStateException("S3 native probe failed", e))
++
++final class PresentationProbeApp extends Application:
++  import PresentationNativeProbe.*
++  private var dock: Option[Dock]        = None
++  private var owner: Option[Stage]      = None
++  private var output                    = Path.of(".")
++  private var phase                     = 0
++  private var darkSheet                 = ""
++  private var lightSheet                = ""
++  private var foreignSheet              = ""
++  private var built                     = 0
++  private var disposed                  = 0
++  private var menu: Option[ContextMenu] = None
++  private var tip: Option[Tooltip]      = None
++  private var identities                = Map.empty[PaneId, javafx.scene.Node]
++  private val heights                   = Vector(32.0, 28.0, 28.0, 32.0)
++  private val names = Vector(
++    "dark-comfortable",
++    "light-compact",
++    "dark-compact-floating",
++    "light-comfortable-restored"
++  )
++
++  override def start(stage: Stage): Unit =
++    owner = Some(stage)
++    try
++      require(getParameters.getRaw.size == 1, "Pass a new evidence directory")
++      output = Path.of(getParameters.getRaw.get(0)).toAbsolutePath
++      require(!Files.exists(output), "Output must be new")
++      Files.createDirectories(output): Unit
++      val dark    = output.resolve("light-name-dark-palette.css")
++      val light   = output.resolve("dark-name-light-palette.css")
++      val foreign = output.resolve("foreign.css")
++      Files.writeString(
++        dark,
++        ".dock { -dock-base:#18202f; -dock-surface:#26344a; -dock-surface-raised:#30405a; -dock-text:#edf1f7; -dock-text-strong:#edf1f7; } .dock-content > .label { -fx-text-fill:-dock-text; }"
++      ): Unit
++      Files.writeString(
++        light,
++        ".dock { -dock-base:#ffffff; -dock-surface:#f2f3f5; -dock-surface-raised:#f5eee2; -dock-text:#1b293c; -dock-text-strong:#1b293c; } .dock-content > .label { -fx-text-fill:-dock-text; }"
++      ): Unit
++      Files.writeString(foreign, ".host-marker { -fx-opacity:1; }"): Unit
++      darkSheet = dark.toUri.toString
++      lightSheet = light.toUri.toString
++      foreignSheet = foreign.toUri.toString
++      val factories = PaneFactories.empty.register(TextPane): text =>
++        built += 1
++        new PaneView[Text]:
++          val node                     = new Label(text.value)
++          def snapshot(): Text         = text
++          override def dispose(): Unit = disposed += 1
++      def pane(s: String): PaneDef = TextPane(Text(s)).titled(s)
++      val value = Dock(
++        factories,
++        initial = LayoutState.of(row(
++          group(pane("Datasets"), pane("Analysis")),
++          group(pane("Inspector"), pane("Metadata"))
++        ))
++      )
++      dock = Some(value)
++      identities = value.state.panes.map(p => p.id -> value.nodeOf(p.id).get).toMap
++      value.view.getStylesheets.add(foreignSheet)
++      stage.setScene(new Scene(value.view, 850, 550))
++      stage.setTitle("S3 synthetic popup fixture")
++      stage.show()
++      schedule()
++    catch case e: Throwable => fail(e)
++    end try
++  end start
++
++  private def later(body: => Unit): Unit =
++    val pause = new PauseTransition(Duration.millis(350))
++    pause.setOnFinished: _ =>
++      try body
++      catch case e: Throwable => fail(e)
++    pause.play()
++
++  private def schedule(): Unit =
++    val value = dock.get
++    if phase == 2 then value.popOut(value.state.groups.last.id)
++    if phase == 3 then
++      val saved = value.save()
++      value.dockAllBack()
++      require(value.load(saved).isRight, "Restore failed")
++    val dark = phase % 2 == 0
++    value.setTheme(DockTheme.CustomWithScheme(if dark then darkSheet else lightSheet, dark))
++    value.setSettings(LayoutSettings(headerPx = heights(phase)))
++    require(menu.forall(!_.isShowing) && tip.forall(!_.isShowing), "Old overlays remained visible")
++    require(value.styleBindingCount == 0, "Old popup style leases survived dismissal")
++    later(openOverlays())
++
++  private def openOverlays(): Unit =
++    val value = dock.get
++    val tab   = value.view.lookup(".dock-tab")
++    val p     = tab.localToScreen(6, 6)
++    Event.fireEvent(
++      tab,
++      new ContextMenuEvent(
++        ContextMenuEvent.CONTEXT_MENU_REQUESTED,
++        6,
++        6,
++        p.getX,
++        p.getY,
++        false,
++        new PickResult(tab, 6, 6)
++      )
++    )
++    menu = Window.getWindows.toArray.collectFirst:
++      case m: ContextMenu if m.getOwnerNode eq tab => m
++    require(menu.exists(_.isShowing), "Owned context menu did not open")
++    val group  = value.groupViewFor(value.state.root.get.groups.head.id).get
++    val button = group.lookup(".dock-header-button.close")
++    tip = group.tipOf(button)
++    val point = button.localToScreen(0, 0)
++    tip.get.show(button, point.getX, point.getY + 45)
++    later(capture())
++
++  private def paint(root: Parent, selector: String, expected: Color): Unit =
++    root.applyCss()
++    root.layout()
++    val fills = root.lookupAll(selector).toArray.toVector.collect:
++      case r: Region if r.getBackground != null =>
++        import scala.jdk.CollectionConverters.*
++        r.getBackground.getFills.asScala.toVector.map(_.getFill)
++    .flatten
++    require(fills.contains(expected), s"$selector expected $expected / $fills")
++
++  private def capture(): Unit =
++    val value = dock.get
++    val label = names(phase)
++    require(
++      menu.exists(_.isShowing) && tip.exists(_.isShowing),
++      "Owned overlay unexpectedly closed"
++    )
++    val expected = Color.web(if phase % 2 == 0 then "#30405a" else "#f5eee2")
++    paint(menu.get.getScene.getRoot, ".context-menu", expected)
++    paint(tip.get.getScene.getRoot, ".tooltip", expected)
++    require(value.styleBindingCount == 2, "Popup bindings duplicated or missing")
++    require(value.view.getStylesheets.contains(foreignSheet), "Foreign owner sheet lost")
++    require(value.view.getStylesheets.toArray.distinct.length == value.view.getStylesheets.size)
++    require(built == 4 && disposed == 0, "Presentation rebuilt or disposed application panes")
++    identities.foreach((id, n) => require(value.nodeOf(id).get eq n, "Pane identity changed"))
++    writeImage(owner.get.getScene, output.resolve(label + "-main.png"))
++    writeImage(menu.get.getScene, output.resolve(label + "-menu.png"))
++    writeImage(tip.get.getScene, output.resolve(label + "-tooltip.png"))
++    for (_, region, _) <- value.dragSurfaces.filter(_._1.isDefined) do
++      writeImage(region.getScene, output.resolve(label + "-floating.png"))
++    val report = Vector(
++      "capture=Owned JavaFX scene snapshots; no OS screen capture",
++      "java=" + System.getProperty("java.version"),
++      "javafx=" + System.getProperty("javafx.runtime.version"),
++      "os=" + System.getProperty("os.name") + "/" + System.getProperty("os.arch"),
++      "expectedRaised=" + expected,
++      "metrics=" + value.settings,
++      "livePopupStyleRoots=" + value.styleBindingCount,
++      "ownedBindingScopes=" + value.ownedBindingCount,
++      "built=" + built,
++      "disposedBeforeCleanup=" + disposed
++    )
++    Files.writeString(output.resolve(label + ".txt"), report.mkString("\n") + "\n"): Unit
++    println(
++      s"S3_NATIVE_FRAME_OK phase=$label color=$expected styleRoots=" + value.styleBindingCount
++    )
++    phase += 1
++    if phase < names.length then schedule()
++    else
++      cleanup()
++      require(
++        value.styleBindingCount == 0 && value.ownedBindingCount == 0,
++        "Presentation scopes leaked"
++      )
++      require(disposed == 4, "Pane cleanup count mismatch")
++      require(!menu.get.isShowing && !tip.get.isShowing, "Overlay survived disposal")
++      println(
++        "S3_NATIVE_PROBE_OK phases=4 captures=14 bindingsAfterDispose=0 ownedWindowsClosed=true"
++      )
++  end capture
++
++  private def writeImage(scene: Scene, file: Path): Unit =
++    val image = scene.snapshot(null)
++    val png = new java.awt.image.BufferedImage(
++      image.getWidth.toInt,
++      image.getHeight.toInt,
++      java.awt.image.BufferedImage.TYPE_INT_ARGB
++    )
++    for y <- 0 until png.getHeight; x <- 0 until png.getWidth do
++      png.setRGB(x, y, image.getPixelReader.getArgb(x, y))
++    require(javax.imageio.ImageIO.write(png, "png", file.toFile))
++
++  private def cleanup(): Unit =
++    dock.foreach(_.dispose())
++    owner.foreach(_.close())
++    Platform.exit()
++
++  private def fail(error: Throwable): Unit =
++    PresentationNativeProbe.failure = Some(error)
++    cleanup()
++end PresentationProbeApp
+--- a/docs/styling.md
++++ b/docs/styling.md
+@@ -113,6 +113,64 @@
+ See [S2 acceptance evidence](evidence/meridian-s2/README.md) for actual bounds,
+ enlargement/shrinkage, identity counters and cancellation checks on both runtimes.
+ Meridian integration and independent provider qualification remain separate gates.
++
++## Popup policy and presentation ownership
++
++A changed theme, requested density or effective CSS-driven geometry dismisses owned
++context/overflow menus and tooltips and cancels any armed/active drag. Reopen the
++overlay, or start a new gesture, to use the current appearance. Ghosts are
++single-gesture snapshots and are destroyed on cancellation. There is no automatic
++resumption or replay of the old action.
++
++Theme application resolves owner CSS before a popup can reopen in the same FX
++turn. Tab context menus are built fresh; the standard MenuButton skin still owns
++overflow behavior. Tooltip roots acquire current CSS only while visible. The
++independent ghost root and floating/header roots carry the `dock` marker and
++public theme resources. These paths use public JavaFX APIs and ordinary controls.
++
++Host-created dialogs, popups and inspectors need explicit registration when they
++are outside the dock's root. Bind a specific root, then cancel its lease in the
++host's existing close/disposal path:
++
++```scala
++val styles: Subscription = dock.bindStylesheets(dialog.getDialogPane)
++// In the host's existing dialog-close handler:
++styles.cancel()
++```
++
++For a host PopupControl, register `popup.getScene.getRoot` before showing it and
++cancel after it hides. Re-register when reopening. Compose this with existing
++lifecycle handlers rather than replacing them blindly. Choose one appearance
++owner for a root. Repeated leases from the same dock share one binding; the last
++cancellation removes only stylesheet/marker additions made by that binding.
++Pre-existing and unrelated styles, class order and owner event handlers remain
++under host ownership. Theme changes update bound hidden roots too.
++
++`bindStylesheets` manages CSS resources only. It does not install an application
++user-agent stylesheet, register arbitrary windows by scanning the scene graph,
++apply main-scene native scheme preferences or choose geometry for host controls.
++Use the existing `DockTheme.applyWindowSchemeOrPlatform(scene)` hook for native
++scheme ownership. Host dialogs/popup content keep their own sizing policy.
++
++All presentation mutation, root binding and lease cancellation belong on the FX
++thread. `setTheme` rejects null themes and disposed docks. `Dock.dispose()` is
++idempotent and closes transient UI, cancels managed event/theme subscriptions and
++external drag-source handlers, detaches scene/window/focus/input observers,
++uninstalls tooltips, retires skins/animations and releases pane views.
++
++A temporary owner hide dismisses overlays and closes floating presentation while
++preserving the layout and live application panes. Showing the owner again restores
++floats using those same pane instances and current preferences. The main dock's
++bounded lifecycle bindings remain for that reuse; terminal app/window shutdown
++must call `Dock.dispose()` after its close-admission flow. Scene/window transfer
++detaches old owners, so hiding an old window cannot close the current owner's
++floats. This preserves hide/show semantics instead of force-disposing scientific
++views when an owner is temporarily hidden.
++
++See [S3 evidence](evidence/meridian-s3/README.md) for computed popup paints,
++dismiss/reopen cases, logical binding-scope counts, old-owner/retired-input checks,
++repeated lifecycle cycles and timed native scene captures. These counts describe
++owned registrations, not a JVM heap or garbage-collection benchmark.
+ 
+ ## Variables (define these in a custom theme)
+ 
+--- /dev/null
++++ b/tools/meridian-s3/run_lane.py
+@@ -0,0 +1,44 @@
++#!/usr/bin/env python3
++"""Reproduce S3's named-module runtime lanes on the recorded macOS/aarch64 host."""
++import argparse,json,os,subprocess
++from pathlib import Path
++ROOT=Path(__file__).resolve().parents[2]
++p=argparse.ArgumentParser(description=__doc__)
++p.add_argument("lane",choices=("floor","current","native"))
++p.add_argument("--output",type=Path)
++p.add_argument("--focus",action="store_true",help="Run PresentationSuite only while diagnosing")
++args=p.parse_args()
++version="24.0.1" if args.lane=="floor" else "27"
++jdk=Path("/Users/bbuchsbaum/Library/Java/JavaVirtualMachines/openjdk-22/Contents/Home" if args.lane=="floor" else "/opt/homebrew/opt/openjdk@25")
++cache=Path("/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx")
++fx=[cache/f"javafx-{m}"/version/f"javafx-{m}-{version}-mac-aarch64.jar" for m in ("base","graphics","controls")]
++assert all(f.is_file() for f in fx),fx
++module_options=["--module-path",os.pathsep.join(map(str,fx)),"--add-modules","javafx.controls","--enable-native-access=javafx.graphics"]
++literal=lambda value:json.dumps(str(value))
++options="Seq("+",".join(literal(x) for x in module_options)+")"
++jars="Seq("+",".join("Attributed.blank(file("+literal(x)+"))" for x in fx)+")"
++commands=[
++    "set fx / Test / javaOptions ++= "+options,
++    'set fx / Test / fullClasspath := (fx / Test / fullClasspath).value.filterNot(_.data.getName.startsWith("javafx-")) ++ '+jars,
++]
++if args.output is not None and args.lane != "native":
++    out=args.output.resolve()
++    assert not out.exists(),out
++    commands += ["set fx / Test / javaOptions += "+literal("-Dscaladock.presentation.captureDir="+str(out))]
++if args.lane=="native":
++    if args.output is None: p.error("native lane requires a new output directory")
++    out=args.output.resolve()
++    assert not out.exists(),out
++    commands += ["set fx / Test / run / fork := true",
++                 "fx/Test/runMain scaladock.fx.PresentationNativeProbe "+str(out)]
++elif args.focus:
++    commands += ["scalafmtAll","fx/testOnly scaladock.fx.PresentationSuite"]
++elif args.lane=="floor":
++    commands += ["scalafmtAll","scalafmtSbtCheck","scalafmtCheckAll","compile","core/test","fx/test",
++                 "fx/packageBin","core/packageBin"]
++else:
++    commands += ["core/test","fx/test"]
++command=["sbt","-batch",*commands]
++env=dict(os.environ,JAVA_HOME=str(jdk))
++result=subprocess.run(command,cwd=ROOT,env=env)
++raise SystemExit(result.returncode)

@@ -1,0 +1,48 @@
+[info] welcome to sbt 1.12.14 (Homebrew Java 25.0.1)
+[info] loading settings for project scaladock-build from plugins.sbt...
+[info] loading project definition from /Users/bbuchsbaum/code/scala/scaladock/project
+[info] loading settings for project root from build.sbt...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] Defining fx / Test / javaOptions
+[info] The new value will be used by fx / Test / bspBuildTargetJvmEnvironmentItem, fx / Test / bspBuildTargetRun and 6 others.
+[info] 	Run `last` for details.
+[info] Reapplying settings...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] Defining fx / Test / fullClasspath
+[info] The new value will be used by fx / Test / bspBuildTargetJvmEnvironmentItem, fx / Test / console and 6 others.
+[info] 	Run `last` for details.
+[info] Reapplying settings...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] compiling 9 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/core/target/scala-3.7.4/classes ...
+[info] done compiling
+[info] compiling 7 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/fx/target/scala-3.7.4/classes ...
+[info] done compiling
+[info] compiling 14 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/fx/target/scala-3.7.4/test-classes ...
+[info] done compiling
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by scala.runtime.LazyVals$ (file:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala3-library_3/3.7.4/scala3-library_3-3.7.4.jar)
+WARNING: Please consider reporting this to the maintainers of class scala.runtime.LazyVals$
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+2026-10-14 21:38:33.522 java[16579:7724040] CVDisplayLinkCreateWithActiveCGDisplays error: -6661
+2026-10-14 21:38:33.522 java[16579:7724040] CVDisplayLinkSetCurrentCGDisplay error: -6661
+2026-10-14 21:38:33.522 java[16579:7724040] CVDisplayLinkSetOutputCallback error: -6661
+2026-10-14 21:38:33.522 java[16579:7724040] CVDisplayLinkStart error: -6661
+scaladock.fx.ThemeSuite:
+  + the drop indicator resolves its colors from theme variables, not hardcoded values 0.608s
+  + the ghost popup carries the variable-bearing marker class 0.003s
+  + legacy Custom constructor, extractor, ordinals and unknown metadata remain intact 0.002s
+  + custom scheme metadata affects equality but preserves stylesheet order 0.004s
+  + main scene schemes are explicit host hooks with legacy no-op and platform fallback 0.004s
+  + known custom schemes reach existing, new and restored floats without changing main ownership or pane identity 0.214s
+scaladock.fx.PopoutSuite:
+  + popOut opens a Stage, moves the same pane node into it, and dockBack closes it 0.088s
+  + multi-window layouts save and load, restoring the floating Stage 0.089s
+  + closing a floating window docks its content back at the home anchor 0.069s
+scaladock.fx.CloseAdmissionSuite:
+  + default admission retains immediate close semantics 0.019s
+  + delayed duplicate close shares admission; veto and failure preserve the pane; retry disposes once 0.016s
+  + whole-dock admission is atomic and rejects a new pane arriving during preparation 0.009s
+  + tab, group and pane-context close paths honor admission 0.004s
+  + a non-closable pane is refused without preparation; a forced edit still removes it 0.003s
+[info] Passed: Total 14, Failed 0, Errors 0, Passed 14
+[success] Total time: 19 s, completed Oct 14, 2026, 9:38:34 p.m.

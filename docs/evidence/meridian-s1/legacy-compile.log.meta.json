@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "started_utc": "2026-10-15T01:39:11.761001+00:00",
+  "finished_utc": "2026-10-15T01:39:18.567661+00:00",
+  "duration_seconds": 6.806452,
+  "command": [
+    "sbt",
+    "-batch",
+    "compile",
+    "export Compile/fullClasspath"
+  ],
+  "cwd": "/Users/bbuchsbaum/code/scala/scaladock/tools/meridian-s1/compat",
+  "log": "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/legacy-compile.log",
+  "exit_code": 0,
+  "child_returncode": 0,
+  "reason": "exited",
+  "detail": null,
+  "timeout_seconds": 180.0,
+  "log_bytes": 1941
+}

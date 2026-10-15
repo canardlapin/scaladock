@@ -1,0 +1,10 @@
+capture=Owned JavaFX scene snapshots; no OS screen capture
+java=25.0.1
+javafx=27+30
+os=Mac OS X/aarch64
+expectedRaised=0x30405aff
+metrics=LayoutSettings(1.0,28.0,50.0,40.0)
+livePopupStyleRoots=2
+ownedBindingScopes=20
+built=4
+disposedBeforeCleanup=0

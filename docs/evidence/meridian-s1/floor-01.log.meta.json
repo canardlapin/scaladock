@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "started_utc": "2026-10-15T01:33:44.881859+00:00",
+  "finished_utc": "2026-10-15T01:34:15.560852+00:00",
+  "duration_seconds": 30.678508,
+  "command": [
+    "sbt",
+    "-batch",
+    "scalafmtAll",
+    "scalafmtSbt",
+    "fx/testOnly scaladock.fx.ThemeSuite scaladock.fx.PopoutSuite",
+    "demo/compile",
+    "fx/packageBin",
+    "core/packageBin"
+  ],
+  "cwd": "/Users/bbuchsbaum/code/scala/scaladock",
+  "log": "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s1/floor-01.log",
+  "exit_code": 0,
+  "child_returncode": 0,
+  "reason": "exited",
+  "detail": null,
+  "timeout_seconds": 300.0,
+  "log_bytes": 3940
+}

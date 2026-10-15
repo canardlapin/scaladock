@@ -6,8 +6,11 @@ import scaladock.*
 /** The root of one window's dock: a flat set of group views and divider strips positioned by core
   * geometry. Splits have no scene-graph presence — they exist only as arithmetic.
   */
-private[fx] final class DockRegion(settings: LayoutSettings) extends Region:
-  private var themeSheet: Option[String] = None
+private[fx] final class DockRegion extends Region:
+  private[fx] var settings: () => LayoutSettings = () => LayoutSettings.default
+  private[fx] var refreshMetrics: () => Unit     = () => ()
+  private val lifetime                           = new PresentationScope
+  private lazy val styles                        = new RootStyles(this)
 
   // `:inactive` while this region's window lacks OS focus (only once it is in a focusable window)
   private val onWindowFocus: javafx.beans.value.ChangeListener[java.lang.Boolean] =
@@ -15,9 +18,27 @@ private[fx] final class DockRegion(settings: LayoutSettings) extends Region:
 
   /** Swap the theme stylesheet (appended after the base sheet, so its variables win). */
   private[fx] def setThemeSheet(url: Option[String]): Unit =
-    themeSheet.foreach(s => getStylesheets.remove(s): Unit)
-    themeSheet = url
-    url.foreach(s => getStylesheets.add(s): Unit)
+    styles.update(DockTheme.Dark.stylesheets ++ url)
+
+  private[fx] def own(action: () => Unit): Subscription = lifetime.own(action)
+  private[fx] def bindingCount: Int                     = lifetime.size
+
+  private[fx] def attach(): Unit =
+    val binding = PresentationBindings.window(this): window =>
+      window.focusedProperty.addListener(onWindowFocus)
+      pseudoClassStateChanged(pseudo.Inactive, !window.isFocused)
+      () => window.focusedProperty.removeListener(onWindowFocus)
+    val _ = lifetime.own(() => binding.cancel())
+
+  private[fx] def dispose(): Unit =
+    hideIndicator()
+    indicatorFade.foreach(_.stop())
+    indicatorFade = None
+    lifetime.cancel()
+    styles.cancel()
+    settings = () => LayoutSettings.default
+    refreshMetrics = () => ()
+    getChildren.clear()
 
   private var root: Option[Node]           = None
   private var maximized: Option[NodeId]    = None
@@ -58,7 +79,9 @@ private[fx] final class DockRegion(settings: LayoutSettings) extends Region:
       requestLayout()
 
   private var indicatorRect: Option[Rect] = None // where the highlight is heading
-  private var shownRect: Option[Rect]     = None // where it is drawn this frame
+  private var shownRect: Option[Rect]     = None
+  private var indicatorFade: Option[javafx.animation.FadeTransition] =
+    None // where it is drawn this frame
 
   /** Eases the highlight between zones instead of teleporting (exponential approach, ~60 ms). */
   private val glide = new javafx.animation.AnimationTimer:
@@ -99,18 +122,6 @@ private[fx] final class DockRegion(settings: LayoutSettings) extends Region:
     val css = classOf[DockRegion].getResource("/scaladock/dock.css")
     if css != null then getStylesheets.add(css.toExternalForm): Unit
 
-  locally:
-    sceneProperty.addListener: (_, oldScene, scene) =>
-      Option(
-        oldScene
-      ).flatMap(sc => Option(sc.getWindow)).foreach(_.focusedProperty.removeListener(onWindowFocus))
-      Option(scene).foreach: sc =>
-        sc.windowProperty.addListener: (_, oldW, w) =>
-          Option(oldW).foreach(_.focusedProperty.removeListener(onWindowFocus))
-          Option(w).foreach: win =>
-            win.focusedProperty.addListener(onWindowFocus)
-            pseudoClassStateChanged(pseudo.Inactive, !win.isFocused)
-
   getChildren.addAll(placeholder, indicator)
 
   private[fx] def previewSplit(p: Option[(NodeId, Vector[Size])]): Unit =
@@ -147,6 +158,8 @@ private[fx] final class DockRegion(settings: LayoutSettings) extends Region:
       indicator.setOpacity(0)
       val fade = new javafx.animation.FadeTransition(javafx.util.Duration.millis(90), indicator)
       fade.setToValue(1)
+      indicatorFade.foreach(_.stop())
+      indicatorFade = Some(fade)
       fade.play()
     indicatorRect = Some(target)
     indicator.setVisible(true)
@@ -157,6 +170,8 @@ private[fx] final class DockRegion(settings: LayoutSettings) extends Region:
     indicatorRect = None
     shownRect = None
     glide.stop()
+    indicatorFade.foreach(_.stop())
+    indicatorFade = None
     indicator.setVisible(false)
 
   /** Where the drop preview is heading, in screen coordinates (the drag chip keeps clear of it). */
@@ -178,6 +193,8 @@ private[fx] final class DockRegion(settings: LayoutSettings) extends Region:
     indicator.toFront()
 
   override def layoutChildren(): Unit =
+    refreshMetrics()
+    val snapshot = settings()
     val viewport = Rect(0, 0, getWidth, getHeight)
     def withSizes(n: Node, id: NodeId, sizes: Vector[Size]): Node = n match
       case sp: Node.Split if sp.id == id && sp.cells.length == sizes.length =>
@@ -186,7 +203,14 @@ private[fx] final class DockRegion(settings: LayoutSettings) extends Region:
         sp.copy(cells = sp.cells.map(c => c.copy(node = withSizes(c.node, id, sizes))))
       case g => g
     val laidOut = splitPreview.fold(root)((id, sizes) => root.map(withSizes(_, id, sizes)))
-    geometry = sizing.geometry(laidOut, viewport, settings, maximized, minimized)
+    // A client title bar can replace a group header; hit tests must see the same zero height.
+    val hidden =
+      getChildren.toArray.collect { case g: GroupView if !g.usesHeader => g.nodeId }.toSet
+    def withHeaders(n: Node): Node = n match
+      case g: Node.Group if hidden(g.id) => g.copy(header = Header.Hidden)
+      case sp: Node.Split => sp.copy(cells = sp.cells.map(c => c.copy(node = withHeaders(c.node))))
+      case g              => g
+    geometry = sizing.geometry(laidOut.map(withHeaders), viewport, snapshot, maximized, minimized)
     val dividerRects =
       geometry.dividers.map(d => (d.split, d.index) -> d).toMap
 
