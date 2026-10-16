@@ -62,10 +62,19 @@ dropping a view the layout no longer shows is not a user close.
 
 | Key (default) | Action | API |
 |---|---|---|
-| F6 / Shift+F6 | next / previous group, focus into its content | `focusNextGroup()`, `focusPreviousGroup()` |
+| F6 / Shift+F6 | next / previous group, focus its content or minimised strip | `focusNextGroup()`, `focusPreviousGroup()` |
 | Ctrl+Tab / Ctrl+Shift+Tab | next / previous tab in the focused group | `nextTab()`, `previousTab()` |
+| Enter / Space on a minimised strip | restore the group and focus its content | — |
 | — | maximise or restore the focused group | `toggleMaximizeFocused()` |
+| — | minimise or restore the focused group | `toggleMinimizeFocused()` |
+| — | restore the focused minimised group | `restoreMinimizedFocused()` |
 | — | close the focused pane (close admission applies) | `closeFocused()` |
+
+F6 visits minimised strips without expanding them, including layouts loaded with minimised groups.
+Ctrl+Tab selects tabs while keeping the group minimised. Enter or Space on the strip restores its
+saved size and moves focus into the active pane. `DockAction.ToggleMinimize` and
+`DockAction.RestoreMinimized` have no default binding; hosts can bind either in their keymap.
+Explicit `dock.focus(pane)` continues to restore a minimised group immediately.
 
 Bindings are matched against a key exactly (unspecified modifiers must be up), so Ctrl+Tab and
 Ctrl+Shift+Tab never collide; avoid giving two bindings combinations that can both match one key

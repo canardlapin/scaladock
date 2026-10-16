@@ -325,12 +325,12 @@ final class Dock private (
 
   // -- keyboard ----------------------------------------------------------------------------------
 
-  /** Move focus to the next visible group (every window, in layout order), into its content. */
+  /** Move focus to the next visible group, into its content or onto its minimised strip. */
   def focusNextGroup(): Unit = focusGroupBy(+1)
 
   def focusPreviousGroup(): Unit = focusGroupBy(-1)
 
-  /** Activate the next tab of the focused group, and focus its content. */
+  /** Activate the next tab of the focused group, focusing its content or minimised strip. */
   def nextTab(): Unit = cycleTab(+1)
 
   def previousTab(): Unit = cycleTab(-1)
@@ -338,6 +338,18 @@ final class Dock private (
   /** Maximise the focused pane's group, or restore the layout if it is maximised. */
   def toggleMaximizeFocused(): Unit =
     current.focused.flatMap(current.groupOf).foreach(g => toggleMaximize(g.id))
+
+  /** Minimise the focused group, or restore it; keyboard focus follows the strip or content. */
+  def toggleMinimizeFocused(): Unit =
+    current.focused.flatMap(current.groupOf).foreach: g =>
+      toggleMinimize(g.id)
+      focusForNavigation(g.active)
+
+  /** Restore the focused minimised group and focus its active pane. */
+  def restoreMinimizedFocused(): Unit =
+    current.focused.flatMap(current.groupOf).filter(g => current.minimized(g.id)).foreach: g =>
+      update(edit.focus(_, g.active))
+      focusContent(g.active)
 
   /** Admit a close of the focused pane. */
   def closeFocused(): Unit = current.focused.foreach(close)
@@ -350,6 +362,8 @@ final class Dock private (
     case DockAction.PreviousTab        => previousTab()
     case DockAction.ToggleMaximize     => toggleMaximizeFocused()
     case DockAction.CloseFocused       => closeFocused()
+    case DockAction.ToggleMinimize     => toggleMinimizeFocused()
+    case DockAction.RestoreMinimized   => restoreMinimizedFocused()
 
   private var bindings: Map[javafx.scene.input.KeyCombination, DockAction] = DockAction.defaultKeys
 
@@ -367,15 +381,15 @@ final class Dock private (
       perform(action)
       e.consume()
 
-  /** Groups keyboard navigation visits: every window, layout order, skipping minimised groups and
-    * those a maximise hides.
+  /** Groups keyboard navigation visits: every window in layout order, including minimised strips,
+    * but skipping groups hidden by a maximise.
     */
   private def navigableGroups: Vector[Node.Group] =
     current.roots.flatMap: root =>
       val groups = root.groups
       current.maximized.flatMap(id => groups.find(_.id == id)) match
         case Some(maxed) => Vector(maxed)
-        case None        => groups.filterNot(g => current.minimized(g.id))
+        case None        => groups
 
   private def focusGroupBy(step: Int): Unit =
     val groups = navigableGroups
@@ -388,18 +402,20 @@ final class Dock private (
       val next = at.fold(if step > 0 then 0 else groups.length - 1)(i =>
         ((i + step) % groups.length + groups.length) % groups.length
       )
-      val target = groups(next).active
-      update(edit.focus(_, target))
-      focusContent(target)
+      focusForNavigation(groups(next).active)
 
   private def cycleTab(step: Int): Unit =
     current.focused.flatMap(current.groupOf).foreach: g =>
       val i      = g.tabs.indexWhere(_.id == g.active)
       val target = g.tabs(((i + step) % g.tabs.length + g.tabs.length) % g.tabs.length).id
-      update(edit.focus(_, target))
-      focusContent(target)
+      focusForNavigation(target)
 
-  /** Put keyboard focus inside a pane: its first focus-traversable descendant, else the node. */
+  /** Navigation selects a strip without expanding it; explicit pane focus still restores it. */
+  private def focusForNavigation(id: PaneId): Unit =
+    update(s => edit.activate(s, id).copy(focused = Some(id)))
+    focusContent(id)
+
+  /** Focus a minimised strip, or the pane's first focusable descendant (else the pane node). */
   private[fx] def focusContent(id: PaneId): Unit =
     def firstFocusable(n: javafx.scene.Node): Option[javafx.scene.Node] =
       if n.isFocusTraversable && !n.isDisabled && n.isVisible then Some(n)
@@ -409,15 +425,23 @@ final class Dock private (
             p.getChildrenUnmodifiable.toArray.iterator.collect { case c: javafx.scene.Node => c }
               .flatMap(firstFocusable).nextOption()
           case _ => None
-    nodeOf(id).foreach: node =>
+    val target = current.groupOf(id).filter(g => current.minimized(g.id))
+      .flatMap(g => groupViewFor(g.id).flatMap(_.minimizedFocusTarget))
+      .orElse(nodeOf(id).map(node => firstFocusable(node).getOrElse(node)))
+    target.foreach: node =>
       Option(node.getScene).flatMap(sc => Option(sc.getWindow)).foreach: w =>
         if !w.isFocused then w.requestFocus()
-      firstFocusable(node).getOrElse(node).requestFocus()
+      node.requestFocus()
 
   /** The pane whose view contains this node, if any. */
   private def paneContaining(n: javafx.scene.Node): Option[PaneId] =
     val byNode = panes.iterator.map((id, bp) => (bp.node, id)).toMap
     Iterator.iterate(n)(_.getParent).takeWhile(_ != null).flatMap(byNode.get).nextOption()
+
+  private def minimizedPaneContaining(n: javafx.scene.Node): Option[PaneId] =
+    Iterator.iterate(n)(_.getParent).takeWhile(_ != null)
+      .collectFirst { case g: GroupView if current.minimized(g.nodeId) => g.nodeId }
+      .flatMap(current.findGroup).map(_.active)
 
   /** Wiring that needs a fully constructed dock (called once by [[Dock.apply]]). */
   private[fx] def attach(): Unit =
@@ -448,15 +472,18 @@ final class Dock private (
     val follow: javafx.beans.value.ChangeListener[javafx.scene.Node] = (_, old, owner) =>
       val userMove = old != null && old.getScene != null
       if owner != null && userMove then
-        paneContaining(owner).filterNot(current.focused.contains).foreach(id =>
-          update(edit.focus(_, id))
-        )
+        val strip = minimizedPaneContaining(owner)
+        strip.orElse(paneContaining(owner)).filterNot(current.focused.contains).foreach: id =>
+          if strip.isDefined then update(_.copy(focused = Some(id)))
+          else update(edit.focus(_, id))
       else if owner != null && !userMove then
         current.focused
           .filter(id =>
             nodeOf(id).exists(n => n.getScene != null && (n.getScene eq owner.getScene))
           )
-          .filterNot(id => paneContaining(owner).contains(id))
+          .filterNot(id =>
+            minimizedPaneContaining(owner).orElse(paneContaining(owner)).contains(id)
+          )
           .foreach(focusContent)
     val binding = PresentationBindings.scene(region): scene =>
       scene.focusOwnerProperty.addListener(follow)
@@ -614,6 +641,9 @@ final class Dock private (
     gv.stylePopup = root => bindStylesheets(root)
     gv.attachPresentation()
     gv.onTabActivated = id => update(edit.focus(_, id))
+    gv.onMinimizedRestored = id =>
+      update(edit.focus(_, id))
+      focusContent(id)
     gv.onTabPressed = (id, e) =>
       // arm the drag BEFORE the focus update: focusing reconciles and rebuilds the tab strip,
       // and the controller must capture the press coordinates from the original gesture
@@ -1306,13 +1336,14 @@ object FloatingStage:
   */
 enum DockAction:
   case FocusNextGroup, FocusPreviousGroup, NextTab, PreviousTab, ToggleMaximize, CloseFocused
+  case ToggleMinimize, RestoreMinimized
 
 object DockAction:
   import javafx.scene.input.{KeyCode, KeyCodeCombination, KeyCombination}
 
   /** F6 / Shift+F6 between groups and Ctrl+Tab / Ctrl+Shift+Tab between tabs (Control on every
-    * platform, as in VS Code and JetBrains IDEs). Maximise and close have no default key: hosts
-    * bind them in their own keymaps.
+    * platform, as in VS Code and JetBrains IDEs). Maximise, minimise, restore and close have no
+    * default key: hosts bind them in their own keymaps. Enter/Space activate a focused strip.
     */
   val defaultKeys: Map[KeyCombination, DockAction] = Map(
     KeyCodeCombination(KeyCode.F6)                               -> FocusNextGroup,

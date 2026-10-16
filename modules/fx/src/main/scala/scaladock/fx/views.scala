@@ -3,7 +3,7 @@ package scaladock.fx
 import javafx.css.PseudoClass
 import javafx.scene.Node as FxNode
 import javafx.scene.control.{CheckMenuItem, Label, MenuButton, MenuItem, SeparatorMenuItem, Tooltip}
-import javafx.scene.input.MouseButton
+import javafx.scene.input.{KeyCode, KeyEvent, MouseButton}
 import javafx.scene.layout.{HBox, Pane as FxPane, Region, StackPane, VBox}
 import scaladock.*
 
@@ -52,6 +52,7 @@ private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => Lay
   private[fx] var onGroupClosed: () => Unit                                      = () => ()
   private[fx] var onMaximizeToggled: () => Unit                                  = () => ()
   private[fx] var onMinimizeToggled: () => Unit                                  = () => ()
+  private[fx] var onMinimizedRestored: PaneId => Unit                            = _ => ()
   private[fx] var onPopOut: () => Unit                                           = () => ()
   private[fx] var onContentResized: (PaneId, Double, Double) => Unit             = (_, _, _) => ()
 
@@ -128,11 +129,13 @@ private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => Lay
   stripFace.getStyleClass.add("dock-strip")
   stripFace.setVisible(false)
   stripFace.setOnMouseClicked(_ => onMinimizeToggled())
+  stripFace.setAccessibleRole(javafx.scene.AccessibleRole.BUTTON)
 
   private var activePane: Option[PaneId]               = None
   private var chromeAllowed: HeaderButtons             = HeaderButtons()
   private var headerVisible                            = true
   private var stripMode                                = false
+  private var minimized                                = false
   private var draggingPane: Option[PaneId]             = None
   private var foldedItems: Vector[(MenuItem, Boolean)] = Vector.empty
   private val foldSeparator: MenuItem                  = new SeparatorMenuItem
@@ -147,6 +150,7 @@ private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => Lay
   header.getStyleClass.add("dock-header")
   header.add(tabsViewport, overflow, buttons)
   getChildren.addAll(header, content, stripFace)
+  stripFace.setOnKeyPressed(e => activePane.foreach(id => restoreFromKey(e, id)))
   // Infeasible viewports can reach zero: children with larger minima must not spill into siblings.
   for container <- Vector(header, content) do
     val clip = new javafx.scene.shape.Rectangle
@@ -194,6 +198,7 @@ private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => Lay
     tipOf(hiddenBadge).foreach(_.setText("Restore the layout"))
     if !activePane.contains(group.active) then manualFirst = None
     activePane = Some(group.active)
+    minimized = minimizedAxis.isDefined
     pseudoClassStateChanged(pseudo.Minimized, minimizedAxis.isDefined)
     pseudoClassStateChanged(pseudo.Maximized, isMaximized)
     pseudoClassStateChanged(pseudo.Floating, loneFloating)
@@ -204,10 +209,12 @@ private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => Lay
     // a group minimised inside a row is a sideways strip: rotated title, click to restore
     stripMode = minimizedAxis.contains(Axis.Horizontal)
     stripFace.setVisible(stripMode)
+    stripFace.setFocusTraversable(stripMode)
     stripLabel.setText(group.tabs.find(_.id == group.active).fold("")(_.title))
+    stripFace.setAccessibleText(s"Restore ${stripLabel.getText}")
     stripIconBox.getChildren.setAll(iconFor(group.active).toSeq*)
 
-    headerVisible = chrome.isDefined && !stripMode
+    headerVisible = (chrome.isDefined || minimized) && !stripMode
     header.setVisible(headerVisible)
     header.setManaged(headerVisible)
 
@@ -222,6 +229,7 @@ private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => Lay
     val views = group.tabs.map: pane =>
       val v = tabViews.getOrElseUpdate(pane.id, TabView(pane.id, iconFor(pane.id)))
       v.sync(pane, pane.id == group.active)
+      v.setFocusTraversable(minimized && !stripMode && pane.id == group.active)
       v
     tabViews.keys.toVector.filterNot(group.tabs.map(_.id).toSet).foreach(tabViews.remove(_): Unit)
     tabNodes = views.map(v => v.id -> v)
@@ -268,6 +276,19 @@ private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => Lay
     header.requestLayout()
   end update
 
+  /** The visible restore target; the hidden content must never receive strip navigation. */
+  def minimizedFocusTarget: Option[FxNode] =
+    if !minimized then None
+    else if stripMode then Some(stripFace)
+    else activePane.flatMap(tabViews.get)
+
+  private def restoreFromKey(e: KeyEvent, pane: PaneId): Unit =
+    if minimized && !e.isShiftDown && !e.isControlDown && !e.isAltDown && !e.isMetaDown &&
+      (e.getCode == KeyCode.ENTER || e.getCode == KeyCode.SPACE)
+    then
+      onMinimizedRestored(pane)
+      e.consume()
+
   def attachPresentation(): Unit =
     if !presentationAttached then
       presentationAttached = true
@@ -309,6 +330,8 @@ private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => Lay
       onGroupClosed = () => ()
       onMaximizeToggled = () => ()
       onMinimizeToggled = () => ()
+      onMinimizedRestored = _ => ()
+      stripFace.setOnKeyPressed(null)
       onPopOut = () => ()
       onContentResized = (_, _, _) => ()
 
@@ -392,6 +415,7 @@ private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => Lay
     setAccessibleRole(javafx.scene.AccessibleRole.TAB_ITEM)
     close.setAccessibleRole(javafx.scene.AccessibleRole.BUTTON)
     close.setAccessibleText("Close tab")
+    setOnKeyPressed(e => restoreFromKey(e, id))
 
     // the context menu is built fresh at each opening, so it always reflects the current layout
     setOnContextMenuRequested: e =>
@@ -432,6 +456,7 @@ private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => Lay
       setOnMouseDragged(null)
       setOnMouseReleased(null)
       setOnMouseClicked(null)
+      setOnKeyPressed(null)
       getChildren.clear()
 
     def sync(pane: Pane, selected: Boolean): Unit =

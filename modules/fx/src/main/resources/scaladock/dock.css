@@ -318,6 +318,13 @@
   -fx-background-color: transparent;
 }
 
+/* Keyboard focus on a restore target stays visible independently of hover and selection. */
+.dock-strip:focused, .dock-group:minimized .dock-tab:focused {
+  -fx-border-color: -dock-accent;
+  -fx-border-width: 2;
+  -fx-border-insets: 2;
+}
+
 .dock-group:minimized .dock-tab:selected .dock-tab-title {
   -fx-text-fill: -dock-text;
 }
