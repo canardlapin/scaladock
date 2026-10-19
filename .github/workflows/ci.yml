@@ -44,3 +44,24 @@ jobs:
       - uses: sbt/setup-sbt@v1
       - name: Test core and fx on JDK 22 / JavaFX 24 (virtual display)
         run: xvfb-run --auto-servernum sbt core/test fx/test
+
+  # Exercise JavaFX 27 itself: the demo's dependency alone does not change fx/Test.
+  current-runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 25
+          cache: sbt
+      - uses: sbt/setup-sbt@v1
+      - name: Resolve both pinned JavaFX versions
+        run: sbt update
+      - name: Qualify the real JavaFX 27 runtime
+        run: xvfb-run --auto-servernum python3 tools/qualify_runtime.py current --java-home "$JAVA_HOME" --manifest target/current-runtime.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: current-runtime-manifest
+          path: target/current-runtime.json
