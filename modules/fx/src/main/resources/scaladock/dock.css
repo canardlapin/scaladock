@@ -189,6 +189,22 @@
   -fx-background-color: -dock-selected-bar, -dock-base;
 }
 
+/* Keyboard focus remains visible even when hover chrome recedes in an inactive window. */
+.dock-layout .dock-group:focus-within .dock-header-buttons,
+.dock-layout .dock-group:focus-within .dock-tab-overflow:quiet,
+.dock-tab:focused .dock-tab-close,
+.dock-tab-close:focused {
+  -fx-opacity: 1;
+}
+
+.dock-header-button:focused, .dock-tab-close:focused,
+.dock-tab-overflow:focused, .dock-maximized-badge:focused {
+  -fx-border-color: -dock-text-strong;
+  -fx-border-width: 1;
+  -fx-border-insets: 1;
+  -fx-border-radius: 3;
+}
+
 .dock-tab-overflow:hover, .dock-tab-overflow:showing {
   -fx-background-color: -dock-hover;
 }
@@ -319,7 +335,7 @@
 }
 
 /* Keyboard focus on a restore target stays visible independently of hover and selection. */
-.dock-strip:focused, .dock-group:minimized .dock-tab:focused {
+.dock-strip:focused, .dock-tab:focused {
   -fx-border-color: -dock-accent;
   -fx-border-width: 2;
   -fx-border-insets: 2;

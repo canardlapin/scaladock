@@ -2,23 +2,45 @@ package scaladock.fx
 
 import javafx.css.PseudoClass
 import javafx.scene.Node as FxNode
+import javafx.scene.{AccessibleAction, AccessibleAttribute, AccessibleRole}
 import javafx.scene.control.{CheckMenuItem, Label, MenuButton, MenuItem, SeparatorMenuItem, Tooltip}
 import javafx.scene.input.{KeyCode, KeyEvent, MouseButton}
 import javafx.scene.layout.{HBox, Pane as FxPane, Region, StackPane, VBox}
 import scaladock.*
 
 private[fx] object pseudo:
-  val Selected: PseudoClass  = PseudoClass.getPseudoClass("selected")
-  val Active: PseudoClass    = PseudoClass.getPseudoClass("active")
-  val Vertical: PseudoClass  = PseudoClass.getPseudoClass("vertical")
-  val Dragging: PseudoClass  = PseudoClass.getPseudoClass("dragging")
-  val Minimized: PseudoClass = PseudoClass.getPseudoClass("minimized")
-  val Maximized: PseudoClass = PseudoClass.getPseudoClass("maximized")
-  val Floating: PseudoClass  = PseudoClass.getPseudoClass("floating")
-  val Hot: PseudoClass       = PseudoClass.getPseudoClass("hot")
-  val Quiet: PseudoClass     = PseudoClass.getPseudoClass("quiet")
-  val Slot: PseudoClass      = PseudoClass.getPseudoClass("slot")
-  val Inactive: PseudoClass  = PseudoClass.getPseudoClass("inactive")
+  val Selected: PseudoClass    = PseudoClass.getPseudoClass("selected")
+  val Active: PseudoClass      = PseudoClass.getPseudoClass("active")
+  val Vertical: PseudoClass    = PseudoClass.getPseudoClass("vertical")
+  val Dragging: PseudoClass    = PseudoClass.getPseudoClass("dragging")
+  val Minimized: PseudoClass   = PseudoClass.getPseudoClass("minimized")
+  val Maximized: PseudoClass   = PseudoClass.getPseudoClass("maximized")
+  val Floating: PseudoClass    = PseudoClass.getPseudoClass("floating")
+  val Hot: PseudoClass         = PseudoClass.getPseudoClass("hot")
+  val Quiet: PseudoClass       = PseudoClass.getPseudoClass("quiet")
+  val Slot: PseudoClass        = PseudoClass.getPseudoClass("slot")
+  val Inactive: PseudoClass    = PseudoClass.getPseudoClass("inactive")
+  val FocusWithin: PseudoClass = PseudoClass.getPseudoClass("focus-within")
+
+/** Custom geometry with the same action path for pointer, keyboard and assistive clients. */
+private[fx] final class DockButton(action: () => Unit, children: FxNode*)
+    extends StackPane(children*):
+  setAccessibleRole(AccessibleRole.BUTTON)
+  setFocusTraversable(true)
+  private def fire(): Unit = if !isDisabled && isVisible then action()
+  setOnMouseClicked: e =>
+    if e.getButton == MouseButton.PRIMARY then
+      fire()
+      e.consume()
+  setOnKeyPressed: e =>
+    if !e.isShiftDown && !e.isControlDown && !e.isAltDown && !e.isMetaDown &&
+      (e.getCode == KeyCode.ENTER || e.getCode == KeyCode.SPACE)
+    then
+      fire()
+      e.consume()
+  override def executeAccessibleAction(action: AccessibleAction, parameters: AnyRef*): Unit =
+    if action == AccessibleAction.FIRE then fire()
+    else super.executeAccessibleAction(action, parameters*)
 
 /** A glyph whose outline lives in CSS (`-fx-shape` on `.dock-icon.<kind>`), so themes can replace
   * every icon without touching code.
@@ -83,24 +105,34 @@ private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => Lay
   overflow.getStyleClass.add("dock-tab-overflow")
   overflow.setGraphic(dockIcon("chevron-down"))
   overflow.setVisible(false)
-  overflow.setFocusTraversable(false)
+  overflow.setFocusTraversable(true)
+  overflow.setAccessibleText("Tabs and group actions")
 
-  private val popOutButton = headerButton("popout", "Open in new window")
-  popOutButton.setOnMouseClicked(_ => onPopOut())
+  private val popOutButton = headerButton("popout", "Open in new window")(() => onPopOut())
 
-  private val minimizeButton = headerButton("minimize", "Minimize")
-  minimizeButton.setOnMouseClicked(_ => onMinimizeToggled())
+  private val minimizeButton = headerButton("minimize", "Minimize")(() => onMinimizeToggled())
 
-  private val maximizeButton = headerButton("maximize", "Maximize")
-  maximizeButton.setOnMouseClicked(_ => onMaximizeToggled())
+  private val maximizeButton = headerButton("maximize", "Maximize")(() => onMaximizeToggled())
 
-  private val closeButton = headerButton("close", "Close group")
-  closeButton.setOnMouseClicked(_ => onGroupClosed())
+  private val closeButton = headerButton("close", "Close group")(() => onGroupClosed())
 
   /** While maximised: how many groups the maximise hides; clicking it restores the layout. */
-  private val hiddenBadge = new Label
+  private val hiddenBadge = new Label:
+    override def executeAccessibleAction(action: AccessibleAction, parameters: AnyRef*): Unit =
+      if action == AccessibleAction.FIRE && !isDisabled && isVisible then onMaximizeToggled()
+      else super.executeAccessibleAction(action, parameters*)
   hiddenBadge.getStyleClass.add("dock-maximized-badge")
-  hiddenBadge.setOnMouseClicked(_ => onMaximizeToggled())
+  hiddenBadge.setAccessibleRole(AccessibleRole.BUTTON)
+  hiddenBadge.setAccessibleText("Restore the layout")
+  hiddenBadge.setFocusTraversable(true)
+  hiddenBadge.setOnMouseClicked: e =>
+    if e.getButton == MouseButton.PRIMARY then onMaximizeToggled()
+  hiddenBadge.setOnKeyPressed: e =>
+    if !e.isShiftDown && !e.isControlDown && !e.isAltDown && !e.isMetaDown &&
+      (e.getCode == KeyCode.ENTER || e.getCode == KeyCode.SPACE)
+    then
+      onMaximizeToggled()
+      e.consume()
   hiddenBadge.setVisible(false)
   hiddenBadge.setManaged(false)
   tooltip(hiddenBadge, "Restore the layout")
@@ -114,6 +146,7 @@ private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => Lay
 
   private val content = new StackPane
   content.getStyleClass.add("dock-content")
+  private var activePane: Option[PaneId] = None
 
   // the sideways presentation of a group minimised inside a row: icon above a rotated title
   private val stripLabel = new Label
@@ -124,14 +157,11 @@ private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => Lay
   private val stripStack = new VBox(stripIconBox, new javafx.scene.Group(stripLabel))
   stripStack.getStyleClass.add("dock-strip-stack")
   stripStack.setMaxHeight(Region.USE_PREF_SIZE) // a button in the rail, not the whole rail
-  private val stripFace = new StackPane(stripStack)
+  private val stripFace = new DockButton(() => activePane.foreach(onMinimizedRestored), stripStack)
   StackPane.setAlignment(stripStack, javafx.geometry.Pos.TOP_CENTER)
   stripFace.getStyleClass.add("dock-strip")
   stripFace.setVisible(false)
-  stripFace.setOnMouseClicked(_ => onMinimizeToggled())
-  stripFace.setAccessibleRole(javafx.scene.AccessibleRole.BUTTON)
 
-  private var activePane: Option[PaneId]               = None
   private var chromeAllowed: HeaderButtons             = HeaderButtons()
   private var headerVisible                            = true
   private var stripMode                                = false
@@ -150,7 +180,6 @@ private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => Lay
   header.getStyleClass.add("dock-header")
   header.add(tabsViewport, overflow, buttons)
   getChildren.addAll(header, content, stripFace)
-  stripFace.setOnKeyPressed(e => activePane.foreach(id => restoreFromKey(e, id)))
   // Infeasible viewports can reach zero: children with larger minima must not spill into siblings.
   for container <- Vector(header, content) do
     val clip = new javafx.scene.shape.Rectangle
@@ -229,7 +258,7 @@ private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => Lay
     val views = group.tabs.map: pane =>
       val v = tabViews.getOrElseUpdate(pane.id, TabView(pane.id, iconFor(pane.id)))
       v.sync(pane, pane.id == group.active)
-      v.setFocusTraversable(minimized && !stripMode && pane.id == group.active)
+      v.setFocusTraversable(!stripMode && pane.id == group.active)
       v
     tabViews.keys.toVector.filterNot(group.tabs.map(_.id).toSet).foreach(tabViews.remove(_): Unit)
     tabNodes = views.map(v => v.id -> v)
@@ -293,6 +322,53 @@ private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => Lay
     if !presentationAttached then
       presentationAttached = true
       tips.values.foreach(bindPopup)
+      val binding = PresentationBindings.scene(this): scene =>
+        def refresh(owner: FxNode): Unit =
+          pseudoClassStateChanged(pseudo.FocusWithin, paneContaining(owner).isDefined)
+        val listener: javafx.beans.value.ChangeListener[FxNode] = (_, _, owner) => refresh(owner)
+        scene.focusOwnerProperty.addListener(listener)
+        refresh(scene.getFocusOwner)
+        () => scene.focusOwnerProperty.removeListener(listener)
+      val _ = overlayLife.own(() => binding.cancel())
+
+  /** Resolve chrome focus as well as content focus without expanding a minimized group. */
+  def paneContaining(node: FxNode): Option[PaneId] =
+    val ancestors = Iterator.iterate(node)(_.getParent).takeWhile(_ != null).toVector
+    if !ancestors.contains(this) then None
+    else ancestors.collectFirst { case t: TabView => t.id }.orElse(activePane)
+
+  def showTabMenu(id: PaneId): Unit =
+    val anchor = tabViews.get(id).filter(_ => headerVisible).getOrElse(this)
+    Option(anchor.localToScreen(0, anchor.getLayoutBounds.getHeight)).foreach: point =>
+      openTabMenu(id, anchor, point.getX, point.getY)
+
+  private def openTabMenu(id: PaneId, anchor: FxNode, x: Double, y: Double): Unit =
+    dismissOverlays()
+    val items = onTabMenu(id)
+    if items.nonEmpty && !disposed then
+      val menu  = new javafx.scene.control.ContextMenu(items*)
+      val lease = stylePopup(menu.getScene.getRoot)
+      val escape: javafx.event.EventHandler[KeyEvent] = e =>
+        if e.getCode == KeyCode.ESCAPE then
+          menu.hide()
+          e.consume()
+      menu.getScene.getRoot.addEventHandler(KeyEvent.KEY_PRESSED, escape)
+      var released = false
+      def release(): Unit =
+        if !released then
+          released = true
+          menu.getScene.getRoot.removeEventHandler(KeyEvent.KEY_PRESSED, escape)
+          lease.cancel()
+          menus.remove(menu): Unit
+          menu.getItems.clear()
+          menu.setOnHidden(null)
+      menus(menu) = () => release()
+      menu.setOnHidden(_ => release())
+      try menu.show(anchor, x, y)
+      catch
+        case scala.util.control.NonFatal(error) =>
+          release()
+          throw error
 
   def dismissOverlays(): Unit =
     overflow.hide()
@@ -376,13 +452,26 @@ private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => Lay
     private var closable   = true
     private var isSelected = false
 
+    private def activate(): Unit =
+      if !isDisabled && !disposed then
+        if minimized then onMinimizedRestored(id)
+        else
+          onTabActivated(id)
+          requestFocus()
+
+    override def executeAccessibleAction(action: AccessibleAction, parameters: AnyRef*): Unit =
+      action match
+        case AccessibleAction.REQUEST_FOCUS | AccessibleAction.FIRE => activate()
+        case AccessibleAction.SHOW_MENU                             => showTabMenu(id)
+        case _ => super.executeAccessibleAction(action, parameters*)
+
     // screen readers ask a tab whether it is the selected one
     override def queryAccessibleAttribute(
-        attribute: javafx.scene.AccessibleAttribute,
+        attribute: AccessibleAttribute,
         parameters: AnyRef*
     ): AnyRef = attribute match
-      case javafx.scene.AccessibleAttribute.SELECTED => java.lang.Boolean.valueOf(isSelected)
-      case _ => super.queryAccessibleAttribute(attribute, parameters*)
+      case AccessibleAttribute.SELECTED => java.lang.Boolean.valueOf(isSelected)
+      case _                            => super.queryAccessibleAttribute(attribute, parameters*)
 
     private val title = new Label
     title.getStyleClass.add("dock-tab-title")
@@ -397,11 +486,8 @@ private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => Lay
       val next = width.getOrElse(Region.USE_COMPUTED_SIZE)
       if math.abs(getPrefWidth - next) > 0.5 then setPrefWidth(next)
 
-    private val close = new StackPane(dockIcon("close"))
+    private val close = new DockButton(() => onTabClosed(id), dockIcon("close"))
     close.getStyleClass.add("dock-tab-close")
-    close.setOnMouseClicked: e =>
-      onTabClosed(id)
-      e.consume()
     // a press on the close glyph must not arm a tab drag
     close.setOnMousePressed(_.consume())
 
@@ -415,29 +501,27 @@ private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => Lay
     setAccessibleRole(javafx.scene.AccessibleRole.TAB_ITEM)
     close.setAccessibleRole(javafx.scene.AccessibleRole.BUTTON)
     close.setAccessibleText("Close tab")
-    setOnKeyPressed(e => restoreFromKey(e, id))
+    setOnKeyPressed: e =>
+      if e.getTarget eq this then
+        if minimized then restoreFromKey(e, id)
+        else if !e.isShiftDown && !e.isControlDown && !e.isAltDown && !e.isMetaDown then
+          e.getCode match
+            case KeyCode.ENTER | KeyCode.SPACE => activate(); e.consume()
+            case KeyCode.LEFT | KeyCode.RIGHT | KeyCode.HOME | KeyCode.END =>
+              val at = tabNodes.indexWhere(_._1 == id)
+              val next = e.getCode match
+                case KeyCode.HOME => 0
+                case KeyCode.END  => tabNodes.size - 1
+                case KeyCode.LEFT => (at + tabNodes.size - 1) % tabNodes.size
+                case _            => (at + 1)                 % tabNodes.size
+              tabViews(tabNodes(next)._1).activate()
+              e.consume()
+            case _ => ()
 
     // the context menu is built fresh at each opening, so it always reflects the current layout
     setOnContextMenuRequested: e =>
-      val items = onTabMenu(id)
-      if items.nonEmpty then
-        val menu     = new javafx.scene.control.ContextMenu(items*)
-        val lease    = stylePopup(menu.getScene.getRoot)
-        var released = false
-        def release(): Unit =
-          if !released then
-            released = true
-            lease.cancel()
-            menus.remove(menu): Unit
-            menu.getItems.clear()
-            menu.setOnHidden(null)
-        menus(menu) = () => release()
-        menu.setOnHidden(_ => release())
-        try menu.show(this, e.getScreenX, e.getScreenY)
-        catch
-          case scala.util.control.NonFatal(error) =>
-            release()
-            throw error
+      if e.isKeyboardTrigger then showTabMenu(id)
+      else openTabMenu(id, this, e.getScreenX, e.getScreenY)
       e.consume()
 
     setOnMousePressed: e =>
@@ -464,9 +548,11 @@ private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => Lay
       if getAccessibleText != pane.title then setAccessibleText(pane.title)
       if isSelected != selected then
         isSelected = selected
-        notifyAccessibleAttributeChanged(javafx.scene.AccessibleAttribute.SELECTED)
+        notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED)
       closable = pane.closable
-      close.setVisible(closable)
+      close.setAccessibleText(s"Close ${pane.title}")
+      close.setFocusTraversable(closable && selected && !minimized)
+      close.setVisible(closable && !minimized)
       close.setManaged(closable)
       pseudoClassStateChanged(pseudo.Selected, selected)
       pseudoClassStateChanged(pseudo.Dragging, draggingPane.contains(id))
@@ -533,8 +619,8 @@ private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => Lay
   private[fx] def headerScreenBounds: Option[javafx.geometry.Bounds] =
     Option(header.localToScreen(header.getLayoutBounds))
 
-  private def headerButton(kind: String, tip: String): StackPane =
-    val b = new StackPane(dockIcon(kind))
+  private def headerButton(kind: String, tip: String)(action: () => Unit): DockButton =
+    val b = new DockButton(action, dockIcon(kind))
     b.getStyleClass.addAll("dock-header-button", kind)
     b.setAccessibleRole(javafx.scene.AccessibleRole.BUTTON)
     b.setAccessibleText(tip)

@@ -45,8 +45,9 @@ final class Dock private (
   /** Retained panes: alive and bound, but in no window's tree (see [[switchTo]]). The last known
     * model entry travels with each, so a close admission knows whether it may close.
     */
-  private val detached = mutable.LinkedHashMap.empty[PaneId, (BoundPane[?], Pane)]
-  private val closing  = mutable.Map.empty[(Set[PaneId], Boolean), Future[Boolean]]
+  private val detached   = mutable.LinkedHashMap.empty[PaneId, (BoundPane[?], Pane)]
+  private val closing    = mutable.Map.empty[(Set[PaneId], Boolean), Future[Boolean]]
+  private var lastClosed = Vector.empty[Pane]
 
   private val main   = WindowRenderer(this, floating = false)
   private val floats = mutable.Map.empty[WindowId, FloatingStage]
@@ -232,6 +233,9 @@ final class Dock private (
             (!wholeDock || (panes.keySet ++ detached.keySet).toSet == ids)
           val _ = closing.remove(key)
           if allowed && unchanged then
+            if !wholeDock then
+              val snapshot = withLiveState(current).panes.filter(p => ids(p.id))
+              if snapshot.nonEmpty then lastClosed = snapshot
             // retained panes are not in the layout: dispose them directly
             ids.filter(detached.contains).foreach: id =>
               detached.remove(id).foreach(_._1.dispose())
@@ -315,8 +319,15 @@ final class Dock private (
         if current.maximized.contains(group.id) then "Restore Layout" else "Maximize",
         chrome.maximize && lone.isEmpty
       )(live(g => toggleMaximize(g.id))),
-      item("Minimize", chrome.minimize && lone.isEmpty)(live(g => minimize(g.id)))
+      item(
+        if current.minimized(group.id) then "Restore" else "Minimize",
+        chrome.minimize && lone.isEmpty
+      )(live(g =>
+        toggleMinimize(g.id)
+        focusForNavigation(g.active)
+      ))
     )
+  end defaultTabMenu
 
   /** The final menu for a tab: defaults through the host's hook. */
   private[fx] def tabMenuItems(pane: PaneId): Seq[javafx.scene.control.MenuItem] =
@@ -354,6 +365,28 @@ final class Dock private (
   /** Admit a close of the focused pane. */
   def closeFocused(): Unit = current.focused.foreach(close)
 
+  /** Rebuild the most recently admitted close from its live snapshot (one close batch). */
+  def reopenClosed(): Unit =
+    val reopen =
+      lastClosed.filterNot(p => current.findPane(p.id).isDefined || detached.contains(p.id))
+    lastClosed = Vector.empty
+    if reopen.nonEmpty then
+      update(s => reopen.foldLeft(s)((layout, pane) => edit.open(layout, pane, DockAt.Preferred)))
+      focusForNavigation(reopen.last.id)
+
+  /** Open the focused pane's menu even when its header is hidden or folded. */
+  def showFocusedTabMenu(): Unit =
+    current.focused.foreach: id =>
+      current.groupOf(id).flatMap(g => groupViewFor(g.id)).foreach(_.showTabMenu(id))
+
+  /** Move the focused group to a window, or return its floating owner to the main layout. */
+  def togglePopOutFocused(): Unit =
+    current.focused.flatMap(current.groupOf).foreach: g =>
+      current.floating.find(_.root.groups.exists(_.id == g.id)) match
+        case Some(window) => dockBack(window.window)
+        case None         => popOut(g.id)
+      focusContent(g.active)
+
   /** Run one keyboard-addressable operation — what a host's command registry or menu calls. */
   def perform(action: DockAction): Unit = action match
     case DockAction.FocusNextGroup     => focusNextGroup()
@@ -364,6 +397,9 @@ final class Dock private (
     case DockAction.CloseFocused       => closeFocused()
     case DockAction.ToggleMinimize     => toggleMinimizeFocused()
     case DockAction.RestoreMinimized   => restoreMinimizedFocused()
+    case DockAction.ShowTabMenu        => showFocusedTabMenu()
+    case DockAction.TogglePopOut       => togglePopOutFocused()
+    case DockAction.ReopenClosed       => reopenClosed()
 
   private var bindings: Map[javafx.scene.input.KeyCombination, DockAction] = DockAction.defaultKeys
 
@@ -418,7 +454,8 @@ final class Dock private (
   /** Focus a minimised strip, or the pane's first focusable descendant (else the pane node). */
   private[fx] def focusContent(id: PaneId): Unit =
     def firstFocusable(n: javafx.scene.Node): Option[javafx.scene.Node] =
-      if n.isFocusTraversable && !n.isDisabled && n.isVisible then Some(n)
+      if !n.isVisible || n.isDisabled then None
+      else if n.isFocusTraversable then Some(n)
       else
         n match
           case p: Parent =>
@@ -438,10 +475,15 @@ final class Dock private (
     val byNode = panes.iterator.map((id, bp) => (bp.node, id)).toMap
     Iterator.iterate(n)(_.getParent).takeWhile(_ != null).flatMap(byNode.get).nextOption()
 
-  private def minimizedPaneContaining(n: javafx.scene.Node): Option[PaneId] =
-    Iterator.iterate(n)(_.getParent).takeWhile(_ != null)
-      .collectFirst { case g: GroupView if current.minimized(g.nodeId) => g.nodeId }
-      .flatMap(current.findGroup).map(_.active)
+  private def chromePaneContaining(n: javafx.scene.Node): Option[PaneId] =
+    val ancestors = Iterator.iterate(n)(_.getParent).takeWhile(_ != null).toVector
+    ancestors.collectFirst { case g: GroupView => g }.flatMap(_.paneContaining(n)).orElse:
+      if ancestors.exists(_.getStyleClass.contains("dock-window-bar")) then
+        floats.collectFirst { case (id, f) if f.renderer.region.getScene eq n.getScene => id }
+          .flatMap(id => current.floating.find(_.window == id)).flatMap: f =>
+            current.focused.filter(id => f.root.panes.exists(_.id == id))
+              .orElse(f.root.groups.headOption.map(_.active))
+      else None
 
   /** Wiring that needs a fully constructed dock (called once by [[Dock.apply]]). */
   private[fx] def attach(): Unit =
@@ -472,7 +514,7 @@ final class Dock private (
     val follow: javafx.beans.value.ChangeListener[javafx.scene.Node] = (_, old, owner) =>
       val userMove = old != null && old.getScene != null
       if owner != null && userMove then
-        val strip = minimizedPaneContaining(owner)
+        val strip = chromePaneContaining(owner)
         strip.orElse(paneContaining(owner)).filterNot(current.focused.contains).foreach: id =>
           if strip.isDefined then update(_.copy(focused = Some(id)))
           else update(edit.focus(_, id))
@@ -482,7 +524,7 @@ final class Dock private (
             nodeOf(id).exists(n => n.getScene != null && (n.getScene eq owner.getScene))
           )
           .filterNot(id =>
-            minimizedPaneContaining(owner).orElse(paneContaining(owner)).contains(id)
+            chromePaneContaining(owner).orElse(paneContaining(owner)).contains(id)
           )
           .foreach(focusContent)
     val binding = PresentationBindings.scene(region): scene =>
@@ -544,6 +586,7 @@ final class Dock private (
       panes.clear()
       detached.values.foreach(_._1.dispose())
       detached.clear()
+      lastClosed = Vector.empty
       contexts.clear()
 
   /** Restyle every dock window. Themes redefine only CSS variables; see docs/styling.md. */
@@ -659,7 +702,10 @@ final class Dock private (
         val _ = admitClose(group.tabs.filter(_.closable).map(_.id).toSet)
       }
     gv.onMaximizeToggled = () => update(edit.toggleMaximize(_, groupId))
-    gv.onMinimizeToggled = () => update(edit.toggleMinimize(_, groupId))
+    gv.onMinimizeToggled = () =>
+      current.findGroup(groupId).foreach: g =>
+        update(edit.toggleMinimize(_, groupId))
+        focusForNavigation(g.active)
     gv.onPopOut = () =>
       // in a window of its own, the pop-out button reads "dock back"
       loneFloatingWindowOf(groupId) match
@@ -760,8 +806,23 @@ final class Dock private (
     val prev = current
     val next = edit.canonical(f(prev))
     if next != prev then
+      val owners =
+        allRegions.flatMap(r => Option(r.getScene).flatMap(s => Option(s.getFocusOwner)))
+          .filter(n => paneContaining(n).orElse(chromePaneContaining(n)).isDefined)
+      val oldFocus = owners.find(n => Option(n.getScene.getWindow).exists(_.isFocused))
+        .orElse(owners.find(n => paneContaining(n).orElse(chromePaneContaining(n)) == prev.focused))
       current = next
       val (detachedNow, reattached) = reconcile(prev, next, retain)
+      def liveFocus(n: javafx.scene.Node): Boolean =
+        n.getScene != null && Iterator.iterate(n)(_.getParent).takeWhile(_ != null)
+          .forall(p => p.isVisible && !p.isDisabled)
+      if oldFocus.nonEmpty && (!oldFocus.exists(
+          liveFocus
+        ) || (retain && prev.focused != next.focused))
+      then
+        next.focused match
+          case Some(id) => focusContent(id)
+          case None     => navigableGroups.headOption.foreach(g => focusForNavigation(g.active))
       // a retained pane did not close, and a reattached one did not open: say what happened
       DockEvent.diff(prev, next).foreach:
         case DockEvent.PaneClosed(id) if detachedNow(id) =>
@@ -1199,7 +1260,16 @@ private[fx] final class WindowBar private (
   private val chip = new javafx.scene.layout.HBox(iconBox, title)
   chip.getStyleClass.add("dock-window-chip")
 
-  private var paneId: Option[PaneId] = None
+  private var paneId: Option[PaneId]                                      = None
+  private val key: javafx.event.EventHandler[javafx.scene.input.KeyEvent] = e => dock.handleKey(e)
+  node.addEventHandler(javafx.scene.input.KeyEvent.KEY_PRESSED, key)
+
+  private def focusWindow(): Unit =
+    dock.state.floating.find(_.window == window).foreach: floating =>
+      val panes = floating.root.panes.map(_.id).toSet
+      val target = dock.state.focused.filter(panes)
+        .orElse(floating.root.groups.headOption.map(_.active))
+      target.foreach(id => dock.update(_.copy(focused = Some(id))))
   // only a single-pane window's chip stands in for a tab; otherwise the title is plain bar
   // surface, and presses fall through so it moves the window like the rest of the bar
   chip.setOnMousePressed: e =>
@@ -1216,12 +1286,13 @@ private[fx] final class WindowBar private (
       e.consume()
 
   private def button(kind: String, icon: String, tip: String)(action: => Unit): javafx.scene.Node =
-    val b = new javafx.scene.layout.StackPane(dockIcon(icon))
+    val b = new DockButton(() => action, dockIcon(icon))
     b.getStyleClass.addAll("dock-header-button", kind)
+    b.setAccessibleText(tip)
+    b.focusedProperty.addListener((_, _, focused) => if focused then focusWindow())
     val tooltip = new javafx.scene.control.Tooltip(tip)
     javafx.scene.control.Tooltip.install(b, tooltip)
     tips(b) = tooltip
-    b.setOnMouseClicked(_ => action)
     b
 
   /** A single-pane window's bar is its only chrome, so it carries the pane's close too. */
@@ -1251,6 +1322,7 @@ private[fx] final class WindowBar private (
 
   def dispose(): Unit =
     overlays.cancel()
+    node.removeEventHandler(javafx.scene.input.KeyEvent.KEY_PRESSED, key)
     tips.foreach((n, t) =>
       t.hide()
       javafx.scene.control.Tooltip.uninstall(n, t)
@@ -1337,6 +1409,7 @@ object FloatingStage:
 enum DockAction:
   case FocusNextGroup, FocusPreviousGroup, NextTab, PreviousTab, ToggleMaximize, CloseFocused
   case ToggleMinimize, RestoreMinimized
+  case ShowTabMenu, TogglePopOut, ReopenClosed
 
 object DockAction:
   import javafx.scene.input.{KeyCode, KeyCodeCombination, KeyCombination}
@@ -1346,6 +1419,8 @@ object DockAction:
     * default key: hosts bind them in their own keymaps. Enter/Space activate a focused strip.
     */
   val defaultKeys: Map[KeyCombination, DockAction] = Map(
+    KeyCodeCombination(KeyCode.F10, KeyCombination.SHIFT_DOWN)   -> ShowTabMenu,
+    KeyCodeCombination(KeyCode.CONTEXT_MENU)                     -> ShowTabMenu,
     KeyCodeCombination(KeyCode.F6)                               -> FocusNextGroup,
     KeyCodeCombination(KeyCode.F6, KeyCombination.SHIFT_DOWN)    -> FocusPreviousGroup,
     KeyCodeCombination(KeyCode.TAB, KeyCombination.CONTROL_DOWN) -> NextTab,
