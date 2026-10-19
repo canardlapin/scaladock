@@ -65,16 +65,30 @@ dropping a view the layout no longer shows is not a user close.
 | F6 / Shift+F6 | next / previous group, focus its content or minimised strip | `focusNextGroup()`, `focusPreviousGroup()` |
 | Ctrl+Tab / Ctrl+Shift+Tab | next / previous tab in the focused group | `nextTab()`, `previousTab()` |
 | Enter / Space on a minimised strip | restore the group and focus its content | — |
+| Shift+F10 / Menu key | open the focused pane's tab menu | `showFocusedTabMenu()` |
+| Left / Right / Home / End on a tab | select a tab and keep focus in its strip | — |
 | — | maximise or restore the focused group | `toggleMaximizeFocused()` |
 | — | minimise or restore the focused group | `toggleMinimizeFocused()` |
 | — | restore the focused minimised group | `restoreMinimizedFocused()` |
 | — | close the focused pane (close admission applies) | `closeFocused()` |
+| — | pop the focused group out, or dock its floating window back | `togglePopOutFocused()` |
+| — | reopen the most recently admitted close batch | `reopenClosed()` |
 
 F6 visits minimised strips without expanding them, including layouts loaded with minimised groups.
 Ctrl+Tab selects tabs while keeping the group minimised. Enter or Space on the strip restores its
 saved size and moves focus into the active pane. `DockAction.ToggleMinimize` and
 `DockAction.RestoreMinimized` have no default binding; hosts can bind either in their keymap.
 Explicit `dock.focus(pane)` continues to restore a minimised group immediately.
+
+Tab traversal reaches the selected tab, its close button, visible group buttons, and overflow.
+Enter or Space activates a focused button. The tab menu is available from content even when
+its header is hidden. `DockAction.ShowTabMenu`, `TogglePopOut`, and `ReopenClosed` are available
+to host menus and keymaps; pop-out and reopen have no default shortcut.
+
+Reopen remembers one successful user-close batch, using each pane's last live snapshot. It
+rebuilds those closed views at the preferred docking location and focuses the last pane; it
+does not undo a layout or resurrect disposed node instances. Vetoed closes do not replace that
+batch. Whole-dock shutdown and releasing detached perspectives do not add a reopen batch.
 
 Bindings are matched against a key exactly (unspecified modifiers must be up), so Ctrl+Tab and
 Ctrl+Shift+Tab never collide; avoid giving two bindings combinations that can both match one key
@@ -103,8 +117,8 @@ moves into a pane by Tab traversal, the dock's focused pane follows.
 
 ## Tab context menu
 
-Right-clicking a tab shows Close, Close Others, Close All, Open in New Window (Dock Back in a
-floating window), Maximize / Restore Layout, and Minimize — each disabled when the group's header
+Right-clicking a tab (or Shift+F10 from its content) shows Close, Close Others, Close All, Open in
+New Window (Dock Back in a floating window), Maximize / Restore Layout, and Minimize / Restore — each disabled when the group's header
 policy forbids it. A hook receives the pane, its group, and the dock, plus those defaults, and
 returns the final list; it runs each time the menu opens:
 
@@ -119,4 +133,27 @@ dock.setTabMenu: (ctx, defaults) =>
 
 Tabs expose `AccessibleRole.TAB_ITEM` with their title; header buttons and tab close buttons
 expose `AccessibleRole.BUTTON` with a name that follows their state ("Maximize" / "Restore
-layout").
+layout"). Tab close buttons include the pane title. Overflow is named "Tabs and group actions".
+
+Following the [JavaFX accessibility action contract](https://openjfx.io/javadoc/24/javafx.graphics/javafx/scene/AccessibleRole.html),
+tab `REQUEST_FOCUS` selects the tab, reports `SELECTED`, and notifies selection changes.
+`SHOW_MENU` opens its live context menu; custom buttons implement `FIRE` through the same
+callbacks as keyboard and pointer activation. Close requests still use asynchronous admission.
+Escape dismisses tab menus and cancels active docking drags. Focused chrome stays visible
+without hover, including inactive-window styling. Close, dock-back, and perspective changes
+return focus to a live pane or minimized strip when the previous target disappears.
+
+These are library semantics; application content must provide its own accessible controls and
+names. Native qualification is bounded to the recorded platform and runtime probes; it does
+not establish a complete screen-reader workflow on every supported operating system.
+
+**Known macOS runtime limitation:** the JavaFX 24.0.1 and 27 native accessibility bridge
+reports enabled buttons as disabled through macOS AX, including a standard JavaFX `Button`.
+JavaFX 27 also exhibits this for tabs. Native actions execute, but the incorrect enabled state
+can affect assistive clients. This is an open qualification gate, not a complete accessibility
+pass; see the [S4 evidence and independent review](evidence/meridian-s4/README.md).
+
+The additional `DockAction` cases preserve existing cases and their ordinals. Downstream code
+that exhaustively pattern-matches this enum must handle the new cases when recompiling,
+especially with fatal warnings enabled. Existing CSS class and pseudo-class names remain valid;
+`focus-within` on a group is additive.

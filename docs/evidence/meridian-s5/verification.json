@@ -1,0 +1,26 @@
+{
+  "source_candidate": "b928a4468eeaf774729c96aa02111b0d71e9bcd8",
+  "source_sha256": {
+    "docs/styling.md": "2ab6bd37ae260123e9129e54e0a4b986aa3f3be7e25ab787327462e29b8cfc6f",
+    "modules/fx/src/main/scala/scaladock/fx/Dock.scala": "1241adcebabea2d18cb91a7fa2097f4b115dc707c31735b6d206bb1aa5afe432",
+    "modules/fx/src/main/scala/scaladock/fx/DockMotion.scala": "91159c535806e1ba134de482cbacf2d617e487bcce07dd892f022342b3841d5b",
+    "modules/fx/src/main/scala/scaladock/fx/DockRegion.scala": "b4dd1135dadde63f5d43829c23b000303fd85eaebf05666112268db5e2834447",
+    "modules/fx/src/main/scala/scaladock/fx/views.scala": "9269d51e6144768b1c4e3011cc7d6c1154069ce10b53c2f82d9dd211e4a3f56d",
+    "modules/fx/src/test/scala/scaladock/fx/MotionSuite.scala": "166fbba8a2c392702cdb7d00c4a3afc009c78978f33bcd41908f697a00245188"
+  },
+  "artifact_sha256": {
+    "README.md": "1e404a5833e805277485f5397a781b64e1b8652e24ce52f84b01f5a87c060088",
+    "run_recorded_lanes.py": "aada3e37be8e634a199aecceee776f77cea89720de023d7b015d602181ab1624",
+    "scaladock-s5-check-01.log": "52cd4a4e0fa7b1ec527df950e28c22e064d8add9d262f84967f76505cf12c6bd",
+    "scaladock-s5-check-01.log.meta.json": "0cd645ac21ba4cd81248fb62c2060cc5250cb215a77d75fc2cf0cb161c743b2b",
+    "scaladock-s5-check-02.log": "60e70089a938fc9d4b1cb91a7ef852a4230eedecc47ff80e12a7df5323845185",
+    "scaladock-s5-check-02.log.meta.json": "db3519235de8208cd639e60590c9210c549b1ddd2c0954dbe3c2a8e8fc3d7553",
+    "scaladock-s5-current-01.log": "2e51934af621abfd6b36e4a9331d002575070648dfc4f26490e7509795065355",
+    "scaladock-s5-current-01.log.meta.json": "108377564e413f0888649a5a5ba41918a79c3a7c3d90882276a371570937970e",
+    "scaladock-s5-floor-01.log": "2773d704354a325556a398cd1ded6e8f02f9de8b2acff818c0e2881219ff570d",
+    "scaladock-s5-floor-01.log.meta.json": "013b8ce7b8ddcb59616d155455f2de5cf3534760299e3bf0e1c2402362d43529"
+  },
+  "native_trace": "MOTION_TRACE lines in floor and current logs; real Stages and native pulses",
+  "passed_per_lane": 67,
+  "full_suites": "S6 pending"
+}

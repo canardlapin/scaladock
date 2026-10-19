@@ -1,0 +1,58 @@
+{
+  "java": "25.0.1",
+  "javafx": "27+30",
+  "accessibilityActive": false,
+  "standardButtonFired": 1,
+  "standardButtonDisabled": false,
+  "buttons": [
+    {
+      "name": "Open in new window",
+      "disabled": false,
+      "accessibleDisabled": "false"
+    },
+    {
+      "name": "Minimize",
+      "disabled": false,
+      "accessibleDisabled": "false"
+    },
+    {
+      "name": "Maximize",
+      "disabled": false,
+      "accessibleDisabled": "false"
+    },
+    {
+      "name": "Close group",
+      "disabled": false,
+      "accessibleDisabled": "false"
+    },
+    {
+      "name": "Open in new window",
+      "disabled": false,
+      "accessibleDisabled": "false"
+    },
+    {
+      "name": "Minimize",
+      "disabled": false,
+      "accessibleDisabled": "false"
+    },
+    {
+      "name": "Maximize",
+      "disabled": false,
+      "accessibleDisabled": "false"
+    },
+    {
+      "name": "Close group",
+      "disabled": false,
+      "accessibleDisabled": "false"
+    }
+  ],
+  "panes": [
+    "Alpha",
+    "Inspector"
+  ],
+  "focused": "Alpha",
+  "minimized": 0,
+  "maximized": false,
+  "floating": 0,
+  "focusName": "Inspector"
+}

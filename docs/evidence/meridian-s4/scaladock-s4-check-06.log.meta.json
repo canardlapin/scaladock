@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "started_utc": "2026-10-19T22:32:36.259481+00:00",
+  "finished_utc": "2026-10-19T22:33:06.566380+00:00",
+  "duration_seconds": 30.30672,
+  "command": [
+    "sbt",
+    "-batch",
+    "fx/scalafmt",
+    "fx/Test/scalafmt",
+    "fx/testOnly scaladock.fx.AccessibilitySuite scaladock.fx.KeyboardSuite scaladock.fx.ChromeSuite scaladock.fx.TabMenuSuite scaladock.fx.CloseAdmissionSuite scaladock.fx.PresentationSuite scaladock.fx.MinimizeFxSuite"
+  ],
+  "cwd": "/Users/bbuchsbaum/code/scala/scaladock",
+  "log": "/tmp/scaladock-s4-check-06.log",
+  "exit_code": 0,
+  "child_returncode": 0,
+  "reason": "exited",
+  "detail": null,
+  "timeout_seconds": 600.0,
+  "log_bytes": 7193
+}

@@ -133,9 +133,16 @@ Requires Scala 3.7+, JDK 22+, and JavaFX 24+ (the demo itself runs on JavaFX 27 
 ## Fit and boundaries
 
 A good fit for JavaFX desktop apps that want VS Code- or JetBrains-style panel layouts from
-Scala 3. Not covered yet: accessibility beyond named tabs and buttons, and a published release
-(see [releasing](docs/releasing.md)). The library is
-tested in CI on Linux and macOS with JDK 25, and on Linux with JDK 22 and JavaFX 24 (the library's floor); Windows is untested.
+Scala 3. Keyboard and custom assistive actions, focus recovery and reduced-motion
+policies have local regression coverage on JavaFX 24 and 27. A macOS JavaFX
+enabled-state reporting defect remains a documented limitation; complete
+screen-reader workflows and Windows are unqualified. See the
+[S4 evidence](docs/evidence/meridian-s4/README.md) and
+[motion contract](docs/styling.md#motion-preferences).
+There is no published release yet (see [releasing](docs/releasing.md)). CI is
+configured for Linux and macOS on JDK 25, a Linux JDK 22 / JavaFX 24 floor lane,
+and a separate lane that actually executes JavaFX 27 tests. A configured lane
+does not establish a hosted result for the current revision.
 scaladock takes golden-layout's model as its conceptual starting point
 ([golden-layout](https://github.com/golden-layout/golden-layout)).
 
@@ -172,6 +179,22 @@ sbt test            # core: property tests; fx: JavaFX toolkit tests (needs a di
 sbt demo/run        # the imaging demo
 sbt scalafmtAll     # format
 ```
+
+For complete runtime qualification, resolve both pinned versions with `sbt update`
+on JDK 25, then run each lane with its matching JDK. Both need a display (wrap in
+`xvfb-run --auto-servernum` on headless Linux):
+
+```sh
+python3 tools/qualify_runtime.py floor --java-home /path/to/jdk22 --manifest /tmp/floor-runtime.json
+python3 tools/qualify_runtime.py current --java-home /path/to/jdk25 --manifest /tmp/current-runtime.json
+```
+
+The floor checks formatting, core/fx compilation and all core/fx tests. The current
+lane checks formatting, aggregate compilation (including the JavaFX 27 demo) and
+all tests. Both replace the test runtime with three coherent named JavaFX modules;
+the fixture asserts the actual JDK/module versions. The manifests record exact
+jar hashes, Git revision, command and exit. The library compile/POM floor remains
+JDK 22 / JavaFX 24.0.1. Use a fresh manifest filename for each run.
 
 ## License
 

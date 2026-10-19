@@ -1,0 +1,50 @@
+{
+  "candidate": "87f900e9bdb1cce08872b363d4fe20a04c458b29",
+  "commands": {
+    "s3": [
+      "/Users/bbuchsbaum/Library/Java/JavaVirtualMachines/openjdk-22/Contents/Home/bin/javap",
+      "-public",
+      "-classpath",
+      "/Users/bbuchsbaum/code/scala/scaladock/docs/evidence/meridian-s3/candidate-artifacts/scaladock-fx_3-0.1.0-SNAPSHOT.jar",
+      "scaladock.fx.Dock"
+    ],
+    "candidate": [
+      "/Users/bbuchsbaum/Library/Java/JavaVirtualMachines/openjdk-22/Contents/Home/bin/javap",
+      "-public",
+      "-classpath",
+      "/Users/bbuchsbaum/code/scala/scaladock/modules/fx/target/scala-3.7.4/classes",
+      "scaladock.fx.Dock"
+    ]
+  },
+  "exit_codes": {
+    "s3": 0,
+    "candidate": 0
+  },
+  "s3_jar_sha256": "298225350093f3b2089e33ef2d6f34ed7836681aa1a17e6d275e8d4937571c6a",
+  "removed_nonmangled_Dock_method_signatures": [],
+  "added_nonmangled_Dock_method_signatures": [
+    "public boolean isReducedMotion();",
+    "public scaladock.fx.DockMotion motion();",
+    "public void reopenClosed();",
+    "public void restoreMinimizedFocused();",
+    "public void setMotion(scaladock.fx.DockMotion);",
+    "public void showFocusedTabMenu();",
+    "public void toggleMinimizeFocused();",
+    "public void togglePopOutFocused();"
+  ],
+  "floor_class_files": {
+    "core": {
+      "classes": 158,
+      "major_versions": [
+        66
+      ]
+    },
+    "fx": {
+      "classes": 88,
+      "major_versions": [
+        66
+      ]
+    }
+  },
+  "limit": "JVM shape only; excludes compiler-mangled methods; private[fx] methods may appear. Not full binary/source compatibility proof. New DockAction cases require updating exhaustive matches."
+}

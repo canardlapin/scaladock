@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "started_utc": "2026-10-19T22:55:15.865420+00:00",
+  "finished_utc": "2026-10-19T22:55:45.537246+00:00",
+  "duration_seconds": 29.671559,
+  "command": [
+    "python3",
+    "/tmp/scaladock-s5-lanes.py",
+    "current",
+    "/tmp/scaladock-s5-current",
+    "--tests"
+  ],
+  "cwd": "/Users/bbuchsbaum/code/scala/scaladock",
+  "log": "/tmp/scaladock-s5-current-01.log",
+  "exit_code": 0,
+  "child_returncode": 0,
+  "reason": "exited",
+  "detail": null,
+  "timeout_seconds": 600.0,
+  "log_bytes": 10837
+}

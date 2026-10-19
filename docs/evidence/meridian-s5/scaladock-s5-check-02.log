@@ -1,0 +1,82 @@
+[info] welcome to sbt 1.12.14 (Homebrew Java 25.0.1)
+[info] loading settings for project scaladock-build from plugins.sbt...
+[info] loading project definition from /Users/bbuchsbaum/code/scala/scaladock/project
+[info] loading settings for project root from build.sbt...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] scalafmt: Formatting 2 Scala sources (/Users/bbuchsbaum/code/scala/scaladock/modules/fx)...
+[info] scalafmt: Reformatted 2 Scala sources
+[success] Total time: 3 s, completed Oct 19, 2026, 6:53:47 p.m.
+[info] scalafmt: Formatting 1 Scala sources (/Users/bbuchsbaum/code/scala/scaladock/modules/fx)...
+[success] Total time: 0 s, completed Oct 19, 2026, 6:53:47 p.m.
+[info] compiling 2 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/fx/target/scala-3.7.4/classes ...
+[info] done compiling
+[info] compiling 1 Scala source to /Users/bbuchsbaum/code/scala/scaladock/modules/fx/target/scala-3.7.4/test-classes ...
+[info] done compiling
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by scala.runtime.LazyVals$ (file:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala3-library_3/3.7.4/scala3-library_3-3.7.4.jar)
+WARNING: Please consider reporting this to the maintainers of class scala.runtime.LazyVals$
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+Oct 19, 2026 6:53:59 P.M. com.sun.javafx.application.PlatformImpl startup
+WARNING: Unsupported JavaFX configuration: classes were loaded from 'unnamed module @611d84b3'
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by com.sun.glass.utils.NativeLibLoader in an unnamed module (file:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-graphics/24.0.1/javafx-graphics-24.0.1-mac-aarch64.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+MOTION_TRACE {"label":"reduced-immediate","java":"25.0.1","javafx":"24.0.1+4","policy":"Reduced","reduced":true,"indicatorAnimating":false,"shownX":10,"targetX":10,"slides":0}
+MOTION_TRACE {"label":"full-start","java":"25.0.1","javafx":"24.0.1+4","policy":"Full","reduced":false,"indicatorAnimating":true,"shownX":14,"targetX":264,"slides":2}
+MOTION_TRACE {"label":"switched-reduced","java":"25.0.1","javafx":"24.0.1+4","policy":"Reduced","reduced":true,"indicatorAnimating":false,"shownX":264,"targetX":264,"slides":0}
+MOTION_TRACE {"label":"full-pulse","java":"25.0.1","javafx":"24.0.1+4","policy":"Full","reduced":false,"indicatorAnimating":true,"shownX":165.7227004427324,"targetX":264,"slides":2}
+MOTION_TRACE {"label":"full-pulse","java":"25.0.1","javafx":"24.0.1+4","policy":"Full","reduced":false,"indicatorAnimating":true,"shownX":260.81073057483485,"targetX":264,"slides":0}
+MOTION_TRACE {"label":"full-pulse","java":"25.0.1","javafx":"24.0.1+4","policy":"Full","reduced":false,"indicatorAnimating":true,"shownX":262.6302313318147,"targetX":264,"slides":0}
+MOTION_TRACE {"label":"full-pulse","java":"25.0.1","javafx":"24.0.1+4","policy":"Full","reduced":false,"indicatorAnimating":true,"shownX":263.4455663461504,"targetX":264,"slides":0}
+MOTION_TRACE {"label":"full-pulse","java":"25.0.1","javafx":"24.0.1+4","policy":"Full","reduced":false,"indicatorAnimating":false,"shownX":264,"targetX":264,"slides":0}
+MOTION_TRACE {"label":"ancestor","java":"25.0.1","javafx":"24.0.1+4","policy":"Full","reduced":false,"indicatorAnimating":false,"shownX":-1,"targetX":-1,"slides":0}
+MOTION_TRACE {"label":"detached","java":"25.0.1","javafx":"24.0.1+4","policy":"Full","reduced":false,"indicatorAnimating":false,"shownX":-1,"targetX":-1,"slides":0}
+MOTION_TRACE {"label":"window","java":"25.0.1","javafx":"24.0.1+4","policy":"Full","reduced":false,"indicatorAnimating":false,"shownX":-1,"targetX":-1,"slides":0}
+MOTION_TRACE {"label":"dispose","java":"25.0.1","javafx":"24.0.1+4","policy":"Full","reduced":false,"indicatorAnimating":false,"shownX":-1,"targetX":-1,"slides":0}
+MOTION_TRACE {"label":"floating-hidden","java":"25.0.1","javafx":"24.0.1+4","policy":"Reduced","reduced":true,"indicatorAnimating":false,"shownX":-1,"targetX":-1,"slides":0}
+scaladock.fx.MotionSuite:
+  + system follows the floor OS preference; explicit overrides and validation preserve state 0.748s
+  + reduced motion draws exact targets immediately without fades or slides 0.103s
+  + switching to reduced mid-animation settles the existing target without cancelling feedback 0.075s
+  + full motion advances on native pulses and stops when settled 0.3s
+  + hidden ancestors, detached roots, hidden windows and disposal stop all custom motion 0.239s
+  + policy changes survive theme and density updates and floating-owner closure 0.101s
+  + reduced-motion drag cancellation clears feedback and restores the divider cursor 0.071s
+scaladock.fx.DragDropSuite:
+  + dragging a tab onto another group's bottom half splits it vertically 50/50 0.077s
+  + dropping on a header inserts as a tab; a hopeless miss returns the pane home 0.084s
+  + a window's lone tab dropped on that window's own edge changes nothing 0.072s
+  + reordering within a group lands at the index shown, accounting for the tab's own removal 0.06s
+  + a drag source fabricates a pane on drop and nothing on a miss 0.07s
+scaladock.fx.PresentationSuite:
+  + repeated host root leases preserve foreign styles/classes and share one live binding 0.089s
+  + open tab menus dismiss on theme/density changes and reopen with current computed colors 0.116s
+  + overflow menus and tooltips dismiss and reopen using current custom styles 0.109s
+  + theme and metric changes cancel ghosts; next ghost owns the current independent root 0.086s
+  + repeated bindings/subscriptions and source handles are released by Dock.dispose 0.071s
+  + scene/window transfer detaches old owners; hide/show recreates float presentation without rebuilding panes 0.202s
+  + retired floating regions have no input bindings and preserve unrelated styles 0.113s
+scaladock.fx.KeyboardSuite:
+  + F6 / Shift+F6 cycle focus between groups, wrapping 0.032s
+  + Ctrl+Tab / Ctrl+Shift+Tab cycle tabs within the focused group 0.014s
+  + F6 reaches a strip and ENTER restores its size (row=false, saved=false) 0.018s
+  + F6 reaches a strip and ENTER restores its size (row=false, saved=true) 0.01s
+  + F6 reaches a strip and SPACE restores its size (row=false, saved=false) 0.01s
+  + F6 reaches a strip and SPACE restores its size (row=false, saved=true) 0.011s
+  + F6 reaches a strip and ENTER restores its size (row=true, saved=false) 0.012s
+  + F6 reaches a strip and ENTER restores its size (row=true, saved=true) 0.014s
+  + F6 reaches a strip and SPACE restores its size (row=true, saved=false) 0.011s
+  + F6 reaches a strip and SPACE restores its size (row=true, saved=true) 0.011s
+  + minimise and restore actions focus the strip or content and support a host keymap 0.013s
+  + Ctrl+Tab selects minimised tabs without expanding; Enter restores the selected pane 0.013s
+  + maximise still hides sibling strips from group traversal 0.011s
+  + a minimised group with a hidden header still exposes a live keyboard restore target 0.008s
+  + strip focus survives native pulses and restoration returns focus to content 0.666s
+  + actions are API: a host keymap can drive them with the dock's own keys switched off 0.027s
+  + keys the content handles never reach the dock 0.008s
+  + unrelated keys pass through untouched 0.01s
+  + focus cleanup never drags the model's focus; a user's move does 0.696s
+[info] Passed: Total 38, Failed 0, Errors 0, Passed 38
+[success] Total time: 17 s, completed Oct 19, 2026, 6:54:04 p.m.

@@ -1,0 +1,118 @@
+[info] welcome to sbt 1.12.14 (Oracle Corporation Java 22)
+[info] loading settings for project scaladock-build from plugins.sbt...
+[info] loading project definition from /Users/bbuchsbaum/code/scala/scaladock/project
+[info] loading settings for project root from build.sbt...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] Defining fx / Test / javaOptions
+[info] The new value will be used by fx / Test / bspBuildTargetJvmEnvironmentItem, fx / Test / bspBuildTargetRun and 6 others.
+[info] 	Run `last` for details.
+[info] Reapplying settings...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] Defining fx / Test / fullClasspath
+[info] The new value will be used by fx / Test / bspBuildTargetJvmEnvironmentItem, fx / Test / console and 6 others.
+[info] 	Run `last` for details.
+[info] Reapplying settings...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[success] Total time: 1 s, completed Oct 19, 2026, 6:54:40 p.m.
+[info] scalafmt: Formatting 1 Scala sources (/Users/bbuchsbaum/code/scala/scaladock/modules/fx)...
+[info] scalafmt: Reformatted 1 Scala sources
+[success] Total time: 1 s, completed Oct 19, 2026, 6:54:41 p.m.
+[success] Total time: 0 s, completed Oct 19, 2026, 6:54:41 p.m.
+[info] compiling 9 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/core/target/scala-3.7.4/classes ...
+[info] done compiling
+[info] compiling 9 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/fx/target/scala-3.7.4/classes ...
+[info] done compiling
+[info] compiling 21 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/fx/target/scala-3.7.4/test-classes ...
+[info] done compiling
+MOTION_TRACE {"label":"reduced-immediate","java":"22","javafx":"24.0.1+4","policy":"Reduced","reduced":true,"indicatorAnimating":false,"shownX":10,"targetX":10,"slides":0}
+MOTION_TRACE {"label":"full-start","java":"22","javafx":"24.0.1+4","policy":"Full","reduced":false,"indicatorAnimating":true,"shownX":14,"targetX":264,"slides":2}
+MOTION_TRACE {"label":"switched-reduced","java":"22","javafx":"24.0.1+4","policy":"Reduced","reduced":true,"indicatorAnimating":false,"shownX":264,"targetX":264,"slides":0}
+MOTION_TRACE {"label":"full-pulse","java":"22","javafx":"24.0.1+4","policy":"Full","reduced":false,"indicatorAnimating":true,"shownX":168.7375296843791,"targetX":264,"slides":2}
+MOTION_TRACE {"label":"full-pulse","java":"22","javafx":"24.0.1+4","policy":"Full","reduced":false,"indicatorAnimating":true,"shownX":255.19769781840577,"targetX":264,"slides":0}
+MOTION_TRACE {"label":"full-pulse","java":"22","javafx":"24.0.1+4","policy":"Full","reduced":false,"indicatorAnimating":true,"shownX":260.59428472190444,"targetX":264,"slides":0}
+MOTION_TRACE {"label":"full-pulse","java":"22","javafx":"24.0.1+4","policy":"Full","reduced":false,"indicatorAnimating":true,"shownX":262.6865123504638,"targetX":264,"slides":0}
+MOTION_TRACE {"label":"full-pulse","java":"22","javafx":"24.0.1+4","policy":"Full","reduced":false,"indicatorAnimating":true,"shownX":263.3405394520436,"targetX":264,"slides":0}
+MOTION_TRACE {"label":"full-pulse","java":"22","javafx":"24.0.1+4","policy":"Full","reduced":false,"indicatorAnimating":false,"shownX":264,"targetX":264,"slides":0}
+MOTION_TRACE {"label":"ancestor","java":"22","javafx":"24.0.1+4","policy":"Full","reduced":false,"indicatorAnimating":false,"shownX":-1,"targetX":-1,"slides":0}
+MOTION_TRACE {"label":"detached","java":"22","javafx":"24.0.1+4","policy":"Full","reduced":false,"indicatorAnimating":false,"shownX":-1,"targetX":-1,"slides":0}
+MOTION_TRACE {"label":"window","java":"22","javafx":"24.0.1+4","policy":"Full","reduced":false,"indicatorAnimating":false,"shownX":-1,"targetX":-1,"slides":0}
+MOTION_TRACE {"label":"dispose","java":"22","javafx":"24.0.1+4","policy":"Full","reduced":false,"indicatorAnimating":false,"shownX":-1,"targetX":-1,"slides":0}
+MOTION_TRACE {"label":"floating-hidden","java":"22","javafx":"24.0.1+4","policy":"Reduced","reduced":true,"indicatorAnimating":false,"shownX":-1,"targetX":-1,"slides":0}
+scaladock.fx.MotionSuite:
+  + system follows the floor OS preference; explicit overrides and validation preserve state 0.623s
+  + reduced motion draws exact targets immediately without fades or slides 0.115s
+  + switching to reduced mid-animation settles the existing target without cancelling feedback 0.079s
+  + full motion advances on native pulses and stops when settled 0.321s
+  + hidden ancestors, detached roots, hidden windows and disposal stop all custom motion 0.25s
+  + policy changes survive theme and density updates and floating-owner closure 0.115s
+  + switching motion during a real tab drag preserves the drop, pointer movement and pane 0.096s
+  + reduced-motion drag cancellation clears feedback and restores the divider cursor 0.063s
+scaladock.fx.DragDropSuite:
+  + dragging a tab onto another group's bottom half splits it vertically 50/50 0.051s
+  + dropping on a header inserts as a tab; a hopeless miss returns the pane home 0.084s
+  + a window's lone tab dropped on that window's own edge changes nothing 0.073s
+  + reordering within a group lands at the index shown, accounting for the tab's own removal 0.057s
+  + a drag source fabricates a pane on drop and nothing on a miss 0.073s
+scaladock.fx.AccessibilitySuite:
+  + assistive tab request selects; arrow keys rove; selection and close names follow state 0.065s
+  + header and minimized actions support keyboard and assistive FIRE with live focus 0.029s
+  + keyboard-visible chrome survives inactive styling and narrow overflow has a stable name 0.239s
+  + assistive and keyboard close share asynchronous admission; reopen uses the live snapshot 0.036s
+  + vetoed accessible close leaves pane, focus and reopen history untouched 0.012s
+  + Shift+F10 and assistive SHOW_MENU open live menus; Escape dismisses; consumed keys stay local 0.095s
+  + pop-out, dock-back and perspective changes preserve live focus and pane identity 0.091s
+  + a vertically minimized tab has no hidden close target; its menu still admits close 0.027s
+  + closing main focus is not masked by a floating window's retained focus owner 0.454s
+  + JavaFX27 titlebar buttons route group keys and menus from their own focus 0.765s
+scaladock.fx.KeyboardSuite:
+  + F6 / Shift+F6 cycle focus between groups, wrapping 0.03s
+  + Ctrl+Tab / Ctrl+Shift+Tab cycle tabs within the focused group 0.013s
+  + F6 reaches a strip and ENTER restores its size (row=false, saved=false) 0.017s
+  + F6 reaches a strip and ENTER restores its size (row=false, saved=true) 0.011s
+  + F6 reaches a strip and SPACE restores its size (row=false, saved=false) 0.01s
+  + F6 reaches a strip and SPACE restores its size (row=false, saved=true) 0.01s
+  + F6 reaches a strip and ENTER restores its size (row=true, saved=false) 0.011s
+  + F6 reaches a strip and ENTER restores its size (row=true, saved=true) 0.009s
+  + F6 reaches a strip and SPACE restores its size (row=true, saved=false) 0.013s
+  + F6 reaches a strip and SPACE restores its size (row=true, saved=true) 0.01s
+  + minimise and restore actions focus the strip or content and support a host keymap 0.012s
+  + Ctrl+Tab selects minimised tabs without expanding; Enter restores the selected pane 0.011s
+  + maximise still hides sibling strips from group traversal 0.01s
+  + a minimised group with a hidden header still exposes a live keyboard restore target 0.008s
+  + strip focus survives native pulses and restoration returns focus to content 0.66s
+  + actions are API: a host keymap can drive them with the dock's own keys switched off 0.026s
+  + keys the content handles never reach the dock 0.007s
+  + unrelated keys pass through untouched 0.008s
+  + focus cleanup never drags the model's focus; a user's move does 0.664s
+scaladock.fx.ChromeSuite:
+  + pressing a tab that moves focus restyles it in place: the pressed node is never replaced 0.025s
+  + a strip whose tabs fit is not clipped short: tabs slid aside by a drop slot stay visible 0.005s
+  + the tab close glyph closes exactly that pane 0.005s
+  + middle-click closes a closable tab; non-closable panes show no close glyph 0.006s
+  + the maximize button toggles; the group close button closes closable tabs 0.008s
+  + a hidden header renders no header bar and geometry gives the content the full rect 0.004s
+  + overflow menu lists every tab and appears only when the strip is too tight 0.016s
+scaladock.fx.TabMenuSuite:
+  + default items, and Close Others closes exactly the others 0.005s
+  + the hook sees the pane and its group, and returns the final list 0.002s
+  + tabs and header buttons carry accessible roles and names 0.004s
+scaladock.fx.CloseAdmissionSuite:
+  + default admission retains immediate close semantics 0.002s
+  + delayed duplicate close shares admission; veto and failure preserve the pane; retry disposes once 0.005s
+  + whole-dock admission is atomic and rejects a new pane arriving during preparation 0.005s
+  + tab, group and pane-context close paths honor admission 0.002s
+  + a non-closable pane is refused without preparation; a forced edit still removes it 0.002s
+scaladock.fx.PresentationSuite:
+  + repeated host root leases preserve foreign styles/classes and share one live binding 0.058s
+  + open tab menus dismiss on theme/density changes and reopen with current computed colors 0.087s
+  + overflow menus and tooltips dismiss and reopen using current custom styles 0.1s
+  + theme and metric changes cancel ghosts; next ghost owns the current independent root 0.08s
+  + repeated bindings/subscriptions and source handles are released by Dock.dispose 0.057s
+  + scene/window transfer detaches old owners; hide/show recreates float presentation without rebuilding panes 0.162s
+  + retired floating regions have no input bindings and preserve unrelated styles 0.1s
+scaladock.fx.MinimizeFxSuite:
+  + minimizing a bottom panel collapses it to a header strip; restore is exact 0.031s
+  + a group minimized inside a row shows the sideways strip; clicking it restores 0.01s
+  + focusing a pane in a minimized group restores it; drags of strip dividers are refused 0.006s
+[info] Passed: Total 67, Failed 0, Errors 0, Passed 67
+[success] Total time: 26 s, completed Oct 19, 2026, 6:55:07 p.m.

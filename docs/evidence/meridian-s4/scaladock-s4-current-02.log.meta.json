@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "started_utc": "2026-10-19T22:36:26.863721+00:00",
+  "finished_utc": "2026-10-19T22:36:55.319812+00:00",
+  "duration_seconds": 28.455906,
+  "command": [
+    "python3",
+    "tools/meridian-s4/run_probe.py",
+    "current",
+    "/tmp/scaladock-s4-native/current-tests",
+    "--tests"
+  ],
+  "cwd": "/Users/bbuchsbaum/code/scala/scaladock",
+  "log": "/tmp/scaladock-s4-current-02.log",
+  "exit_code": 0,
+  "child_returncode": 0,
+  "reason": "exited",
+  "detail": null,
+  "timeout_seconds": 600.0,
+  "log_bytes": 6872
+}

@@ -1,0 +1,83 @@
+{
+  "source_candidate": "3cf16329dd4e304ad374aa10539c3153ac03e1d9",
+  "base": "948e0005ce26b85cb7d787d18006bc0e900643ba",
+  "source_sha256": {
+    "docs/workspaces.md": "9df6dddafe895a344eeba5b9c9cd05b5832958d9afb20133da22e182eb77ca27",
+    "modules/fx/src/main/resources/scaladock/dock.css": "17f1b7c247df5441dd5e0639c90d299fd33dbbc1b70b394f7132513c8698aced",
+    "modules/fx/src/main/scala/scaladock/fx/Dock.scala": "1d825efe8d55cbf3cc4bc1c8c74d17d62adf036f0ee852e8c430a43c392e76b6",
+    "modules/fx/src/main/scala/scaladock/fx/views.scala": "1efc737370ccd1a4a6aafbb742e1457f051ee521423a44a0d3797e91de25eb81",
+    "modules/fx/src/test/scala/scaladock/fx/AccessibilityNativeProbe.scala": "f735d8778ccd4724eb7b8a3010ea9ac8ed5b81e7ca07ab41c06ad251b0414dab",
+    "modules/fx/src/test/scala/scaladock/fx/AccessibilitySuite.scala": "a197803c76a593089d3cd9b77908bc187a1aa1323e801e504352acbe54a06185",
+    "tools/meridian-s4/ax_probe.swift": "7a1aa57c5d98b6c56afa772f65521ef2a4362d2f00f3d15372ed288228007f72",
+    "tools/meridian-s4/check_ax.py": "837a53ddb259118405d605b0f9f2ac56c03985f590eb73c6ab4e6c4a1434ac41",
+    "tools/meridian-s4/run_probe.py": "30caf214c9e316a3b1dabf6a8224e380848f4dae057d7ee05b0584c3c89ed3e8"
+  },
+  "lanes": {
+    "floor": {
+      "jdk": "22",
+      "javafx": "24.0.1+4",
+      "platform": "macOS/aarch64",
+      "jars_sha256": {
+        "javafx-base/24.0.1/javafx-base-24.0.1-mac-aarch64.jar": "0ea913712b982e24be7fb20d1a90b45dafc38403f49dd9d494d1d0d3b43e8794",
+        "javafx-graphics/24.0.1/javafx-graphics-24.0.1-mac-aarch64.jar": "90b9c1c89ebd0d79a8af6951517516828cd08896def96871af015cf0a09cdf53",
+        "javafx-controls/24.0.1/javafx-controls-24.0.1-mac-aarch64.jar": "0c90550f1989637741c2f08bfb8c37216c2d55b0a7d047169d60815cc9e44dbf"
+      },
+      "maven_libglass_sha256": "f8f86bcf79741c5e5d77c44e8598c0b577fd0636615d5cc9a3a7351685347ceb",
+      "actions_passed": 9,
+      "native_AXEnabled_false": 8,
+      "voiceover_session": false
+    },
+    "current": {
+      "jdk": "25.0.1",
+      "javafx": "27+30",
+      "platform": "macOS/aarch64",
+      "jars_sha256": {
+        "javafx-base/27/javafx-base-27-mac-aarch64.jar": "3fe8c6c3798ca48b02e15031c5394ae038aaaeedd04df950badefcc291a6fb6e",
+        "javafx-graphics/27/javafx-graphics-27-mac-aarch64.jar": "f01749fcdb476dfdf9afc996443fe7871498158fcd6a27477332fbeebdd60e5e",
+        "javafx-controls/27/javafx-controls-27-mac-aarch64.jar": "0d05e5b1190985e0fb5532f300590d5c9fe02fb8d5549292332d087c2ca02444"
+      },
+      "maven_libglass_sha256": "d15f466aabe29f7573ae19248c67c350a932dc10429c5923e2d4ba9576c41980",
+      "actions_passed": 9,
+      "native_AXEnabled_false": 9,
+      "voiceover_session": false
+    }
+  },
+  "recorded_exit_codes": {
+    "scaladock-s4-current-02.log.meta.json": 0,
+    "scaladock-s4-floor-final.log.meta.json": 0,
+    "scaladock-s4-check-04.log.meta.json": 0,
+    "scaladock-s4-check-06.log.meta.json": 0,
+    "scaladock-s4-check-02.log.meta.json": 1,
+    "scaladock-s4-native-current-01.log.meta.json": 0
+  },
+  "artifact_sha256": {
+    "README.md": "6c0ea607c94aedc8571a2f986896a5b59e92928dd47eae7aeef7767e2bf63fd1",
+    "current-01/actions.json": "b35da0652fece4a90eaf2277ddcd3cef64d88d8ac0e1f34d250d0cf6143a483d",
+    "current-01/ax-after.json": "1417d0a051c40906765e1e841431203c492b367f1961de2fd4cc0c5470028a49",
+    "current-01/ax-before.json": "c3499d6ab8bbbc3b41750c440d1b993b153c0d6f472f6494b9550c4058a6f4d3",
+    "current-01/state.json": "c619dd5fa0c6c0478fa916aac314185ebdacbc3d535ce9a3b6867792fe78b641",
+    "floor-02/actions.json": "ff2966fa9b80a7a724a223f801212dda6fe2329b434306b4970268eb5ca3d93a",
+    "floor-02/ax-after.json": "de587b7dc043ce85a21f5a9f2c603ca141c4791b0d26cd7a2a03edbc99b641d1",
+    "floor-02/ax-before.json": "8b4ecd7d348ecfc72ce3bc8a81edfc0d5ad4e9f1c600836d524d473b8a75fea1",
+    "floor-02/state.json": "a149040a7e025454ce63fcdd0b6ce90591cff0efa18c34511e49dd804861164f",
+    "floor-final/actions.json": "fa33b6ad4908873ff90d1e5a522aa6fc67d77e5a9eec28a3c6cc0d950d5559ec",
+    "floor-final/ax-after.json": "aaac6eca7cf3198995057f4bf478e4dc1e90823a2858b24e6cc0604bfb78047e",
+    "floor-final/ax-before.json": "9f0e036fcc6e69ac0030365720619d359fae3437af8d626209eaf4485bb32ba8",
+    "floor-final/selected-tab-inactive-window.png": "04e2804ec10c612f4d6b85477531798bc6a6d9c2df01d15c5fad3e46d418f497",
+    "floor-final/state.json": "ba67fbee1da5e6c59ea558feb9e11dce14658067c57dacd48c601898311a16c1",
+    "independent-review.md": "b1571d761214e5a58d299823b1b38701e50e88fdec7841560b405b79f64444b3",
+    "scaladock-s4-check-02.log": "8290cb08c0eca4c7604e69fe1920a4a6f4bad2ab39544d701f74ea729fcf26bd",
+    "scaladock-s4-check-02.log.meta.json": "e9151775e16471b2be0a0448ecbc28ddd4354c618c8fa15582413e90b8df8d0b",
+    "scaladock-s4-check-04.log": "a539bf7d08f099a41c867ae634b624fe317319f0399bd4dfa171b50681a364fb",
+    "scaladock-s4-check-04.log.meta.json": "be9c27d882fdc659becff6e01535eafd08fd0066cff6b959fd9df6f440d44532",
+    "scaladock-s4-check-06.log": "1dcf75857df5ef58788fd10e92933422738a308e817348508914e6d05c80f76b",
+    "scaladock-s4-check-06.log.meta.json": "ef9adafa0f03dd3be0343458329f0e11f4b71f81cf1fac18f2560f30967dadb6",
+    "scaladock-s4-current-02.log": "64760e20076d0a320deb472715e08ecbeff5f485ea4e937c61cc14890ea48232",
+    "scaladock-s4-current-02.log.meta.json": "af639ee51053dee7e7799733b0d44e00aa625338080dafe55ddcbf643db1b1c4",
+    "scaladock-s4-floor-final.log": "505a539d31d9bf840f9ea658fca435ba0598d79e7892526eb225f2be04cafaf8",
+    "scaladock-s4-floor-final.log.meta.json": "fc85e1f4c6680d56d0ed7b566dd4d77b79121858ba86190a658da473c3bd10a3",
+    "scaladock-s4-native-current-01.log": "1040c6f43e88f41647745b84977183559180b82fa10041f97e4bd75921a17afc",
+    "scaladock-s4-native-current-01.log.meta.json": "1b7aa0f24137b036cc1a9ff1b00180c34b6acc2927d5b6542bb32aa0bd9ba714"
+  },
+  "scope": "S4 implementation evidence; acceptance pending upstream enabled-state decision; not S6 qualification"
+}

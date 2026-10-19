@@ -11,6 +11,8 @@ private[fx] final class DockRegion extends Region:
   private[fx] var refreshMetrics: () => Unit     = () => ()
   private val lifetime                           = new PresentationScope
   private lazy val styles                        = new RootStyles(this)
+  private var reducedMotion                      = false
+  private var disposed                           = false
 
   // `:inactive` while this region's window lacks OS focus (only once it is in a focusable window)
   private val onWindowFocus: javafx.beans.value.ChangeListener[java.lang.Boolean] =
@@ -28,9 +30,12 @@ private[fx] final class DockRegion extends Region:
       window.focusedProperty.addListener(onWindowFocus)
       pseudoClassStateChanged(pseudo.Inactive, !window.isFocused)
       () => window.focusedProperty.removeListener(onWindowFocus)
-    val _ = lifetime.own(() => binding.cancel())
+    val _          = lifetime.own(() => binding.cancel())
+    val visibility = MotionVisibility.onHidden(this)(() => hideIndicator())
+    val _          = lifetime.own(() => visibility.cancel())
 
   private[fx] def dispose(): Unit =
+    disposed = true
     hideIndicator()
     indicatorFade.foreach(_.stop())
     indicatorFade = None
@@ -82,14 +87,36 @@ private[fx] final class DockRegion extends Region:
   private var shownRect: Option[Rect]     = None
   private var indicatorFade: Option[javafx.animation.FadeTransition] =
     None // where it is drawn this frame
+  private var gliding = false
+
+  private[fx] def indicatorAnimating: Boolean   = gliding || indicatorFade.isDefined
+  private[fx] def indicatorTarget: Option[Rect] = indicatorRect
+  private[fx] def indicatorShown: Option[Rect]  = shownRect
+
+  private[fx] def setReducedMotion(reduced: Boolean): Unit =
+    reducedMotion = reduced
+    if reduced then settleIndicator()
+
+  private def settleIndicator(): Unit =
+    glide.stop()
+    indicatorFade.foreach(_.stop())
+    indicatorFade = None
+    shownRect = indicatorRect
+    shownRect.foreach(r => indicator.resizeRelocate(r.x, r.y, r.width, r.height))
+    indicator.setOpacity(1)
 
   /** Eases the highlight between zones instead of teleporting (exponential approach, ~60 ms). */
   private val glide = new javafx.animation.AnimationTimer:
     private var last = 0L
     // a glide interrupted by hideIndicator must not resume with one enormous time step
     override def start(): Unit =
-      last = 0L
-      super.start()
+      if !gliding then
+        last = 0L
+        gliding = true
+        super.start()
+    override def stop(): Unit =
+      super.stop()
+      gliding = false
     def handle(now: Long): Unit =
       val dt = if last == 0L then 1.0 / 60 else (now - last) / 1e9
       last = now
@@ -150,20 +177,26 @@ private[fx] final class DockRegion extends Region:
     * other zone is an inset, rounded region.
     */
   private[fx] def showIndicator(r: Rect, slot: Boolean = false): Unit =
+    if disposed || !MotionVisibility.isShowing(this) then
+      hideIndicator()
+      return
     indicator.pseudoClassStateChanged(pseudo.Slot, slot)
     val target = if slot then r else DockRegion.inset(r, DockRegion.IndicatorInsetPx)
     if !indicator.isVisible || shownRect.isEmpty then
       shownRect = Some(target)
       indicator.resizeRelocate(target.x, target.y, target.width, target.height)
-      indicator.setOpacity(0)
-      val fade = new javafx.animation.FadeTransition(javafx.util.Duration.millis(90), indicator)
-      fade.setToValue(1)
-      indicatorFade.foreach(_.stop())
-      indicatorFade = Some(fade)
-      fade.play()
+      indicator.setOpacity(if reducedMotion then 1 else 0)
+      if !reducedMotion then
+        val fade = new javafx.animation.FadeTransition(javafx.util.Duration.millis(90), indicator)
+        fade.setToValue(1)
+        indicatorFade.foreach(_.stop())
+        indicatorFade = Some(fade)
+        fade.setOnFinished(_ => indicatorFade = None)
+        fade.play()
     indicatorRect = Some(target)
     indicator.setVisible(true)
-    if shownRect != indicatorRect then glide.start()
+    if reducedMotion then settleIndicator()
+    else if shownRect != indicatorRect then glide.start()
     requestLayout()
 
   private[fx] def hideIndicator(): Unit =
