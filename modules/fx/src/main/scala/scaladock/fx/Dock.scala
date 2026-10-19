@@ -845,8 +845,11 @@ final class Dock private (
       val owners =
         allRegions.flatMap(r => Option(r.getScene).flatMap(s => Option(s.getFocusOwner)))
           .filter(n => paneContaining(n).orElse(chromePaneContaining(n)).isDefined)
-      val oldFocus = owners.find(n => Option(n.getScene.getWindow).exists(_.isFocused))
-        .orElse(owners.find(n => paneContaining(n).orElse(chromePaneContaining(n)) == prev.focused))
+      // Native focus requests are asynchronous (and a hidden window cannot gain focus).
+      // Prefer the model's pane so another window's retained owner cannot mask its removal.
+      val oldFocus =
+        owners.find(n => paneContaining(n).orElse(chromePaneContaining(n)) == prev.focused)
+          .orElse(owners.find(n => Option(n.getScene.getWindow).exists(_.isFocused)))
       current = next
       val (detachedNow, reattached) = reconcile(prev, next, retain)
       def liveFocus(n: javafx.scene.Node): Boolean =

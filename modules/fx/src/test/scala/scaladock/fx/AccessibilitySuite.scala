@@ -232,27 +232,37 @@ final class AccessibilitySuite extends FunSuite:
         assert(d.state.findPane(id).isEmpty)
       finally d.dispose()
 
-  test("closing main focus is not masked by a floating window's retained focus owner"):
-    val (d, st, id) = onFx:
-      val d  = make()
-      val st = new Stage
-      st.setScene(d.view.getScene); st.show()
-      val id   = d.state.panes.head.id
-      val side = d.state.panes.last.id
-      d.popOut(d.state.groupOf(side).get.id)
-      d.focus(side); d.focusContent(side)
-      d.focus(id); d.focusContent(id)
-      (d, st, id)
-    try
-      Thread.sleep(200)
-      onFx:
-        d.close(id)
-        assert(d.state.focused.isDefined)
-        assert(d.view.getScene.getFocusOwner eq d.nodeOf(d.state.focused.get).get)
-      Thread.sleep(200)
-      onFx:
-        assert(d.view.getScene.getFocusOwner eq d.nodeOf(d.state.focused.get).get)
-    finally onFx { d.dispose(); st.close() }
+  for showMain <- Seq(true, false) do
+    test(s"closing main focus survives a floating window's retained focus (main shown=$showMain)"):
+      val (d, st, id, replacement, side) = onFx:
+        val d  = make()
+        val st = new Stage
+        st.setScene(d.view.getScene)
+        if showMain then st.show()
+        val id          = d.state.panes.head.id
+        val replacement = d.state.panes(1).id
+        val side        = d.state.panes.last.id
+        d.popOut(d.state.groupOf(side).get.id)
+        d.focus(side); d.focusContent(side)
+        d.focus(id); d.focusContent(id)
+        (d, st, id, replacement, side)
+      try
+        Thread.sleep(200)
+        onFx:
+          assertEquals(d.state.focused, Some(id))
+          assert(d.view.getScene.getFocusOwner eq d.nodeOf(id).get)
+          val floating = d.nodeOf(side).get
+          assert(floating.getScene.getFocusOwner eq floating)
+          // A hidden main Stage cannot take native focus; its Scene still retains an owner.
+          // This also covers a window manager that has not honored the main focus request yet.
+          d.close(id)
+          assertEquals(d.state.focused, Some(replacement))
+          assert(d.view.getScene.getFocusOwner eq d.nodeOf(replacement).get)
+        Thread.sleep(200)
+        onFx:
+          assertEquals(d.state.focused, Some(replacement))
+          assert(d.view.getScene.getFocusOwner eq d.nodeOf(replacement).get)
+      finally onFx { d.dispose(); st.close() }
 
   test("JavaFX27 titlebar buttons route group keys and menus from their own focus"):
     val (d, st, side) = onFx:
