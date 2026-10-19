@@ -1,0 +1,17 @@
+{
+  "source_candidate": "39fccfeaf920ec9e6522351d9ef12c5d1bd7f98b",
+  "source_sha256": {
+    "modules/fx/src/main/scala/scaladock/fx/Dock.scala": "47ff0602493ecb577e8e9758b6b063f201a7e803981cdb9729272f9bbb41b5f9",
+    "modules/fx/src/test/scala/scaladock/fx/AccessibilitySuite.scala": "ac44a379d3beb6cbdf70641e836c19eb2d03773a22162bfcf63b4853bb745b3f"
+  },
+  "artifact_sha256": {
+    "hosted-after.log.gz": "d034e1ddfdebf603f06a134531f19c1f5401c0056049f6faf20c237fb1b9e791",
+    "hosted-before.log.gz": "3a126cba7ad5ee4b378ef3108ca6a3de63faf5c34184bb95c6a768e6c5aef2bf",
+    "hosted.json": "152a251308366c725b3e0c25b90279b872e6e15db241b2ea932d747f9d81a7f6",
+    "scaladock-pr2-focus-after.log": "5cc28df4d31f7b644ca0ad06f6922787a24b0cb29bb537b36c2cba8eeedd7afa",
+    "scaladock-pr2-focus-after.log.meta.json": "87eb03d6501f4a0e69f7ab91349bca629f6368fa3072204c01a4e523ef13c78c",
+    "scaladock-pr2-focus-before.log": "b158fa17c27a211af66e1e0399596a6d545fc9e4fab4a98b1d434f27a36e95e7",
+    "scaladock-pr2-focus-before.log.meta.json": "a0c054f03778ae9b5d9f0aaec31cba499a7a94eaee9c7e6a1cf772afcc1c181f"
+  },
+  "receipt_sha256": "679e3d472d4ecebcc14ea26251b3a8ef0dff91ad8b9bfdde32f0e943bf57816e"
+}
