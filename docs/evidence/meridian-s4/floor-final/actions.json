@@ -1,0 +1,564 @@
+[
+  {
+    "name": "Standard JavaFX button",
+    "command": "AXPress",
+    "enabled": false,
+    "result": "AX_ACTION_OK pid=10612 action=AXPress name=Standard JavaFX button",
+    "state": {
+      "java": "22",
+      "javafx": "24.0.1+4",
+      "accessibilityActive": false,
+      "standardButtonFired": 1,
+      "standardButtonDisabled": false,
+      "buttons": [
+        {
+          "name": "Open in new window",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Minimize",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Maximize",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Close group",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Open in new window",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Minimize",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Maximize",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Close group",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        }
+      ],
+      "panes": [
+        "Alpha",
+        "Beta",
+        "Inspector"
+      ],
+      "focused": "Beta",
+      "minimized": 0,
+      "maximized": false,
+      "floating": 0,
+      "focusName": "Beta"
+    }
+  },
+  {
+    "name": "Beta",
+    "command": "AXPress",
+    "enabled": true,
+    "result": "AX_ACTION_OK pid=10612 action=AXPress name=Beta",
+    "state": {
+      "java": "22",
+      "javafx": "24.0.1+4",
+      "accessibilityActive": false,
+      "standardButtonFired": 1,
+      "standardButtonDisabled": false,
+      "buttons": [
+        {
+          "name": "Open in new window",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Minimize",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Maximize",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Close group",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Open in new window",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Minimize",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Maximize",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Close group",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        }
+      ],
+      "panes": [
+        "Alpha",
+        "Beta",
+        "Inspector"
+      ],
+      "focused": "Beta",
+      "minimized": 0,
+      "maximized": false,
+      "floating": 0,
+      "focusName": "Beta"
+    }
+  },
+  {
+    "name": "Maximize",
+    "command": "AXPress",
+    "enabled": false,
+    "result": "AX_ACTION_OK pid=10612 action=AXPress name=Maximize",
+    "state": {
+      "java": "22",
+      "javafx": "24.0.1+4",
+      "accessibilityActive": false,
+      "standardButtonFired": 1,
+      "standardButtonDisabled": false,
+      "buttons": [
+        {
+          "name": "Open in new window",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Minimize",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Restore layout",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Close group",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Open in new window",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Minimize",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Maximize",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Close group",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        }
+      ],
+      "panes": [
+        "Alpha",
+        "Beta",
+        "Inspector"
+      ],
+      "focused": "Beta",
+      "minimized": 0,
+      "maximized": true,
+      "floating": 0,
+      "focusName": "Beta"
+    }
+  },
+  {
+    "name": "Restore layout",
+    "command": "AXPress",
+    "enabled": false,
+    "result": "AX_ACTION_OK pid=10612 action=AXPress name=Restore layout",
+    "state": {
+      "java": "22",
+      "javafx": "24.0.1+4",
+      "accessibilityActive": false,
+      "standardButtonFired": 1,
+      "standardButtonDisabled": false,
+      "buttons": [
+        {
+          "name": "Open in new window",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Minimize",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Maximize",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Close group",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Open in new window",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Minimize",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Maximize",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Close group",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        }
+      ],
+      "panes": [
+        "Alpha",
+        "Beta",
+        "Inspector"
+      ],
+      "focused": "Beta",
+      "minimized": 0,
+      "maximized": false,
+      "floating": 0,
+      "focusName": "Beta"
+    }
+  },
+  {
+    "name": "Minimize",
+    "command": "AXPress",
+    "enabled": false,
+    "result": "AX_ACTION_OK pid=10612 action=AXPress name=Minimize",
+    "state": {
+      "java": "22",
+      "javafx": "24.0.1+4",
+      "accessibilityActive": false,
+      "standardButtonFired": 1,
+      "standardButtonDisabled": false,
+      "buttons": [
+        {
+          "name": "Open in new window",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Restore",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Maximize",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Close group",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Open in new window",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Minimize",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Maximize",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Close group",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        }
+      ],
+      "panes": [
+        "Alpha",
+        "Beta",
+        "Inspector"
+      ],
+      "focused": "Beta",
+      "minimized": 1,
+      "maximized": false,
+      "floating": 0,
+      "focusName": "Restore Beta"
+    }
+  },
+  {
+    "name": "Restore Beta",
+    "command": "AXPress",
+    "enabled": false,
+    "result": "AX_ACTION_OK pid=10612 action=AXPress name=Restore Beta",
+    "state": {
+      "java": "22",
+      "javafx": "24.0.1+4",
+      "accessibilityActive": false,
+      "standardButtonFired": 1,
+      "standardButtonDisabled": false,
+      "buttons": [
+        {
+          "name": "Open in new window",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Minimize",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Maximize",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Close group",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Open in new window",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Minimize",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Maximize",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Close group",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        }
+      ],
+      "panes": [
+        "Alpha",
+        "Beta",
+        "Inspector"
+      ],
+      "focused": "Beta",
+      "minimized": 0,
+      "maximized": false,
+      "floating": 0,
+      "focusName": ""
+    }
+  },
+  {
+    "name": "Close Beta",
+    "command": "AXPress",
+    "enabled": false,
+    "result": "AX_ACTION_OK pid=10612 action=AXPress name=Close Beta",
+    "state": {
+      "java": "22",
+      "javafx": "24.0.1+4",
+      "accessibilityActive": false,
+      "standardButtonFired": 1,
+      "standardButtonDisabled": false,
+      "buttons": [
+        {
+          "name": "Open in new window",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Minimize",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Maximize",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Close group",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Open in new window",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Minimize",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Maximize",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Close group",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        }
+      ],
+      "panes": [
+        "Alpha",
+        "Inspector"
+      ],
+      "focused": "Alpha",
+      "minimized": 0,
+      "maximized": false,
+      "floating": 0,
+      "focusName": ""
+    }
+  },
+  {
+    "name": "Open in new window",
+    "command": "AXPress",
+    "enabled": false,
+    "result": "AX_ACTION_OK pid=10612 action=AXPress name=Open in new window",
+    "state": {
+      "java": "22",
+      "javafx": "24.0.1+4",
+      "accessibilityActive": false,
+      "standardButtonFired": 1,
+      "standardButtonDisabled": false,
+      "buttons": [
+        {
+          "name": "Open in new window",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Minimize",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Maximize",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Close group",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        }
+      ],
+      "panes": [
+        "Inspector",
+        "Alpha"
+      ],
+      "focused": "Alpha",
+      "minimized": 0,
+      "maximized": false,
+      "floating": 1,
+      "focusName": ""
+    }
+  },
+  {
+    "name": "Dock back into main window",
+    "command": "AXPress",
+    "enabled": false,
+    "result": "AX_ACTION_OK pid=10612 action=AXPress name=Dock back into main window",
+    "state": {
+      "java": "22",
+      "javafx": "24.0.1+4",
+      "accessibilityActive": false,
+      "standardButtonFired": 1,
+      "standardButtonDisabled": false,
+      "buttons": [
+        {
+          "name": "Open in new window",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Minimize",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Maximize",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Close group",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Open in new window",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Minimize",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Maximize",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        },
+        {
+          "name": "Close group",
+          "disabled": false,
+          "accessibleDisabled": "false"
+        }
+      ],
+      "panes": [
+        "Alpha",
+        "Inspector"
+      ],
+      "focused": "Alpha",
+      "minimized": 0,
+      "maximized": false,
+      "floating": 0,
+      "focusName": ""
+    }
+  }
+]

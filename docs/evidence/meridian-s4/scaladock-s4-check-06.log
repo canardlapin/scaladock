@@ -1,0 +1,89 @@
+[info] welcome to sbt 1.12.14 (Homebrew Java 25.0.1)
+[info] loading settings for project scaladock-build from plugins.sbt...
+[info] loading project definition from /Users/bbuchsbaum/code/scala/scaladock/project
+[info] loading settings for project root from build.sbt...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[success] Total time: 1 s, completed Oct 19, 2026, 6:32:40 p.m.
+[info] scalafmt: Formatting 2 Scala sources (/Users/bbuchsbaum/code/scala/scaladock/modules/fx)...
+[info] scalafmt: Reformatted 2 Scala sources
+[success] Total time: 1 s, completed Oct 19, 2026, 6:32:41 p.m.
+[info] compiling 9 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/core/target/scala-3.7.4/classes ...
+[info] done compiling
+[info] compiling 8 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/fx/target/scala-3.7.4/classes ...
+[info] done compiling
+[info] compiling 20 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/fx/target/scala-3.7.4/test-classes ...
+[info] done compiling
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by scala.runtime.LazyVals$ (file:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala3-library_3/3.7.4/scala3-library_3-3.7.4.jar)
+WARNING: Please consider reporting this to the maintainers of class scala.runtime.LazyVals$
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+Oct 19, 2026 6:33:01 P.M. com.sun.javafx.application.PlatformImpl startup
+WARNING: Unsupported JavaFX configuration: classes were loaded from 'unnamed module @3d7a2f43'
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by com.sun.glass.utils.NativeLibLoader in an unnamed module (file:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-graphics/24.0.1/javafx-graphics-24.0.1-mac-aarch64.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+scaladock.fx.AccessibilitySuite:
+  + assistive tab request selects; arrow keys rove; selection and close names follow state 0.741s
+  + header and minimized actions support keyboard and assistive FIRE with live focus 0.062s
+  + keyboard-visible chrome survives inactive styling and narrow overflow has a stable name 0.344s
+  + assistive and keyboard close share asynchronous admission; reopen uses the live snapshot 0.076s
+  + vetoed accessible close leaves pane, focus and reopen history untouched 0.023s
+  + Shift+F10 and assistive SHOW_MENU open live menus; Escape dismisses; consumed keys stay local 0.105s
+  + pop-out, dock-back and perspective changes preserve live focus and pane identity 0.118s
+  + a vertically minimized tab has no hidden close target; its menu still admits close 0.032s
+  + closing main focus is not masked by a floating window's retained focus owner 0.461s
+  + JavaFX27 titlebar buttons route group keys and menus from their own focus 0.395s
+scaladock.fx.KeyboardSuite:
+  + F6 / Shift+F6 cycle focus between groups, wrapping 0.032s
+  + Ctrl+Tab / Ctrl+Shift+Tab cycle tabs within the focused group 0.021s
+  + F6 reaches a strip and ENTER restores its size (row=false, saved=false) 0.024s
+  + F6 reaches a strip and ENTER restores its size (row=false, saved=true) 0.016s
+  + F6 reaches a strip and SPACE restores its size (row=false, saved=false) 0.017s
+  + F6 reaches a strip and SPACE restores its size (row=false, saved=true) 0.018s
+  + F6 reaches a strip and ENTER restores its size (row=true, saved=false) 0.015s
+  + F6 reaches a strip and ENTER restores its size (row=true, saved=true) 0.016s
+  + F6 reaches a strip and SPACE restores its size (row=true, saved=false) 0.024s
+  + F6 reaches a strip and SPACE restores its size (row=true, saved=true) 0.014s
+  + minimise and restore actions focus the strip or content and support a host keymap 0.019s
+  + Ctrl+Tab selects minimised tabs without expanding; Enter restores the selected pane 0.016s
+  + maximise still hides sibling strips from group traversal 0.015s
+  + a minimised group with a hidden header still exposes a live keyboard restore target 0.011s
+  + strip focus survives native pulses and restoration returns focus to content 0.661s
+  + actions are API: a host keymap can drive them with the dock's own keys switched off 0.024s
+  + keys the content handles never reach the dock 0.012s
+  + unrelated keys pass through untouched 0.017s
+  + focus cleanup never drags the model's focus; a user's move does 0.677s
+scaladock.fx.ChromeSuite:
+  + pressing a tab that moves focus restyles it in place: the pressed node is never replaced 0.026s
+  + a strip whose tabs fit is not clipped short: tabs slid aside by a drop slot stay visible 0.005s
+  + the tab close glyph closes exactly that pane 0.006s
+  + middle-click closes a closable tab; non-closable panes show no close glyph 0.006s
+  + the maximize button toggles; the group close button closes closable tabs 0.008s
+  + a hidden header renders no header bar and geometry gives the content the full rect 0.005s
+  + overflow menu lists every tab and appears only when the strip is too tight 0.015s
+scaladock.fx.TabMenuSuite:
+  + default items, and Close Others closes exactly the others 0.004s
+  + the hook sees the pane and its group, and returns the final list 0.003s
+  + tabs and header buttons carry accessible roles and names 0.005s
+scaladock.fx.CloseAdmissionSuite:
+  + default admission retains immediate close semantics 0.002s
+  + delayed duplicate close shares admission; veto and failure preserve the pane; retry disposes once 0.006s
+  + whole-dock admission is atomic and rejects a new pane arriving during preparation 0.013s
+  + tab, group and pane-context close paths honor admission 0.003s
+  + a non-closable pane is refused without preparation; a forced edit still removes it 0.005s
+scaladock.fx.PresentationSuite:
+  + repeated host root leases preserve foreign styles/classes and share one live binding 0.077s
+  + open tab menus dismiss on theme/density changes and reopen with current computed colors 0.094s
+  + overflow menus and tooltips dismiss and reopen using current custom styles 0.102s
+  + theme and metric changes cancel ghosts; next ghost owns the current independent root 0.094s
+  + repeated bindings/subscriptions and source handles are released by Dock.dispose 0.072s
+  + scene/window transfer detaches old owners; hide/show recreates float presentation without rebuilding panes 0.209s
+  + retired floating regions have no input bindings and preserve unrelated styles 0.12s
+scaladock.fx.MinimizeFxSuite:
+  + minimizing a bottom panel collapses it to a header strip; restore is exact 0.034s
+  + a group minimized inside a row shows the sideways strip; clicking it restores 0.011s
+  + focusing a pane in a minimized group restores it; drags of strip dividers are refused 0.012s
+[info] Passed: Total 54, Failed 0, Errors 0, Passed 54
+[success] Total time: 25 s, completed Oct 19, 2026, 6:33:06 p.m.
