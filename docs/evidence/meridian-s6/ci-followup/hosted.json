@@ -1,0 +1,58 @@
+{
+  "headSha": "39fccfeaf920ec9e6522351d9ef12c5d1bd7f98b",
+  "status": "completed",
+  "conclusion": "success",
+  "url": "https://github.com/canardlapin/scaladock/actions/runs/39343080741",
+  "jobs": [
+    {
+      "name": "build (ubuntu-latest)",
+      "databaseId": 118369077049,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/canardlapin/scaladock/actions/runs/39343080741/job/118369077049"
+    },
+    {
+      "name": "library-floor",
+      "databaseId": 118369077291,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/canardlapin/scaladock/actions/runs/39343080741/job/118369077291"
+    },
+    {
+      "name": "build (macos-latest)",
+      "databaseId": 118369077294,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/canardlapin/scaladock/actions/runs/39343080741/job/118369077294"
+    },
+    {
+      "name": "current-runtime",
+      "databaseId": 118369077456,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/canardlapin/scaladock/actions/runs/39343080741/job/118369077456"
+    }
+  ],
+  "test_and_runtime_receipts": [
+    "build (ubuntu-latest)\tCompile and test (Linux, virtual display)\t2026-10-19T23:42:30.3557744Z [info] Passed: Total 70, Failed 0, Errors 0, Passed 70",
+    "build (ubuntu-latest)\tCompile and test (Linux, virtual display)\t2026-10-19T23:42:37.4240225Z RUNTIME_PROBE {\"java\":\"25.0.4.1\",\"javafx\":\"24.0.1+4\",\"modules\":[{\"name\":\"unnamed\",\"location\":\"file:/home/runner/.cache/coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-base/24.0.1/javafx-base-24.0.1-linux.jar\"},{\"name\":\"unnamed\",\"location\":\"file:/home/runner/.cache/coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-graphics/24.0.1/javafx-graphics-24.0.1-linux.jar\"},{\"name\":\"unnamed\",\"location\":\"file:/home/runner/.cache/coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-controls/24.0.1/javafx-controls-24.0.1-linux.jar\"}]}",
+    "build (ubuntu-latest)\tCompile and test (Linux, virtual display)\t2026-10-19T23:42:42.2080813Z   + closing main focus survives a floating window's retained focus (main shown=true) 0.449s",
+    "build (ubuntu-latest)\tCompile and test (Linux, virtual display)\t2026-10-19T23:42:42.2082720Z   + closing main focus survives a floating window's retained focus (main shown=false) 0.43s",
+    "build (ubuntu-latest)\tCompile and test (Linux, virtual display)\t2026-10-19T23:42:45.3838827Z [info] Passed: Total 104, Failed 0, Errors 0, Passed 104",
+    "library-floor\tTest core and fx on JDK 22 / JavaFX 24 (virtual display)\t2026-10-19T23:41:53.9926424Z [info] Passed: Total 70, Failed 0, Errors 0, Passed 70",
+    "library-floor\tTest core and fx on JDK 22 / JavaFX 24 (virtual display)\t2026-10-19T23:42:11.0516195Z RUNTIME_PROBE {\"java\":\"22.0.2\",\"javafx\":\"24.0.1+4\",\"modules\":[{\"name\":\"unnamed\",\"location\":\"file:/home/runner/.cache/coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-base/24.0.1/javafx-base-24.0.1-linux.jar\"},{\"name\":\"unnamed\",\"location\":\"file:/home/runner/.cache/coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-graphics/24.0.1/javafx-graphics-24.0.1-linux.jar\"},{\"name\":\"unnamed\",\"location\":\"file:/home/runner/.cache/coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-controls/24.0.1/javafx-controls-24.0.1-linux.jar\"}]}",
+    "library-floor\tTest core and fx on JDK 22 / JavaFX 24 (virtual display)\t2026-10-19T23:42:15.7239113Z   + closing main focus survives a floating window's retained focus (main shown=true) 0.442s",
+    "library-floor\tTest core and fx on JDK 22 / JavaFX 24 (virtual display)\t2026-10-19T23:42:15.7240630Z   + closing main focus survives a floating window's retained focus (main shown=false) 0.427s",
+    "library-floor\tTest core and fx on JDK 22 / JavaFX 24 (virtual display)\t2026-10-19T23:42:19.0277997Z [info] Passed: Total 104, Failed 0, Errors 0, Passed 104",
+    "build (macos-latest)\tCompile and test (macOS)\t2026-10-19T23:42:33.5660490Z [info] Passed: Total 70, Failed 0, Errors 0, Passed 70",
+    "build (macos-latest)\tCompile and test (macOS)\t2026-10-19T23:42:38.3931400Z RUNTIME_PROBE {\"java\":\"25.0.4.1\",\"javafx\":\"24.0.1+4\",\"modules\":[{\"name\":\"unnamed\",\"location\":\"file:/Users/runner/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-base/24.0.1/javafx-base-24.0.1-mac-aarch64.jar\"},{\"name\":\"unnamed\",\"location\":\"file:/Users/runner/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-graphics/24.0.1/javafx-graphics-24.0.1-mac-aarch64.jar\"},{\"name\":\"unnamed\",\"location\":\"file:/Users/runner/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-controls/24.0.1/javafx-controls-24.0.1-mac-aarch64.jar\"}]}",
+    "build (macos-latest)\tCompile and test (macOS)\t2026-10-19T23:42:46.4079230Z   + closing main focus survives a floating window's retained focus (main shown=true) 0.631s",
+    "build (macos-latest)\tCompile and test (macOS)\t2026-10-19T23:42:46.4182630Z   + closing main focus survives a floating window's retained focus (main shown=false) 0.547s",
+    "build (macos-latest)\tCompile and test (macOS)\t2026-10-19T23:42:51.6942810Z [info] Passed: Total 104, Failed 0, Errors 0, Passed 104",
+    "current-runtime\tQualify the real JavaFX 27 runtime\t2026-10-19T23:42:36.4408966Z [info] Passed: Total 70, Failed 0, Errors 0, Passed 70",
+    "current-runtime\tQualify the real JavaFX 27 runtime\t2026-10-19T23:42:44.5762906Z RUNTIME_PROBE {\"java\":\"25.0.4.1\",\"javafx\":\"27+30\",\"modules\":[{\"name\":\"javafx.base\",\"location\":\"file:/home/runner/.cache/coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-base/27/javafx-base-27-linux.jar\"},{\"name\":\"javafx.graphics\",\"location\":\"file:/home/runner/.cache/coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-graphics/27/javafx-graphics-27-linux.jar\"},{\"name\":\"javafx.controls\",\"location\":\"file:/home/runner/.cache/coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-controls/27/javafx-controls-27-linux.jar\"}]}",
+    "current-runtime\tQualify the real JavaFX 27 runtime\t2026-10-19T23:42:49.9019121Z   + closing main focus survives a floating window's retained focus (main shown=true) 0.455s",
+    "current-runtime\tQualify the real JavaFX 27 runtime\t2026-10-19T23:42:49.9020582Z   + closing main focus survives a floating window's retained focus (main shown=false) 0.441s",
+    "current-runtime\tQualify the real JavaFX 27 runtime\t2026-10-19T23:42:53.6166163Z [info] Passed: Total 104, Failed 0, Errors 0, Passed 104"
+  ]
+}

@@ -1,0 +1,1 @@
+{"actor":"codex-scaladock-s4-s6","entity":"bd-01M4Y1AD9D3H9T2PPFKHJYFF3S","kind":"note","note_kind":"progress","op":"20261019T233804.105935Z-p89801-c0003-r4b49-hd3630e","text":"PR 2 CI run 39341541991 exposed focus recovery failure in all three Linux lanes; retain prior local receipts and add a correction.","ts":"2026-10-19T23:38:04.105935Z","v":1}

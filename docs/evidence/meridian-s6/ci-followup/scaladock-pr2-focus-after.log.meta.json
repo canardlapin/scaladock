@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "started_utc": "2026-10-19T23:38:57.064944+00:00",
+  "finished_utc": "2026-10-19T23:39:23.518496+00:00",
+  "duration_seconds": 26.453272,
+  "command": [
+    "env",
+    "CI=true",
+    "JAVA_HOME=/opt/homebrew/Cellar/openjdk/25.0.1",
+    "sbt",
+    "-batch",
+    "scalafmtAll",
+    "scalafmtCheckAll",
+    "fx/testOnly scaladock.fx.AccessibilitySuite scaladock.fx.KeyboardSuite scaladock.fx.PresentationSuite"
+  ],
+  "cwd": "/Users/bbuchsbaum/code/scala/scaladock",
+  "log": "/private/tmp/scaladock-pr2-focus-after.log",
+  "exit_code": 0,
+  "child_returncode": 0,
+  "reason": "exited",
+  "detail": null,
+  "timeout_seconds": 300.0,
+  "log_bytes": 6677
+}
