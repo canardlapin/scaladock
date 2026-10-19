@@ -29,6 +29,8 @@ final class Dock private (
   private var current: LayoutState             = LayoutState.empty
   private var updating                         = false
   private var disposed                         = false
+  private var currentMotion                    = DockMotion.System
+  private var effectiveReducedMotion           = false
   private val lifetime                         = new PresentationScope
   private final class StyledRoot(val styles: RootStyles):
     var users = 0
@@ -63,6 +65,28 @@ final class Dock private (
 
   /** The requested density before CSS preferred minima are applied. */
   def requestedSettings: LayoutSettings = requestedMetrics
+
+  /** Requested animation policy; System follows the OS preference on JavaFX 24 and later. */
+  def motion: DockMotion = currentMotion
+
+  /** Effective policy for custom docking chrome, including any explicit host override. */
+  def isReducedMotion: Boolean = effectiveReducedMotion
+
+  /** Update on the FX thread. Reducing motion immediately settles live glides, fades and slides
+    * while preserving the current drop target and pointer-follow behavior.
+    */
+  def setMotion(next: DockMotion): Unit =
+    require(javafx.application.Platform.isFxApplicationThread, "Motion updates require JavaFX")
+    require(!disposed && next != null, "A live dock and non-null motion policy are required")
+    currentMotion = next
+    refreshMotion()
+
+  private def refreshMotion(): Unit =
+    effectiveReducedMotion = currentMotion match
+      case DockMotion.System  => javafx.application.Platform.getPreferences.isReducedMotion
+      case DockMotion.Full    => false
+      case DockMotion.Reduced => true
+    allRenderers.foreach(_.setReducedMotion(effectiveReducedMotion))
 
   /** Atomically change presentation without rebuilding panes or modifying LayoutState. Validate
     * first; cancel armed/active gestures before publishing new metrics. CSS minima may raise
@@ -413,9 +437,14 @@ final class Dock private (
     bindings = keys
 
   private[fx] def handleKey(e: javafx.scene.input.KeyEvent): Unit =
-    bindings.collectFirst { case (combo, action) if combo.`match`(e) => action }.foreach: action =>
-      perform(action)
+    if e.getCode == javafx.scene.input.KeyCode.ESCAPE && allRenderers.exists(_.isResizing) then
+      cancelGestures()
       e.consume()
+    else
+      bindings.collectFirst { case (combo, action) if combo.`match`(e) => action }.foreach:
+        action =>
+          perform(action)
+          e.consume()
 
   /** Groups keyboard navigation visits: every window in layout order, including minimised strips,
     * but skipping groups hidden by a maximise.
@@ -487,6 +516,12 @@ final class Dock private (
 
   /** Wiring that needs a fully constructed dock (called once by [[Dock.apply]]). */
   private[fx] def attach(): Unit =
+    val preference = javafx.application.Platform.getPreferences.reducedMotionProperty
+    val motionListener: javafx.beans.value.ChangeListener[java.lang.Boolean] = (_, _, _) =>
+      if currentMotion == DockMotion.System then refreshMotion()
+    preference.addListener(motionListener)
+    val _ = lifetime.own(() => preference.removeListener(motionListener))
+    refreshMotion()
     main.attachMetrics()
     val owner = PresentationBindings.window(main.region): window =>
       val hidden: javafx.event.EventHandler[javafx.stage.WindowEvent] = _ =>
@@ -681,6 +716,7 @@ final class Dock private (
 
   private[fx] def wireGroupView(gv: GroupView): Unit =
     val groupId = gv.nodeId
+    gv.setReducedMotion(isReducedMotion)
     gv.stylePopup = root => bindStylesheets(root)
     gv.attachPresentation()
     gv.onTabActivated = id => update(edit.focus(_, id))
@@ -1024,6 +1060,7 @@ private[fx] final class WindowRenderer(dock: Dock, floating: Boolean):
     if !attached then
       attached = true
       region.settings = () => dock.settings
+      region.setReducedMotion(dock.isReducedMotion)
       region.refreshMetrics = () => dock.refreshMetrics()
       region.attach()
       region.setThemeSheet(dock.themeStylesheet)
@@ -1037,6 +1074,11 @@ private[fx] final class WindowRenderer(dock: Dock, floating: Boolean):
 
   def bindingCount: Int       = region.bindingCount + groupViews.values.map(_.bindingCount).sum
   def dismissOverlays(): Unit = groupViews.values.foreach(_.dismissOverlays())
+
+  def setReducedMotion(reduced: Boolean): Unit =
+    region.setReducedMotion(reduced)
+    groupViews.values.foreach(_.setReducedMotion(reduced))
+    dividerViews.values.foreach(_.setReducedMotion(reduced))
 
   def dispose(): Unit =
     groupViews.values.foreach(_.dispose())
@@ -1057,6 +1099,8 @@ private[fx] final class WindowRenderer(dock: Dock, floating: Boolean):
     groupViews.values.foreach(_.resetInsertion())
     region.previewSplit(None)
     region.hideIndicator()
+
+  def isResizing: Boolean = dividerViews.values.exists(_.isResizing)
 
   def groupViewFor(id: NodeId): Option[GroupView] = groupViews.get(id)
 
@@ -1103,6 +1147,8 @@ private[fx] final class WindowRenderer(dock: Dock, floating: Boolean):
       .toSet
     neededDividers.filterNot(dividerViews.contains).foreach: key =>
       val dv = DividerView(key._1, key._2)
+      dv.setReducedMotion(dock.isReducedMotion)
+      dv.attachMotion()
       dock.wireDividerView(dv, region)
       dividerViews(key) = dv
       region.addView(dv)

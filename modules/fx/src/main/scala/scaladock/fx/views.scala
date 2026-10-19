@@ -61,6 +61,7 @@ private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => Lay
   private val overlayLife = new PresentationScope
   private val menus    = collection.mutable.Map.empty[javafx.scene.control.ContextMenu, () => Unit]
   private var disposed = false
+  private var reducedMotion                                       = false
   private var presentationAttached                                = false
   private[fx] var stylePopup: javafx.scene.Parent => Subscription = _ => () => ()
 
@@ -329,7 +330,9 @@ private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => Lay
         scene.focusOwnerProperty.addListener(listener)
         refresh(scene.getFocusOwner)
         () => scene.focusOwnerProperty.removeListener(listener)
-      val _ = overlayLife.own(() => binding.cancel())
+      val _          = overlayLife.own(() => binding.cancel())
+      val visibility = MotionVisibility.onHidden(this)(() => resetInsertion())
+      val _          = overlayLife.own(() => visibility.cancel())
 
   /** Resolve chrome focus as well as content focus without expanding a minimized group. */
   def paneContaining(node: FxNode): Option[PaneId] =
@@ -562,13 +565,17 @@ private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => Lay
     * slide right, so a header drop previews as a real slot rather than a hairline.
     */
   def previewInsertion(gap: Option[(Int, Double)]): Unit =
+    if disposed then return
     tabNodes.zipWithIndex.foreach:
       case ((id, node), i) =>
         val to = gap.collect { case (at, w) if i >= at => w }.getOrElse(0.0)
         // one slide per tab, retargeted rather than stacked: compare against where the running
         // slide is heading, not where the tab happens to be this frame
         val heading = slides.get(id).fold(node.getTranslateX)(_._2)
-        if math.abs(heading - to) > 0.5 then
+        if reducedMotion || !MotionVisibility.isShowing(this) then
+          slides.remove(id).foreach(_._1.stop())
+          node.setTranslateX(to)
+        else if math.abs(heading - to) > 0.5 then
           slides.get(id).foreach(_._1.stop())
           val slide = new javafx.animation.TranslateTransition(GroupView.SlideTime, node)
           slide.setToX(to)
@@ -576,6 +583,16 @@ private[fx] final class GroupView(val nodeId: NodeId, initialSettings: () => Lay
           slide.setOnFinished(_ => slides.remove(id): Unit)
           slides(id) = (slide, to)
           slide.play()
+
+  private[fx] def slideCount: Int = slides.size
+
+  private[fx] def setReducedMotion(reduced: Boolean): Unit =
+    reducedMotion = reduced
+    if reduced then
+      slides.foreach: (id, running) =>
+        running._1.stop()
+        tabViews.get(id).foreach(_.setTranslateX(running._2))
+      slides.clear()
 
   /** Close any opened slot at once (a drop is about to re-lay the strip). */
   def resetInsertion(): Unit =
@@ -791,7 +808,21 @@ private[fx] final class DividerView(val splitId: NodeId, val index: Int) extends
   sash.getStyleClass.add("dock-divider-sash")
   sash.setMouseTransparent(true)
 
-  private val hoverDelay = new javafx.animation.PauseTransition(javafx.util.Duration.millis(250))
+  private val hoverDelay    = new javafx.animation.PauseTransition(javafx.util.Duration.millis(250))
+  private var reducedMotion = false
+  private var visibility: Option[scaladock.Subscription] = None
+
+  private[fx] def attachMotion(): Unit =
+    visibility = Some(MotionVisibility.onHidden(this)(() => cancel()))
+
+  private[fx] def setReducedMotion(reduced: Boolean): Unit =
+    reducedMotion = reduced
+    if reduced then
+      hoverDelay.stop()
+      pseudoClassStateChanged(pseudo.Hot, isHover && MotionVisibility.isShowing(this))
+
+  private[fx] def hoverPending: Boolean =
+    hoverDelay.getStatus == javafx.animation.Animation.Status.RUNNING
 
   private var axis: Axis                                              = Axis.Horizontal
   private[fx] var dragContext: () => Option[DividerView.DragContext]  = () => None
@@ -802,6 +833,7 @@ private[fx] final class DividerView(val splitId: NodeId, val index: Int) extends
   private[fx] var onPreviewEnd: () => Unit                             = () => ()
 
   private var active: Option[(Double, DividerView.DragContext)] = None
+  private[fx] def isResizing: Boolean                           = active.isDefined
 
   /** The scene whose cursor the gesture borrowed, and the cursor to hand back. */
   private var borrowed: Option[(javafx.scene.Scene, javafx.scene.Cursor)] = None
@@ -813,7 +845,9 @@ private[fx] final class DividerView(val splitId: NodeId, val index: Int) extends
 
   hoverDelay.setOnFinished(_ => pseudoClassStateChanged(pseudo.Hot, true))
   hoverProperty.addListener: (_, _, hovering) =>
-    if hovering then hoverDelay.playFromStart()
+    if hovering && MotionVisibility.isShowing(this) then
+      if reducedMotion then pseudoClassStateChanged(pseudo.Hot, true)
+      else hoverDelay.playFromStart()
     else
       hoverDelay.stop()
       pseudoClassStateChanged(pseudo.Hot, false)
@@ -833,6 +867,8 @@ private[fx] final class DividerView(val splitId: NodeId, val index: Int) extends
 
   def dispose(): Unit =
     cancel()
+    visibility.foreach(_.cancel())
+    visibility = None
     dragContext = () => None
     onCommit = (_, _) => ()
     onPreview = (_, _) => ()

@@ -172,6 +172,41 @@ dismiss/reopen cases, logical binding-scope counts, old-owner/retired-input chec
 repeated lifecycle cycles and timed native scene captures. These counts describe
 owned registrations, not a JVM heap or garbage-collection benchmark.
 
+## Motion preferences
+
+ScalaDock's custom chrome defaults to `DockMotion.System`. It follows
+`Platform.getPreferences.reducedMotionProperty()` on JavaFX 24 and later,
+including changes while a drag is in progress. JavaFX reports `false` when the
+platform supplies no preference. See the [JavaFX 24 preference contract](https://openjfx.io/javadoc/24/javafx.graphics/javafx/application/Platform.Preferences.html#reducedMotionProperty()).
+
+Hosts can override the policy on the JavaFX application thread:
+
+```scala
+import scaladock.fx.DockMotion
+
+dock.setMotion(DockMotion.Reduced) // settle custom motion immediately
+dock.setMotion(DockMotion.Full)    // use the short custom animations
+dock.setMotion(DockMotion.System)  // resume following the OS
+val reduced: Boolean = dock.isReducedMotion // effective policy
+```
+
+For an application-specific preference, call `setMotion` from the preference's
+FX-thread change callback; cancel that host-owned listener when the host closes.
+The built-in System listener is owned and released by `Dock.dispose()`. No
+JavaFX 27-only API or reflection is required. This policy controls ScalaDock's
+indicator, tab slides and divider feedback. Pane content, native control skins
+and host-owned Scene preferences retain their own policies; hosts should apply
+their preference consistently to those surfaces too.
+
+Reduced motion snaps the drop indicator and insertion tabs to the current target,
+removes the indicator fade, and shows divider hover feedback without its delay.
+Changing policy preserves the active drop target and immediate pointer-following
+drag chip. Full motion uses the existing 35 ms indicator approach constant,
+90 ms entrance fade, 110 ms tab slide and 250 ms divider hover delay. The custom
+timer stops when it settles. Hiding an ancestor/window, detaching a root, cancelling
+a gesture, or disposing a view clears transient feedback and stops owned work.
+Theme and density changes continue to cancel gestures before recomputing geometry.
+
 ## Variables (define these in a custom theme)
 
 Define them on the `.dock` selector — the marker class carried by every dock window's root
