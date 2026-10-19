@@ -1,0 +1,35 @@
+{
+  "candidate": "87f900e9bdb1cce08872b363d4fe20a04c458b29",
+  "tracked_diff": [],
+  "lane": "floor",
+  "jdk_home": "/Users/bbuchsbaum/Library/Java/JavaVirtualMachines/openjdk-22/Contents/Home",
+  "jdk_info": "Property settings:\n    file.encoding = UTF-8\n    file.separator = /\n    ftp.nonProxyHosts = local|*.local|169.254/16|*.169.254/16\n    http.nonProxyHosts = local|*.local|169.254/16|*.169.254/16\n    java.class.path = \n    java.class.version = 66.0\n    java.home = /Users/bbuchsbaum/Library/Java/JavaVirtualMachines/openjdk-22/Contents/Home\n    java.io.tmpdir = /var/folders/9h/nkjq6vss7mqdl4ck7q1hd8ph0000gp/T/\n    java.library.path = /Users/bbuchsbaum/Library/Java/Extensions\n        /Library/Java/Extensions\n        /Network/Library/Java/Extensions\n        /System/Library/Java/Extensions\n        /usr/lib/java\n        .\n    java.runtime.name = OpenJDK Runtime Environment\n    java.runtime.version = 22+36-2370\n    java.specification.name = Java Platform API Specification\n    java.specification.vendor = Oracle Corporation\n    java.specification.version = 22\n    java.vendor = Oracle Corporation\n    java.vendor.url = https://java.oracle.com/\n    java.vendor.url.bug = https://bugreport.java.com/bugreport/\n    java.version = 22\n    java.version.date = 2024-03-19\n    java.vm.compressedOopsMode = Zero based\n    java.vm.info = mixed mode, sharing\n    java.vm.name = OpenJDK 64-Bit Server VM\n    java.vm.specification.name = Java Virtual Machine Specification\n    java.vm.specification.vendor = Oracle Corporation\n    java.vm.specification.version = 22\n    java.vm.vendor = Oracle Corporation\n    java.vm.version = 22+36-2370\n    jdk.debug = release\n    line.separator = \\n \n    native.encoding = US-ASCII\n    os.arch = aarch64\n    os.name = Mac OS X\n    os.version = 14.3\n    path.separator = :\n    socksNonProxyHosts = local|*.local|169.254/16|*.169.254/16\n    stderr.encoding = US-ASCII\n    stdout.encoding = US-ASCII\n    sun.arch.data.model = 64\n    sun.boot.library.path = /Users/bbuchsbaum/Library/Java/JavaVirtualMachines/openjdk-22/Contents/Home/lib\n    sun.cpu.endian = little\n    sun.io.unicode.encoding = UnicodeBig\n    sun.java.launcher = SUN_STANDARD\n    sun.jnu.encoding = UTF-8\n    sun.management.compiler = HotSpot 64-Bit Tiered Compilers\n    user.country = CA\n    user.dir = /Users/bbuchsbaum/code/scala/scaladock\n    user.home = /Users/bbuchsbaum\n    user.language = en\n    user.name = bbuchsbaum\n\nopenjdk version \"22\" 2024-03-19\nOpenJDK Runtime Environment (build 22+36-2370)\nOpenJDK 64-Bit Server VM (build 22+36-2370, mixed mode, sharing)\n",
+  "javafx": "24.0.1",
+  "classifier": "mac-aarch64",
+  "jars": [
+    {
+      "path": "/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-base/24.0.1/javafx-base-24.0.1-mac-aarch64.jar",
+      "sha256": "0ea913712b982e24be7fb20d1a90b45dafc38403f49dd9d494d1d0d3b43e8794"
+    },
+    {
+      "path": "/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-graphics/24.0.1/javafx-graphics-24.0.1-mac-aarch64.jar",
+      "sha256": "90b9c1c89ebd0d79a8af6951517516828cd08896def96871af015cf0a09cdf53"
+    },
+    {
+      "path": "/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-controls/24.0.1/javafx-controls-24.0.1-mac-aarch64.jar",
+      "sha256": "0c90550f1989637741c2f08bfb8c37216c2d55b0a7d047169d60815cc9e44dbf"
+    }
+  ],
+  "command": [
+    "sbt",
+    "-batch",
+    "set fx / Test / javaOptions ++= Seq(\"--module-path\",\"/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-base/24.0.1/javafx-base-24.0.1-mac-aarch64.jar:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-graphics/24.0.1/javafx-graphics-24.0.1-mac-aarch64.jar:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-controls/24.0.1/javafx-controls-24.0.1-mac-aarch64.jar\",\"--add-modules\",\"javafx.controls\",\"--enable-native-access=javafx.graphics\",\"-Dscaladock.expectedJavafx=24.0.1\",\"-Dscaladock.expectedJava=22\")",
+    "set fx / Test / fullClasspath := (fx / Test / fullClasspath).value.filterNot(_.data.getName.startsWith(\"javafx-\")) ++ Seq(Attributed.blank(file(\"/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-base/24.0.1/javafx-base-24.0.1-mac-aarch64.jar\")),Attributed.blank(file(\"/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-graphics/24.0.1/javafx-graphics-24.0.1-mac-aarch64.jar\")),Attributed.blank(file(\"/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-controls/24.0.1/javafx-controls-24.0.1-mac-aarch64.jar\")))",
+    "scalafmtCheckAll",
+    "core/compile",
+    "fx/compile",
+    "core/test",
+    "fx/test"
+  ],
+  "exit_code": 0
+}

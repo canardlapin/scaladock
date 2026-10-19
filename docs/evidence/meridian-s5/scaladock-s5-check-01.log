@@ -1,0 +1,90 @@
+[info] welcome to sbt 1.12.14 (Homebrew Java 25.0.1)
+[info] loading settings for project scaladock-build from plugins.sbt...
+[info] loading project definition from /Users/bbuchsbaum/code/scala/scaladock/project
+[info] loading settings for project root from build.sbt...
+[info] set current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)
+[info] scalafmt: Formatting 4 Scala sources (/Users/bbuchsbaum/code/scala/scaladock/modules/fx)...
+[info] scalafmt: Reformatted 4 Scala sources
+[success] Total time: 4 s, completed Oct 19, 2026, 6:52:50 p.m.
+[info] scalafmt: Formatting 1 Scala sources (/Users/bbuchsbaum/code/scala/scaladock/modules/fx)...
+[info] scalafmt: Reformatted 1 Scala sources
+[success] Total time: 0 s, completed Oct 19, 2026, 6:52:51 p.m.
+[info] compiling 9 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/core/target/scala-3.7.4/classes ...
+[info] done compiling
+[info] compiling 9 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/fx/target/scala-3.7.4/classes ...
+[info] done compiling
+[info] compiling 21 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/fx/target/scala-3.7.4/test-classes ...
+[warn] -- [E176] Potential Issue Warning: /Users/bbuchsbaum/code/scala/scaladock/modules/fx/src/test/scala/scaladock/fx/MotionSuite.scala:81:8 
+[warn] 81 |        intercept[IllegalArgumentException](d.setMotion(null))
+[warn]    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[warn]    |        unused value of type IllegalArgumentException
+[warn] -- [E176] Potential Issue Warning: /Users/bbuchsbaum/code/scala/scaladock/modules/fx/src/test/scala/scaladock/fx/MotionSuite.scala:185:13 
+[warn] 185 |        start(d)
+[warn]     |        ^^^^^^^^
+[warn]     |unused value of type (scaladock.fx.DockRegion, scaladock.fx.GroupView)
+[warn] two warnings found
+[info] done compiling
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by scala.runtime.LazyVals$ (file:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala3-library_3/3.7.4/scala3-library_3-3.7.4.jar)
+WARNING: Please consider reporting this to the maintainers of class scala.runtime.LazyVals$
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+Oct 19, 2026 6:53:15 P.M. com.sun.javafx.application.PlatformImpl startup
+WARNING: Unsupported JavaFX configuration: classes were loaded from 'unnamed module @7047ea8c'
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by com.sun.glass.utils.NativeLibLoader in an unnamed module (file:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-graphics/24.0.1/javafx-graphics-24.0.1-mac-aarch64.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+MOTION_TRACE {"label":"reduced-immediate","java":"25.0.1","javafx":"24.0.1+4","policy":"Reduced","reduced":true,"indicatorAnimating":false,"shownX":10,"targetX":10,"slides":0}
+MOTION_TRACE {"label":"full-start","java":"25.0.1","javafx":"24.0.1+4","policy":"Full","reduced":false,"indicatorAnimating":true,"shownX":14,"targetX":264,"slides":2}
+MOTION_TRACE {"label":"switched-reduced","java":"25.0.1","javafx":"24.0.1+4","policy":"Reduced","reduced":true,"indicatorAnimating":false,"shownX":264,"targetX":264,"slides":0}
+MOTION_TRACE {"label":"full-pulse","java":"25.0.1","javafx":"24.0.1+4","policy":"Full","reduced":false,"indicatorAnimating":true,"shownX":108.71371059613712,"targetX":264,"slides":2}
+MOTION_TRACE {"label":"full-pulse","java":"25.0.1","javafx":"24.0.1+4","policy":"Full","reduced":false,"indicatorAnimating":true,"shownX":209.02714605161157,"targetX":264,"slides":2}
+MOTION_TRACE {"label":"full-pulse","java":"25.0.1","javafx":"24.0.1+4","policy":"Full","reduced":false,"indicatorAnimating":false,"shownX":264,"targetX":264,"slides":0}
+MOTION_TRACE {"label":"ancestor","java":"25.0.1","javafx":"24.0.1+4","policy":"Full","reduced":false,"indicatorAnimating":false,"shownX":-1,"targetX":-1,"slides":0}
+MOTION_TRACE {"label":"detached","java":"25.0.1","javafx":"24.0.1+4","policy":"Full","reduced":false,"indicatorAnimating":false,"shownX":-1,"targetX":-1,"slides":0}
+MOTION_TRACE {"label":"window","java":"25.0.1","javafx":"24.0.1+4","policy":"Full","reduced":false,"indicatorAnimating":false,"shownX":-1,"targetX":-1,"slides":0}
+MOTION_TRACE {"label":"dispose","java":"25.0.1","javafx":"24.0.1+4","policy":"Full","reduced":false,"indicatorAnimating":false,"shownX":-1,"targetX":-1,"slides":0}
+MOTION_TRACE {"label":"floating-hidden","java":"25.0.1","javafx":"24.0.1+4","policy":"Reduced","reduced":true,"indicatorAnimating":false,"shownX":-1,"targetX":-1,"slides":0}
+scaladock.fx.MotionSuite:
+  + system follows the floor OS preference; explicit overrides and validation preserve state 0.744s
+  + reduced motion draws exact targets immediately without fades or slides 0.099s
+  + switching to reduced mid-animation settles the existing target without cancelling feedback 0.086s
+  + full motion advances on native pulses and stops when settled 0.55s
+  + hidden ancestors, detached roots, hidden windows and disposal stop all custom motion 0.273s
+  + policy changes survive theme and density updates and floating-owner closure 0.1s
+==> X scaladock.fx.MotionSuite.reduced-motion drag cancellation clears feedback and restores the divider cursor  0.087s munit.ComparisonFailException: modules/fx/src/test/scala/scaladock/fx/MotionSuite.scala:247
+246:        )
+247:        assertEquals(stage.getScene.getCursor, Cursor.CROSSHAIR)
+248:        assertEquals(d.state, before)
+values are not the same
+=> Obtained
+H_RESIZE
+=> Diff (- expected, + obtained)
+-CROSSHAIR
++H_RESIZE
+    at munit.FunSuite.assertEquals(FunSuite.scala:13)
+    at scaladock.fx.MotionSuite.$init$$$anonfun$7$$anonfun$1(MotionSuite.scala:247)
+    at scaladock.fx.MotionSuite.$init$$$anonfun$7$$anonfun$adapted$1(MotionSuite.scala:252)
+    at scaladock.fx.FxFixture$.onFx$$anonfun$2(FxFixture.scala:26)
+    at com.sun.javafx.application.PlatformImpl.lambda$runLater$4(PlatformImpl.java:419)
+    at com.sun.glass.ui.InvokeLaterDispatcher$Future.run(InvokeLaterDispatcher.java:95)
+scaladock.fx.DragDropSuite:
+  + dragging a tab onto another group's bottom half splits it vertically 50/50 0.091s
+  + dropping on a header inserts as a tab; a hopeless miss returns the pane home 0.087s
+  + a window's lone tab dropped on that window's own edge changes nothing 0.064s
+  + reordering within a group lands at the index shown, accounting for the tab's own removal 0.059s
+  + a drag source fabricates a pane on drop and nothing on a miss 0.072s
+scaladock.fx.PresentationSuite:
+  + repeated host root leases preserve foreign styles/classes and share one live binding 0.104s
+  + open tab menus dismiss on theme/density changes and reopen with current computed colors 0.115s
+  + overflow menus and tooltips dismiss and reopen using current custom styles 0.109s
+  + theme and metric changes cancel ghosts; next ghost owns the current independent root 0.089s
+  + repeated bindings/subscriptions and source handles are released by Dock.dispose 0.068s
+  + scene/window transfer detaches old owners; hide/show recreates float presentation without rebuilding panes 0.202s
+  + retired floating regions have no input bindings and preserve unrelated styles 0.129s
+[error] Failed: Total 19, Failed 1, Errors 0, Passed 18
+[error] Failed tests:
+[error] 	scaladock.fx.MotionSuite
+[error] (fx / Test / testOnly) sbt.TestsFailedException: Tests unsuccessful
+[error] Total time: 28 s, completed Oct 19, 2026, 6:53:18 p.m.

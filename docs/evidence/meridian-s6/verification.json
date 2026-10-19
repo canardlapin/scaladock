@@ -1,0 +1,58 @@
+{
+  "source_candidate": "87f900e9bdb1cce08872b363d4fe20a04c458b29",
+  "source_manifest_sha256": "2ad5e60f34f6dbb629a075530d28abb725dc4de31d61763a7ef7dee2a6fa8869",
+  "independent_review_sha256": "1d01bc0057397d0d98140a6e78283842063aa36362cf309b683459b3a33fd49e",
+  "native_harness_binary_sha256": "3d50ca1374e6c4263d3adc72696a05fb0e392540ca9e69266e8460a741dabb8f",
+  "results": {
+    "floor": {
+      "core": 70,
+      "fx": 103,
+      "native_actions": 9,
+      "native_enabled_false": 8,
+      "exit_code": 0
+    },
+    "current": {
+      "core": 70,
+      "fx": 103,
+      "native_actions": 9,
+      "native_enabled_false": 9,
+      "exit_code": 0
+    }
+  },
+  "inherited_evidence": {
+    "S4_manifest_sha256": "671037104298f5b18c5ea9ff13b9102134e382ff8e30bde75808a124ef3f6fb9",
+    "S5_manifest_sha256": "8237c360fe4ce0cd7ae848e092604fd2231866f278c4df729cd75f2546c0fb2f",
+    "S5_review_sha256": "262cb1a82fa1ad695c50393205c7297c02c2b6c74b1249d7c694cadae58fcd3e"
+  },
+  "artifact_sha256": {
+    "README.md": "76befc590ec107d3d65da5c2069ee9be726fb6058ed3efec348a63cd8f50b167",
+    "api-shape.json": "9d36e21445c94f9dceb8e2ab329115f9625a04ee35f836bdf1419a8281eea7ae",
+    "current-01.json": "ba341ad4aa68a77bd124e540d8a079b9fe242757d943424c5a38e5ea843ab6d8",
+    "dock-api-candidate.txt": "aa0d643c32cf02f5e253eba3b3279c9493ef89860b9f016aa8448faed96f2a70",
+    "dock-api-s3.txt": "28821c085e2c2a18d2c015964ee0f4746d6ada6761abc6c1448649df328e7044",
+    "floor-01.json": "379fbc015306dc4af97e585ddbb2df2daf53b20f3fb88a35f7e482d7c26c26f9",
+    "independent-review.md": "1d01bc0057397d0d98140a6e78283842063aa36362cf309b683459b3a33fd49e",
+    "native-current/actions.json": "9293acec13df51d4244062b16664a02d6e58945217d02c79d043c1669d818b11",
+    "native-current/ax-after.json": "3ba3d189342f82c5f4cb0991e967a7bc1bd6414b3b16817909df746b975ac60b",
+    "native-current/ax-before.json": "e47201fb8e3c23eba69d3fa9090dddd0b5968fba34181c91f6a14ff59e0f5dc6",
+    "native-current/state.json": "c619dd5fa0c6c0478fa916aac314185ebdacbc3d535ce9a3b6867792fe78b641",
+    "native-floor/actions.json": "abaf5bba1c6499900dc11515ccd15c6a138b9dfe93202653d434582e82fbdefd",
+    "native-floor/ax-after.json": "7142d772cc48d2bb80487479ae87ef94777d54e240517b8731593167b9fa8528",
+    "native-floor/ax-before.json": "e8845046494918f0ef3d52f085fa014a73c3b135c9df4de8eb257cfc71d37add",
+    "native-floor/state.json": "ba67fbee1da5e6c59ea558feb9e11dce14658067c57dacd48c601898311a16c1",
+    "scaladock-s6-ax-current.log": "90d4f74f76d1fd8f0294cf1791109659efed345d124da0a4104f08d668ef8ec2",
+    "scaladock-s6-ax-current.log.meta.json": "b835a74bf00ec4ebbeab7f8304803507d2d18500260967b228c23930791386a8",
+    "scaladock-s6-ax-floor.log": "eeebad3cd1794c3717442308bc82b2d3e146cf654de5f2aac3c7dfa1a2d02fae",
+    "scaladock-s6-ax-floor.log.meta.json": "ce1b54ee9f979ed881a79ebeaa4047f6bde6947e51ff03d61ff030e4abc2f026",
+    "scaladock-s6-current-01.log": "d6bf3723090267559879a0e5114f649d59138b6fcdaf00a4d22b2005b497fa3f",
+    "scaladock-s6-current-01.log.meta.json": "6e321a45cda59ce339319a0b8edbe9fe17ca61a6dba511282e36656db29a9bea",
+    "scaladock-s6-floor-01.log": "f3a7b8a3ce47d05b03fd2924f086236c652208fe4cdcd77862eb6d0685cb8b6b",
+    "scaladock-s6-floor-01.log.meta.json": "ce6b27c2ca5b120cc16f9024c7f6171cbfb08bfd538082f6ce7152f0f3f158d4",
+    "scaladock-s6-native-current.log": "3263d5745a7fc009be289f53a7a5544a485aa6f25e521f1d37fe45b61a18fc3e",
+    "scaladock-s6-native-current.log.meta.json": "1178eba485eaff0fa4022da0433d1443bdeff7e8bf97d359285debbd43bf4922",
+    "scaladock-s6-native-floor.log": "8a6e3b2cfa810fd4734352a8a80cf6b14af19c4c8ba0f9fe5fae5c406e230e57",
+    "scaladock-s6-native-floor.log.meta.json": "216054b0daf09afb6b37cfec0fae2823acd3b47d90827c8d8fc5bdd78179e764",
+    "source-manifest.json": "2ad5e60f34f6dbb629a075530d28abb725dc4de31d61763a7ef7dee2a6fa8869"
+  },
+  "scope": "Local macOS/aarch64 provider qualification with user-accepted upstream AXEnabled limitation. No hosted CI, B0 consumer acceptance, landing or publication."
+}

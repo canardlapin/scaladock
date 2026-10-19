@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "started_utc": "2026-10-19T23:00:06.522551+00:00",
+  "finished_utc": "2026-10-19T23:00:44.228916+00:00",
+  "duration_seconds": 37.706056,
+  "command": [
+    "python3",
+    "tools/qualify_runtime.py",
+    "current",
+    "--java-home",
+    "/opt/homebrew/opt/openjdk@25",
+    "--manifest",
+    "docs/evidence/meridian-s6/current-01.json"
+  ],
+  "cwd": "/Users/bbuchsbaum/code/scala/scaladock",
+  "log": "/tmp/scaladock-s6-current-01.log",
+  "exit_code": 0,
+  "child_returncode": 0,
+  "reason": "exited",
+  "detail": null,
+  "timeout_seconds": 600.0,
+  "log_bytes": 20104
+}

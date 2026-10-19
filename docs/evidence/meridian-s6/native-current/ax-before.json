@@ -1,0 +1,336 @@
+[
+  {
+    "actions" : [
+      "AXRaise"
+    ],
+    "AXFocused" : false,
+    "AXRole" : "AXWindow",
+    "AXTitle" : "ScalaDock S4 synthetic accessibility probe",
+    "depth" : 0
+  },
+  {
+    "actions" : [
+      "AXPress"
+    ],
+    "AXDescription" : "Alpha",
+    "AXEnabled" : false,
+    "AXFocused" : false,
+    "AXRole" : "AXRadioButton",
+    "AXTitle" : "Alpha",
+    "AXValue" : true,
+    "depth" : 1
+  },
+  {
+    "actions" : [
+
+    ],
+    "AXEnabled" : false,
+    "AXFocused" : false,
+    "AXRole" : "AXStaticText",
+    "AXValue" : "Alpha",
+    "depth" : 2
+  },
+  {
+    "actions" : [
+
+    ],
+    "AXEnabled" : false,
+    "AXFocused" : false,
+    "AXRole" : "AXStaticText",
+    "AXValue" : "Alpha",
+    "depth" : 3
+  },
+  {
+    "actions" : [
+      "AXPress"
+    ],
+    "AXDescription" : "Close Alpha",
+    "AXEnabled" : false,
+    "AXFocused" : false,
+    "AXRole" : "AXButton",
+    "AXTitle" : "Close Alpha",
+    "depth" : 2
+  },
+  {
+    "actions" : [
+      "AXPress"
+    ],
+    "AXDescription" : "Beta",
+    "AXEnabled" : false,
+    "AXFocused" : false,
+    "AXRole" : "AXRadioButton",
+    "AXTitle" : "Beta",
+    "AXValue" : false,
+    "depth" : 1
+  },
+  {
+    "actions" : [
+
+    ],
+    "AXEnabled" : false,
+    "AXFocused" : false,
+    "AXRole" : "AXStaticText",
+    "AXValue" : "Beta",
+    "depth" : 2
+  },
+  {
+    "actions" : [
+
+    ],
+    "AXEnabled" : false,
+    "AXFocused" : false,
+    "AXRole" : "AXStaticText",
+    "AXValue" : "Beta",
+    "depth" : 3
+  },
+  {
+    "actions" : [
+      "AXPress"
+    ],
+    "AXDescription" : "Close Beta",
+    "AXEnabled" : false,
+    "AXFocused" : false,
+    "AXRole" : "AXButton",
+    "AXTitle" : "Close Beta",
+    "depth" : 2
+  },
+  {
+    "actions" : [
+      "AXPress"
+    ],
+    "AXDescription" : "Open in new window",
+    "AXEnabled" : false,
+    "AXFocused" : false,
+    "AXRole" : "AXButton",
+    "AXTitle" : "Open in new window",
+    "depth" : 1
+  },
+  {
+    "actions" : [
+      "AXPress"
+    ],
+    "AXDescription" : "Minimize",
+    "AXEnabled" : false,
+    "AXFocused" : false,
+    "AXRole" : "AXButton",
+    "AXTitle" : "Minimize",
+    "depth" : 1
+  },
+  {
+    "actions" : [
+      "AXPress"
+    ],
+    "AXDescription" : "Maximize",
+    "AXEnabled" : false,
+    "AXFocused" : false,
+    "AXRole" : "AXButton",
+    "AXTitle" : "Maximize",
+    "depth" : 1
+  },
+  {
+    "actions" : [
+      "AXPress"
+    ],
+    "AXDescription" : "Close group",
+    "AXEnabled" : false,
+    "AXFocused" : false,
+    "AXRole" : "AXButton",
+    "AXTitle" : "Close group",
+    "depth" : 1
+  },
+  {
+    "actions" : [
+
+    ],
+    "AXEnabled" : true,
+    "AXFocused" : true,
+    "AXRole" : "AXTextField",
+    "AXValue" : "alpha content",
+    "depth" : 1
+  },
+  {
+    "actions" : [
+
+    ],
+    "AXEnabled" : false,
+    "AXFocused" : false,
+    "AXRole" : "AXStaticText",
+    "AXValue" : "alpha content",
+    "depth" : 2
+  },
+  {
+    "actions" : [
+      "AXPress"
+    ],
+    "AXDescription" : "Inspector",
+    "AXEnabled" : false,
+    "AXFocused" : false,
+    "AXRole" : "AXRadioButton",
+    "AXTitle" : "Inspector",
+    "AXValue" : true,
+    "depth" : 1
+  },
+  {
+    "actions" : [
+
+    ],
+    "AXEnabled" : false,
+    "AXFocused" : false,
+    "AXRole" : "AXStaticText",
+    "AXValue" : "Inspector",
+    "depth" : 2
+  },
+  {
+    "actions" : [
+
+    ],
+    "AXEnabled" : false,
+    "AXFocused" : false,
+    "AXRole" : "AXStaticText",
+    "AXValue" : "Inspector",
+    "depth" : 3
+  },
+  {
+    "actions" : [
+      "AXPress"
+    ],
+    "AXDescription" : "Close Inspector",
+    "AXEnabled" : false,
+    "AXFocused" : false,
+    "AXRole" : "AXButton",
+    "AXTitle" : "Close Inspector",
+    "depth" : 2
+  },
+  {
+    "actions" : [
+      "AXPress"
+    ],
+    "AXDescription" : "Open in new window",
+    "AXEnabled" : false,
+    "AXFocused" : false,
+    "AXRole" : "AXButton",
+    "AXTitle" : "Open in new window",
+    "depth" : 1
+  },
+  {
+    "actions" : [
+      "AXPress"
+    ],
+    "AXDescription" : "Minimize",
+    "AXEnabled" : false,
+    "AXFocused" : false,
+    "AXRole" : "AXButton",
+    "AXTitle" : "Minimize",
+    "depth" : 1
+  },
+  {
+    "actions" : [
+      "AXPress"
+    ],
+    "AXDescription" : "Maximize",
+    "AXEnabled" : false,
+    "AXFocused" : false,
+    "AXRole" : "AXButton",
+    "AXTitle" : "Maximize",
+    "depth" : 1
+  },
+  {
+    "actions" : [
+      "AXPress"
+    ],
+    "AXDescription" : "Close group",
+    "AXEnabled" : false,
+    "AXFocused" : false,
+    "AXRole" : "AXButton",
+    "AXTitle" : "Close group",
+    "depth" : 1
+  },
+  {
+    "actions" : [
+
+    ],
+    "AXEnabled" : true,
+    "AXFocused" : false,
+    "AXRole" : "AXTextField",
+    "AXValue" : "inspector content",
+    "depth" : 1
+  },
+  {
+    "actions" : [
+
+    ],
+    "AXEnabled" : false,
+    "AXFocused" : false,
+    "AXRole" : "AXStaticText",
+    "AXValue" : "inspector content",
+    "depth" : 2
+  },
+  {
+    "actions" : [
+      "AXPress"
+    ],
+    "AXDescription" : "Standard JavaFX button",
+    "AXEnabled" : false,
+    "AXFocused" : false,
+    "AXRole" : "AXButton",
+    "AXTitle" : "Standard JavaFX button",
+    "depth" : 1
+  },
+  {
+    "actions" : [
+
+    ],
+    "AXEnabled" : false,
+    "AXFocused" : false,
+    "AXRole" : "AXStaticText",
+    "AXValue" : "Standard JavaFX button",
+    "depth" : 2
+  },
+  {
+    "actions" : [
+      "AXPress"
+    ],
+    "AXEnabled" : true,
+    "AXFocused" : false,
+    "AXRole" : "AXButton",
+    "depth" : 1
+  },
+  {
+    "actions" : [
+      "AXPress",
+      "AXZoomWindow",
+      "AXShowMenu"
+    ],
+    "AXEnabled" : true,
+    "AXFocused" : false,
+    "AXRole" : "AXButton",
+    "depth" : 1
+  },
+  {
+    "actions" : [
+
+    ],
+    "AXFocused" : false,
+    "AXRole" : "AXGroup",
+    "depth" : 2
+  },
+  {
+    "actions" : [
+      "AXPress"
+    ],
+    "AXEnabled" : true,
+    "AXFocused" : false,
+    "AXRole" : "AXButton",
+    "depth" : 1
+  },
+  {
+    "actions" : [
+
+    ],
+    "AXEnabled" : true,
+    "AXFocused" : false,
+    "AXRole" : "AXStaticText",
+    "AXValue" : "ScalaDock S4 synthetic accessibility probe",
+    "depth" : 1
+  }
+]
