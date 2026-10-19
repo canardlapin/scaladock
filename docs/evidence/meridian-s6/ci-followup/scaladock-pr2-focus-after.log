@@ -1,0 +1,69 @@
+[0m[[0m[0minfo[0m] [0m[0mwelcome to sbt 1.12.14 (Homebrew Java 25.0.1)[0m
+[0m[[0m[0minfo[0m] [0m[0mloading settings for project scaladock-build from plugins.sbt...[0m
+[0m[[0m[0minfo[0m] [0m[0mloading project definition from /Users/bbuchsbaum/code/scala/scaladock/project[0m
+[0m[[0m[0minfo[0m] [0m[0mloading settings for project root from build.sbt...[0m
+[0m[[0m[0minfo[0m] [0m[0mset current project to scaladock (in build file:/Users/bbuchsbaum/code/scala/scaladock/)[0m
+[0m[[0m[0minfo[0m] [0m[0mscalafmt: Formatting 1 Scala sources (/Users/bbuchsbaum/code/scala/scaladock/modules/fx)...[0m
+[0m[[0m[32msuccess[0m] [0m[0mTotal time: 2 s, completed Oct 19, 2026, 7:39:01 p.m.[0m
+[0m[[0m[32msuccess[0m] [0m[0mTotal time: 0 s, completed Oct 19, 2026, 7:39:01 p.m.[0m
+[0m[[0m[0minfo[0m] [0m[0mcompiling 9 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/core/target/scala-3.7.4/classes ...[0m
+[0m[[0m[0minfo[0m] [0m[0mdone compiling[0m
+[0m[[0m[0minfo[0m] [0m[0mcompiling 9 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/fx/target/scala-3.7.4/classes ...[0m
+[0m[[0m[0minfo[0m] [0m[0mdone compiling[0m
+[0m[[0m[0minfo[0m] [0m[0mcompiling 21 Scala sources to /Users/bbuchsbaum/code/scala/scaladock/modules/fx/target/scala-3.7.4/test-classes ...[0m
+[0m[[0m[0minfo[0m] [0m[0mdone compiling[0m
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by scala.runtime.LazyVals$ (file:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala3-library_3/3.7.4/scala3-library_3-3.7.4.jar)
+WARNING: Please consider reporting this to the maintainers of class scala.runtime.LazyVals$
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+Oct 19, 2026 7:39:18 P.M. com.sun.javafx.application.PlatformImpl startup
+WARNING: Unsupported JavaFX configuration: classes were loaded from 'unnamed module @22302054'
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by com.sun.glass.utils.NativeLibLoader in an unnamed module (file:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-graphics/24.0.1/javafx-graphics-24.0.1-mac-aarch64.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+RUNTIME_PROBE {"java":"25.0.1","javafx":"24.0.1+4","modules":[{"name":"unnamed","location":"file:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-base/24.0.1/javafx-base-24.0.1-mac-aarch64.jar"},{"name":"unnamed","location":"file:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-graphics/24.0.1/javafx-graphics-24.0.1-mac-aarch64.jar"},{"name":"unnamed","location":"file:/Users/bbuchsbaum/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/openjfx/javafx-controls/24.0.1/javafx-controls-24.0.1-mac-aarch64.jar"}]}
+scaladock.fx.AccessibilitySuite:
+  + assistive tab request selects; arrow keys rove; selection and close names follow state 0.511s
+  + header and minimized actions support keyboard and assistive FIRE with live focus 0.049s
+  + keyboard-visible chrome survives inactive styling and narrow overflow has a stable name 0.336s
+  + assistive and keyboard close share asynchronous admission; reopen uses the live snapshot 0.049s
+  + vetoed accessible close leaves pane, focus and reopen history untouched 0.015s
+  + Shift+F10 and assistive SHOW_MENU open live menus; Escape dismisses; consumed keys stay local 0.107s
+  + pop-out, dock-back and perspective changes preserve live focus and pane identity 0.116s
+  + a vertically minimized tab has no hidden close target; its menu still admits close 0.038s
+  + closing main focus survives a floating window's retained focus (main shown=true) 0.462s
+  + closing main focus survives a floating window's retained focus (main shown=false) 0.481s
+  + JavaFX27 titlebar buttons route group keys and menus from their own focus 0.677s
+scaladock.fx.KeyboardSuite:
+  + F6 / Shift+F6 cycle focus between groups, wrapping 0.026s
+  + Ctrl+Tab / Ctrl+Shift+Tab cycle tabs within the focused group 0.011s
+  + F6 reaches a strip and ENTER restores its size (row=false, saved=false) 0.018s
+  + F6 reaches a strip and ENTER restores its size (row=false, saved=true) 0.008s
+  + F6 reaches a strip and SPACE restores its size (row=false, saved=false) 0.009s
+  + F6 reaches a strip and SPACE restores its size (row=false, saved=true) 0.008s
+  + F6 reaches a strip and ENTER restores its size (row=true, saved=false) 0.009s
+  + F6 reaches a strip and ENTER restores its size (row=true, saved=true) 0.009s
+  + F6 reaches a strip and SPACE restores its size (row=true, saved=false) 0.009s
+  + F6 reaches a strip and SPACE restores its size (row=true, saved=true) 0.008s
+  + minimise and restore actions focus the strip or content and support a host keymap 0.011s
+  + Ctrl+Tab selects minimised tabs without expanding; Enter restores the selected pane 0.011s
+  + maximise still hides sibling strips from group traversal 0.009s
+  + a minimised group with a hidden header still exposes a live keyboard restore target 0.007s
+  + strip focus survives native pulses and restoration returns focus to content 0.64s
+  + actions are API: a host keymap can drive them with the dock's own keys switched off 0.021s
+  + keys the content handles never reach the dock 0.007s
+  + unrelated keys pass through untouched 0.006s
+  + focus cleanup never drags the model's focus; a user's move does 0.654s
+scaladock.fx.PresentationSuite:
+  + repeated host root leases preserve foreign styles/classes and share one live binding 0.061s
+  + open tab menus dismiss on theme/density changes and reopen with current computed colors 0.072s
+  + overflow menus and tooltips dismiss and reopen using current custom styles 0.076s
+  + theme and metric changes cancel ghosts; next ghost owns the current independent root 0.078s
+  + repeated bindings/subscriptions and source handles are released by Dock.dispose 0.048s
+  + scene/window transfer detaches old owners; hide/show recreates float presentation without rebuilding panes 0.144s
+  + retired floating regions have no input bindings and preserve unrelated styles 0.084s
+[0m[[0m[0minfo[0m] [0m[0mPassed: Total 37, Failed 0, Errors 0, Passed 37[0m
+[0m[[0m[32msuccess[0m] [0m[0mTotal time: 22 s, completed Oct 19, 2026, 7:39:23 p.m.[0m
+[0J
