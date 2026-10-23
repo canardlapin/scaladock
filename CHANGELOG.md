@@ -8,6 +8,11 @@ downstream apps pinning a commit can see what moved.
 
 ### Behaviour changes — check these when updating a pin
 
+- **Type-safe pane restoration**: reusing an attached or retained pane now requires the same
+  nominal `PaneType`; unknown placeholders also require the same raw payload. Restoring a
+  different type disposes the old view and creates the requested view or placeholder. Saving an
+  inactive perspective no longer replaces its content from a same-ID binding of another type.
+
 - **Maven group is now `io.github.canardlapin`** (was `io.github.bbuchsbaum`): update
   `libraryDependencies` / pinned coordinates, e.g.
   `"io.github.canardlapin" %% "scaladock-fx" % "0.1.0-SNAPSHOT"`.

@@ -73,7 +73,7 @@ final class PaneFactories private (
   ): BoundPane[S] =
     val state                    = content.state.asInstanceOf[S]
     val typedCtx: PaneContext[S] = ctx.typed[S]
-    BoundPane(e.tpe, e.make(typedCtx)(state), typedCtx)
+    BoundPane(e.tpe, e.make(typedCtx)(state), typedCtx, content)
 
 object PaneFactories:
   val empty: PaneFactories = new PaneFactories(Map.empty)
@@ -89,8 +89,15 @@ object PaneFactories:
 private[fx] final class BoundPane[S](
     val tpe: PaneType[S],
     val view: PaneView[S],
-    val context: PaneContext[S]
+    val context: PaneContext[S],
+    source: PaneContent
 ):
+  /** Reuse requires the nominal type that built this view. Unresolved views cannot edit their
+    * payload, so a different raw record must be rebound rather than replaced by a stale snapshot.
+    */
+  def accepts(content: PaneContent): Boolean =
+    (source.tpe eq content.tpe) && ((tpe ne PaneType.Unresolved) || source == content)
+
   def node: javafx.scene.Node      = view.node
   def snapshotContent: PaneContent = PaneContent(tpe, view.snapshot())
   def dispose(): Unit              = view.dispose()
