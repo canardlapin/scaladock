@@ -55,7 +55,11 @@ Ordinary `update` and `load` are unchanged: panes that leave are disposed.
 When a retained pane returns, **its live view wins**: the state recorded for that `PaneId` in the
 incoming layout is not re-applied (the view already holds the newer state). If the incoming
 layout gives the `PaneId` a different pane type, the retained view is disposed and a new one
-built. Releasing a retained pane goes through close admission even if it is not closable:
+built. This also applies to an attached pane during restore. Type identity is the registered
+`PaneType` instance, not just its wire name. Unknown panes preserve their entire raw record: an
+incoming change to the unknown type or payload creates a new placeholder. Saving inactive
+perspectives refreshes only compatible bindings; a same-ID pane of another type cannot overwrite
+their persisted content. Releasing a retained pane goes through close admission even if it is not closable:
 dropping a view the layout no longer shows is not a user close.
 
 ## Keyboard

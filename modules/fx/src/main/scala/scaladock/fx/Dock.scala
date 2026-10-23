@@ -882,13 +882,18 @@ final class Dock private (
     val reattached = mutable.Set.empty[PaneId]
     val retained   = mutable.Set.empty[PaneId]
 
+    // A stable id can be restored with another type while still attached. Retire its incompatible
+    // binding before admitting newcomers, using the same rule as retained-view reattachment.
+    panes.keys.toVector.filter(id => nextPanes.get(id).exists(p => !panes(id).accepts(p.content)))
+      .foreach(id => panes.remove(id).foreach(_.dispose()))
+
     // panes (across every window): newcomers reuse a retained view or bind once; leavers are
     // disposed — or, in a retaining transition, kept alive and detached
     nextPanes.keysIterator.filterNot(panes.contains).foreach: id =>
       // a retained view comes back as-is (its live state wins over the layout's saved state) —
       // unless the layout now says the pane is of another type: then it is rebuilt
       detached.remove(id) match
-        case Some((bound, _)) if bound.tpe.name == nextPanes(id).content.tpe.name =>
+        case Some((bound, _)) if bound.accepts(nextPanes(id).content) =>
           panes(id) = bound
           reattached += id
         case Some((stale, _)) =>
@@ -957,7 +962,7 @@ final class Dock private (
       val node = new Label(s"Unavailable pane type\n${content.tpe.name}")
       node.getStyleClass.add("dock-unresolved")
       def snapshot(): ujson.Value = keep
-    BoundPane(PaneType.Unresolved, view, ctx.typed[ujson.Value])
+    BoundPane(PaneType.Unresolved, view, ctx.typed[ujson.Value], content)
 
   /** Replace each pane's persisted state with its live snapshot. Snapshotting is best-effort per
     * pane: one throwing `snapshot()` falls back to that pane's last persisted state rather than
@@ -965,7 +970,7 @@ final class Dock private (
     */
   private def withLiveState(s: LayoutState): LayoutState =
     def refresh(p: Pane): Pane =
-      liveBinding(p.id).fold(p): bp =>
+      liveBinding(p.id).filter(_.accepts(p.content)).fold(p): bp =>
         try p.copy(content = bp.snapshotContent)
         catch
           case scala.util.control.NonFatal(t) =>
